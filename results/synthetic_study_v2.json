@@ -1,0 +1,342 @@
+{
+  "purpose": "synthetic stress test; no patient data",
+  "config": {
+    "hidden": 16,
+    "common": 8,
+    "rank": 4,
+    "epochs": 20,
+    "teacher_epochs": 20,
+    "learning_rate": 0.01,
+    "weight_decay": 0.001,
+    "alpha": 1.0,
+    "lambda_within": 0.0001,
+    "lambda_common": 0.0001,
+    "lambda_unique": 0.0001,
+    "patch_keep": 0.8,
+    "omic_noise": 0.05,
+    "folds": 3,
+    "seed": 17
+  },
+  "runs": {
+    "null": {
+      "41": {
+        "additive": {
+          "heldout_nll": 0.9188693761825562,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 0.947618842124939,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 0.9477464556694031,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 0.947901725769043,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "53": {
+        "additive": {
+          "heldout_nll": 1.2095030546188354,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.228294849395752,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.2281743288040161,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.2227356433868408,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "67": {
+        "additive": {
+          "heldout_nll": 1.1646840572357178,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.1753647327423096,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.1751998662948608,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.1688616275787354,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      }
+    },
+    "additive": {
+      "41": {
+        "additive": {
+          "heldout_nll": 0.8874428868293762,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 0.8753734827041626,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 0.875435471534729,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 0.8730971217155457,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "53": {
+        "additive": {
+          "heldout_nll": 0.9731179475784302,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 0.9757719039916992,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 0.975723385810852,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 0.9623826742172241,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "67": {
+        "additive": {
+          "heldout_nll": 0.9864567518234253,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.001172423362732,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.0010730028152466,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 0.9981950521469116,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      }
+    },
+    "interaction": {
+      "41": {
+        "additive": {
+          "heldout_nll": 0.9778317213058472,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.003442645072937,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.0031901597976685,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.0001903772354126,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "53": {
+        "additive": {
+          "heldout_nll": 1.1108198165893555,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.1229560375213623,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.1228175163269043,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.1276353597640991,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "67": {
+        "additive": {
+          "heldout_nll": 1.1922978162765503,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.2081173658370972,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.2078676223754883,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.2039663791656494,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      }
+    },
+    "correlated_additive": {
+      "41": {
+        "additive": {
+          "heldout_nll": 0.9978014230728149,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.0883533954620361,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.0884133577346802,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.0866823196411133,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "53": {
+        "additive": {
+          "heldout_nll": 1.069457769393921,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.0941588878631592,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.0940873622894287,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.0893480777740479,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      },
+      "67": {
+        "additive": {
+          "heldout_nll": 1.1209858655929565,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "interaction": {
+          "heldout_nll": 1.135495662689209,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "decur_interaction": {
+          "heldout_nll": 1.1355345249176025,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 0
+        },
+        "full": {
+          "heldout_nll": 1.1395490169525146,
+          "train_n": 160,
+          "test_n": 80,
+          "teacher_oof_n": 160
+        }
+      }
+    }
+  }
+}

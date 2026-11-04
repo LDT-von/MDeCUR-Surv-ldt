@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local patient manifests, feature arrays, checkpoints, and run outputs.
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.csv
+outputs/
+runs/
+checkpoints/
+
+# Local tooling and editor state.
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.idea/
+.vscode/
