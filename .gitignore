@@ -7,11 +7,20 @@ __pycache__/
 *.npz
 *.pt
 *.pth
+*.bin
+*.safetensors
+*.h5
+*.hdf5
+*.svs
+*.ndpi
+*.mrxs
+*.partial.*
 *.ckpt
 *.csv
 outputs/
 runs/
 checkpoints/
+uni_view_outputs/
 
 # Local tooling and editor state.
 .venv/

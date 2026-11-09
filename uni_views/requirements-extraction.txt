@@ -1,0 +1,9 @@
+# Provision only in a separately reviewed environment on the extraction computer.
+# Install PyTorch/torchvision separately for that GPU (e.g. sm_120); do not blindly
+# replace an existing training environment. No package is installed by our scripts.
+numpy>=1.24
+h5py>=3.8
+Pillow>=10
+timm>=0.9.8
+openslide-python>=1.3
+# Native OpenSlide is also required; see https://openslide.org/api/python/

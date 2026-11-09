@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-09",
+  "timezone": "Asia/Shanghai",
+  "status": "passed_synthetic_engineering_checks",
+  "scope": "Opt-in lazy H5 patient minibatches, checkpointed patch summaries and preserved within-batch correlation objectives",
+  "user_scope": "Real WSI, coordinates and UNI weights remain on another computer; local modification only",
+  "full_suite_final_run": {
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views test_cancer_local test_cancer_stream test_cancer_stream_data test_cancer_stream_cli",
+    "tests_run": 70,
+    "passed": 70,
+    "exit_code": 0,
+    "elapsed_seconds": 36.29,
+    "previous_tests": 51,
+    "new_tests": {
+      "mathematics_gradients_training": 8,
+      "lazy_data_integrity": 9,
+      "cli_and_h5_replay_guard": 2
+    }
+  },
+  "checks": [
+    "Fixed-patient-batch dense versus chunked predictions, all auxiliary projections, local and joint losses",
+    "All model parameter gradients and one AdamW update agree within numerical tolerances",
+    "Chunk size 1, nondivisible chunks and chunk size exceeding bag size, checkpoint on/off",
+    "Stable logsumexp attention and float64 centered moments, including large offsets",
+    "Checkpoint backward re-reads bound immutable H5 blocks",
+    "Actual synthetic H5 changed after forward is rejected during backward replay",
+    "Bounded full-file checksum, coordinate, row-index and view-code validation",
+    "Lazy multislide order agrees with the eager loader; no full bag feature tensors retained",
+    "Patient singleton tail merged without dropping a patient; actual batch sizes recorded",
+    "Train-only RNA scaling, validation checkpoint selection and reference-only label-free prediction",
+    "CLI reports input fingerprint scheme, reconstructible checkpoint and refuses overwrite",
+    "Existing 51 checks retained"
+  ],
+  "benchmark_receipt": "stream_memory_benchmark_20261109.json",
+  "benchmark_scope": "Fresh CPU processes, generated features only; time includes synthetic feature generation plus forward/backward",
+  "scientific_limits": [
+    "Chunking equivalence applies to the same patient batch, not whole-cohort versus minibatch optimization",
+    "Patient minibatching changes the patient population used for each correlation estimate",
+    "Autograd graph and small summary state still scale with chunk count; not strict constant memory",
+    "No real H5 disk throughput, WSI decoding, UNI extraction, patient prediction efficacy or CUDA performance evidence",
+    "Original cosine stability metric and predictive model capacity unchanged"
+  ],
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu"
+  },
+  "source_sha256": {
+    "cancer_model.py": "71062efdbebee8f5bd7295fa11b03df557f14c27ad347521fb865fd3c0ce6f64",
+    "cancer_auxiliary.py": "53c5a4a4967eccbd85cf7010d9a5138b8a4706e69d5246adea07af77ffd1de03",
+    "cancer_stream.py": "63ee83d587ce7a73f25905e7cd1c4e0e78c9474e0d6deb8bda4b5eb5cddc6556",
+    "cancer_stream_data.py": "2f89def5a5c68eb0448374ac2b997c9ffefbc09ddfd0d691faf0e5d707a6e3f2",
+    "uni_views/core.py": "18fbd919bac69c3d30fd1513b5f6d19f19813f394d396f2d5020ddf339a7b2d2",
+    "train_cancer.py": "8799efd7b4d626e43c8e5f3e3715b1304eabcee1c5c8ba683ec6907aa3abad29",
+    "test_cancer_stream.py": "572c405af6cffc8ad9027fac536c6018f0c2689e33a47d52b83cc9cc3f80933b",
+    "test_cancer_stream_data.py": "c526a9f8e2a9dd0c1c1c023c86e3daa671ecd559ac3029b19bf6ad55e565af89",
+    "test_cancer_stream_cli.py": "ef7a0034d54c89e9fcc805a8974d129dfdffbeb8a3ba1be3c121fa4d5dbd00ee",
+    "benchmark_cancer_stream.py": "48e5bcb14f7685c6c5caf49dc93b6ff73f31f5f58e309e045b27908e53276f43"
+  }
+}

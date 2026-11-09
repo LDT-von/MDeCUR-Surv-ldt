@@ -4,7 +4,8 @@ from copy import deepcopy
 import math
 import torch
 from cancer_model import CancerDeCUR, piecewise_nll
-from model import decur_auxiliary, stability_weighted_common, DegenerateCorrelation
+from cancer_auxiliary import patient_balanced_local_correlation
+from model import correlation_loss, stability_weighted_common, DegenerateCorrelation
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,23 @@ class CancerConfig:
     patch_keep: float = 0.8
     rna_noise: float = 0.05
     seed: int = 17
+    path_views: str = 'legacy_patch_dropout'
+    prediction_space: str = 'projected'  # historical path; encoder separates prediction/auxiliary
+    lambda_local: float = 0.0
+    local_dim: int = 16
+    lambda_path_within: float | None = None
+    lambda_rna_within: float | None = None
+
+
+def effective_loss_weights(cfg):
+    """Explicit per-modality overrides; absent overrides preserve the old mean."""
+    return {
+        'path_within': cfg.lambda_within / 2 if cfg.lambda_path_within is None else cfg.lambda_path_within,
+        'rna_within': cfg.lambda_within / 2 if cfg.lambda_rna_within is None else cfg.lambda_rna_within,
+        'local': cfg.lambda_local,
+        'common': 0.0 if cfg.common_mode == 'off' else cfg.lambda_common,
+        'unique': cfg.lambda_unique,
+    }
 
 
 def validate_cohort(data, starts, require_labels=True):
@@ -38,6 +56,14 @@ def validate_cohort(data, starts, require_labels=True):
         raise ValueError('Cohort fields have inconsistent lengths or empty bags')
     if not torch.isfinite(x[m]).all() or not torch.isfinite(g).all():
         raise ValueError('Missing/nonfinite features require explicit train-only preprocessing')
+    keys=('patches_view1','patches_view2')
+    if any(k in data for k in keys):
+        if not all(k in data for k in keys):
+            raise ValueError('Both cached pathology views are required')
+        for key in keys:
+            view=data[key]
+            if view.shape != x.shape or view.device != x.device or not torch.isfinite(view[m]).all():
+                raise ValueError('Cached views must be finite and match the complete base bag')
     if require_labels:
         if 'time' not in data or 'event' not in data:
             raise ValueError('Missing survival labels')
@@ -45,7 +71,15 @@ def validate_cohort(data, starts, require_labels=True):
         piecewise_nll(torch.zeros(n,len(starts),device=t.device),t,e,starts)
 
 
-def view_batch(x, g, mask, cfg):
+def view_batch(x, g, mask, cfg, cached_views=None):
+    if cfg.path_views == 'cached_uni':
+        if cfg.patch_keep != 1 or cached_views is None or len(cached_views) != 2:
+            raise ValueError('cached_uni requires two full cached views and patch_keep=1')
+        if any(v.shape != x.shape for v in cached_views):
+            raise ValueError('Cached views must preserve every input patch row')
+        return [(v,g+cfg.rna_noise*torch.randn_like(g),mask) for v in cached_views]
+    if cfg.path_views != 'legacy_patch_dropout' or cached_views is not None:
+        raise ValueError('Choose an explicit compatible pathology view source')
     views=[]
     for _ in range(2):
         chosen = mask & (torch.rand(mask.shape,device=mask.device)<cfg.patch_keep)
@@ -59,22 +93,47 @@ def train_cancer_model(train, validation, starts, cfg):
     """Fit on train; select the validation-NLL-best checkpoint; no test input."""
     if cfg.common_mode not in ('off','uniform','stability','shuffled'):
         raise ValueError('Invalid common mode')
+    if cfg.path_views not in ('legacy_patch_dropout','cached_uni'):
+        raise ValueError('Invalid pathology view source')
+    if cfg.path_views == 'cached_uni' and cfg.patch_keep != 1:
+        raise ValueError('cached_uni must preserve all patches: patch_keep=1')
     if cfg.epochs < 1 or cfg.patience < 1 or cfg.lr <= 0 or not 0 < cfg.patch_keep <= 1 or cfg.rna_noise < 0:
         raise ValueError('Invalid training configuration')
-    if min(cfg.lambda_within,cfg.lambda_common,cfg.lambda_unique,cfg.strength) < 0:
-        raise ValueError('Negative loss or weight strength')
+    weights = effective_loss_weights(cfg)
+    if any(not math.isfinite(v) or v < 0 for v in (*weights.values(), cfg.lambda_within, cfg.lambda_common, cfg.strength)):
+        raise ValueError('Loss coefficients and weight strength must be finite and nonnegative')
+    if not 0 < cfg.min_weight <= 1:
+        raise ValueError('min_weight must be in (0,1]')
+    if cfg.prediction_space not in ('projected', 'encoder'):
+        raise ValueError('Invalid prediction space')
+    if not isinstance(cfg.local_dim, int) or cfg.local_dim < 1:
+        raise ValueError('local_dim must be a positive integer')
+    if cfg.lambda_local and cfg.path_views != 'cached_uni':
+        raise ValueError('Local consistency requires aligned cached_uni image views')
     validate_cohort(train,starts)
     validate_cohort(validation,starts)
+    cached_views=None
+    if cfg.path_views == 'cached_uni':
+        if not all(k in train for k in ('patches_view1','patches_view2')):
+            raise ValueError('Missing cached UNI training views')
+        cached_views=(train['patches_view1'],train['patches_view2'])
+    elif any(k in train for k in ('patches_view1','patches_view2')):
+        raise ValueError('Cached views supplied but legacy patch dropping was selected')
     if set(train['ids']) & set(validation['ids']):
         raise ValueError('Patient overlap between training and validation')
     if train['rna'].shape[1] != validation['rna'].shape[1] or train['patches'].shape[-1] != validation['patches'].shape[-1]:
         raise ValueError('Feature dimensions differ')
+    if any(weights.values()) and len(train['ids']) < 2:
+        raise ValueError('Auxiliary correlation requires at least two training patients')
     torch.manual_seed(cfg.seed)
     mean = train['rna'].mean(0)
     scale = train['rna'].std(0,unbiased=False).clamp_min(1e-6)
     x, g, m = train['patches'], (train['rna']-mean)/scale, train['mask']
     vx, vg, vm = validation['patches'], (validation['rna']-mean)/scale, validation['mask']
-    model = CancerDeCUR(x.shape[-1],g.shape[-1],cfg.hidden,cfg.common,len(starts)).to(x.device)
+    model_kwargs = {'path_dim': x.shape[-1], 'rna_dim': g.shape[-1], 'hidden': cfg.hidden,
+                    'common': cfg.common, 'bins': len(starts), 'prediction_space': cfg.prediction_space,
+                    'local_dim': cfg.local_dim if cfg.lambda_local else None}
+    model = CancerDeCUR(**model_kwargs).to(x.device)
     optimizer = torch.optim.AdamW(model.parameters(),lr=cfg.lr,weight_decay=cfg.weight_decay)
     best = math.inf
     best_state = None
@@ -88,20 +147,39 @@ def train_cancer_model(train, validation, starts, cfg):
         out = model(x,g,m)
         nll = piecewise_nll(out['log_rates'],train['time'],train['event'],starts)
         loss = nll
-        stats = {'ess':None,'weight_mean':None,'weight_min':None,'weight_std':None,'common_loss':None,'skipped':False}
-        if cfg.lambda_within or cfg.lambda_unique or (cfg.lambda_common and cfg.common_mode != 'off'):
-            (x1,g1,m1),(x2,g2,m2) = view_batch(x,g,m,cfg)
-            p1,r1,_ = model.encode(x1,g1,m1)
-            p2,r2,_ = model.encode(x2,g2,m2)
-            aux = decur_auxiliary(p1,p2,r1,r2,cfg.common)
-            loss = loss + cfg.lambda_within*aux['within'] + cfg.lambda_unique*aux['unique']
-            if cfg.lambda_common and cfg.common_mode != 'off':
+        stats = {'ess':None,'weight_mean':None,'weight_min':None,'weight_std':None,'common_loss':None,'skipped':False,
+                 'path_within_loss':None,'rna_within_loss':None,'unique_loss':None,
+                 'local_loss':None,'local_diagnostics':None}
+        if any(weights.values()):
+            (x1,g1,m1),(x2,g2,m2) = view_batch(x,g,m,cfg,cached_views)
+            v1 = model.encode_auxiliary(x1,g1,m1,include_local=bool(weights['local']))
+            v2 = model.encode_auxiliary(x2,g2,m2,include_local=bool(weights['local']))
+            p1,r1,p2,r2 = v1['path'],v1['rna'],v2['path'],v2['rna']
+            if weights['path_within']:
+                within_path = correlation_loss(p1,p2,1)
+                loss = loss + weights['path_within']*within_path
+                stats['path_within_loss'] = within_path.item()
+            if weights['rna_within']:
+                within_rna = correlation_loss(r1,r2,1)
+                loss = loss + weights['rna_within']*within_rna
+                stats['rna_within_loss'] = within_rna.item()
+            if weights['unique']:
+                unique = correlation_loss(p1[:,cfg.common:],r1[:,cfg.common:],0)
+                loss = loss + weights['unique']*unique
+                stats['unique_loss'] = unique.item()
+            if weights['local']:
+                if not torch.equal(m1,m2):
+                    raise ValueError('Local view masks must preserve identical patch rows')
+                local, diagnostics = patient_balanced_local_correlation(v1['local'],v2['local'],m1)
+                loss = loss + weights['local']*local
+                stats.update(local_loss=local.item(),local_diagnostics=diagnostics)
+            if weights['common']:
                 try:
                     common, w = stability_weighted_common(
                         p1[:,:cfg.common],p2[:,:cfg.common],r1[:,:cfg.common],r2[:,:cfg.common],
                         strength=0 if cfg.common_mode == 'uniform' else cfg.strength,
                         min_weight=cfg.min_weight,shuffle_weights=cfg.common_mode == 'shuffled')
-                    loss = loss + cfg.lambda_common*common
+                    loss = loss + weights['common']*common
                     stats.update(ess=w['ess'].item(),weight_mean=w['weights'].mean().item(),
                                  weight_min=w['weights'].min().item(),
                                  weight_std=w['weights'].std(unbiased=False).item(),common_loss=common.item())
@@ -110,6 +188,7 @@ def train_cancer_model(train, validation, starts, cfg):
                     skipped += 1
         if not torch.isfinite(loss):
             raise FloatingPointError('Training loss is not finite')
+        stats['total_loss'] = loss.item()
         loss.backward()
         optimizer.step()
         model.eval()
@@ -127,7 +206,8 @@ def train_cancer_model(train, validation, starts, cfg):
     model.load_state_dict(best_state)
     model.eval()
     return {'model':model,'rna_mean':mean,'rna_scale':scale,'starts':starts.clone(),
-            'best_epoch':best_epoch,'validation_nll':best,'history':history,'skipped_common':skipped}
+            'best_epoch':best_epoch,'validation_nll':best,'history':history,'skipped_common':skipped,
+            'model_kwargs':model_kwargs,'effective_loss_weights':weights}
 
 
 def predict(fitted, cohort):

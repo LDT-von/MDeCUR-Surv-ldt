@@ -24,6 +24,12 @@ def cohort_fingerprint(cohort):
         for name in ('patches','mask','rna','time','event'):
             array=d[name].contiguous().numpy()
             h.update(name.encode());h.update(str(array.shape).encode());h.update(str(array.dtype).encode());h.update(array.tobytes())
+        for name in ('patches_view1','patches_view2'):
+            if name in d:
+                array=d[name].contiguous().numpy()
+                h.update(name.encode());h.update(str(array.shape).encode());h.update(array.tobytes())
+        if 'view_provenance' in d:
+            h.update(json.dumps(d['view_provenance'],sort_keys=True).encode())
     return h.hexdigest()
 
 
@@ -39,10 +45,32 @@ def main():
                         help='Choose a prespecified ablation; off disables only the common term')
     parser.add_argument('--seed',type=int,default=17)
     parser.add_argument('--epochs',type=int,default=80)
+    parser.add_argument('--hidden',type=int,default=16)
+    parser.add_argument('--common',type=int,default=8)
+    parser.add_argument('--training-backend',choices=['padded','stream'],default='padded')
+    parser.add_argument('--patient-batch-size',type=int,default=16,
+                        help='stream: patients per correlation batch; a final singleton is merged')
+    parser.add_argument('--patch-chunk-size',type=int,default=2048,
+                        help='stream: maximum patch rows read/encoded per block')
+    parser.add_argument('--device',default='cpu',help='stream: explicit torch device; no automatic GPU selection')
     parser.add_argument('--lambda-common',type=float,default=.001)
     parser.add_argument('--lambda-within',type=float,default=.001)
+    parser.add_argument('--lambda-path-within',type=float,default=None,
+                        help='Pathology within coefficient; default is lambda-within/2')
+    parser.add_argument('--lambda-rna-within',type=float,default=None,
+                        help='RNA within coefficient; default is lambda-within/2')
+    parser.add_argument('--lambda-local',type=float,default=0.,
+                        help='Patient-balanced same-patch pathology loss; requires cached_uni')
+    parser.add_argument('--local-dim',type=int,default=16)
+    parser.add_argument('--prediction-space',choices=['projected','encoder'],default='projected',
+                        help='encoder predicts before auxiliary projection; projected preserves the historical baseline')
     parser.add_argument('--lambda-unique',type=float,default=.001)
     parser.add_argument('--strength',type=float,default=2.)
+    parser.add_argument('--path-views',choices=['legacy_patch_dropout','cached_uni'],default='legacy_patch_dropout',
+                        help='cached_uni uses aligned full-patch image views; legacy preserves historical synthetic experiments')
+    parser.add_argument('--patch-keep',type=float,default=None)
+    parser.add_argument('--rna-noise',type=float,default=.05,
+                        help='Existing RNA feature perturbation; not a validated biological augmentation')
     args=parser.parse_args()
     destination=Path(args.out)
     if destination.exists():
@@ -51,15 +79,40 @@ def main():
         raise ValueError('horizon must be nonnegative')
     manifest=Path(args.manifest).resolve()
     manifest_hash=hashlib.sha256(manifest.read_bytes()).hexdigest()
-    cohort=load_manifest(manifest)
-    input_hash=cohort_fingerprint(cohort)
+    if args.training_backend == 'stream':
+        if args.path_views != 'cached_uni':
+            raise ValueError('stream backend requires --path-views cached_uni')
+        from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
+        from cancer_stream import train_stream_model, predict_stream
+        cohort=load_stream_manifest(manifest)
+        input_hash=stream_cohort_fingerprint(cohort)
+        fingerprint_scheme='verified-cache-stream-v1'
+    else:
+        if args.device != 'cpu':
+            raise ValueError('Explicit device selection is supported by the stream backend')
+        cohort=load_manifest(manifest,path_views=args.path_views)
+        input_hash=cohort_fingerprint(cohort)
+        fingerprint_scheme='padded-cohort-tensors-v1'
     cfg=CancerConfig(seed=args.seed,epochs=args.epochs,common_mode=args.mode,
+                     hidden=args.hidden,common=args.common,
                      lambda_common=args.lambda_common,lambda_within=args.lambda_within,
-                     lambda_unique=args.lambda_unique,strength=args.strength)
+                     lambda_unique=args.lambda_unique,strength=args.strength,
+                     lambda_path_within=args.lambda_path_within,lambda_rna_within=args.lambda_rna_within,
+                     lambda_local=args.lambda_local,local_dim=args.local_dim,prediction_space=args.prediction_space,
+                     path_views=args.path_views,rna_noise=args.rna_noise,
+                     patch_keep=args.patch_keep if args.patch_keep is not None else
+                                (1. if args.path_views == 'cached_uni' else .8))
     starts=torch.tensor(args.starts,dtype=torch.float32)
-    fitted=train_cancer_model(cohort['train'],cohort['val'],starts,cfg)
+    if args.training_backend == 'stream':
+        fitted=train_stream_model(cohort['train'],cohort['val'],starts,cfg,
+                                  patient_batch_size=args.patient_batch_size,
+                                  patch_chunk_size=args.patch_chunk_size,device=args.device)
+        prediction_function=predict_stream
+    else:
+        fitted=train_cancer_model(cohort['train'],cohort['val'],starts,cfg)
+        prediction_function=predict
     test=cohort['test']
-    outputs=predict(fitted,{k:v for k,v in test.items() if k not in ('event','time')})
+    outputs=prediction_function(fitted,{k:v for k,v in test.items() if k not in ('event','time')})
     with torch.no_grad():
         nll=piecewise_nll(outputs['log_rates'],test['time'],test['event'],starts).item()
         survival=survival_at(outputs['log_rates'],torch.tensor([args.horizon]),starts)[:,0]
@@ -68,15 +121,22 @@ def main():
                      test['time'].numpy(),test['event'].numpy(),survival.numpy(),args.horizon)
     destination.mkdir(parents=True,exist_ok=False)
     torch.save({'model_state':fitted['model'].state_dict(),
-                'path_dim':cohort['train']['patches'].shape[-1],
+                'model_kwargs':fitted['model_kwargs'],
+                'path_dim':fitted['model_kwargs']['path_dim'],
                 'rna_dim':cohort['train']['rna'].shape[-1],
                 'rna_mean':fitted['rna_mean'],'rna_scale':fitted['rna_scale'],
-                'starts':starts,'config':asdict(cfg)},destination/'checkpoint.pt')
+                'starts':starts,'config':asdict(cfg),
+                'training_backend':args.training_backend,'stream_config':fitted.get('stream_config'),
+                'effective_loss_weights':fitted['effective_loss_weights']},destination/'checkpoint.pt')
     with (destination/'test_predictions.csv').open('w',encoding='utf-8',newline='') as handle:
         writer=csv.writer(handle)
         writer.writerow(['patient_id','survival_at_horizon'])
         writer.writerows(zip(test['ids'],survival.tolist()))
-    report={'status':'research_only','manifest_sha256':manifest_hash,'cohort_tensor_sha256':input_hash,'config':asdict(cfg),
+    report={'status':'research_only','manifest_sha256':manifest_hash,'cohort_input_sha256':input_hash,'config':asdict(cfg),
+            'cohort_tensor_sha256':input_hash if args.training_backend == 'padded' else None,
+            'cohort_fingerprint_scheme':fingerprint_scheme,'training_backend':args.training_backend,
+            'stream_config':fitted.get('stream_config'),
+            'model_kwargs':fitted['model_kwargs'],'effective_loss_weights':fitted['effective_loss_weights'],
             'endpoint':args.endpoint,'time_unit':args.time_unit,'interval_starts':args.starts,
             'prediction_horizon':args.horizon,'best_epoch':fitted['best_epoch'],
             'validation_nll':fitted['validation_nll'],'test_nll':nll,
@@ -84,7 +144,8 @@ def main():
             'patients':{k:len(v['ids']) for k,v in cohort.items()},
             'events':{k:int(v['event'].sum()) for k,v in cohort.items()},
             'skipped_common':fitted['skipped_common'],'history':fitted['history'],
-            'runtime':{'python':platform.python_version(),'torch':torch.__version__},
+            'view_provenance':{k:v.get('view_provenance') for k,v in cohort.items()},
+            'runtime':{'python':platform.python_version(),'torch':torch.__version__,'device':args.device},
             'warning':'Cohort provenance, time origin and split validity must be independently audited.'}
     with (destination/'report.json').open('w',encoding='utf-8') as handle:
         json.dump(report,handle,indent=2,ensure_ascii=False)

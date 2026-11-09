@@ -1,0 +1,53 @@
+{
+  "date": "2026-11-08",
+  "status": "synthetic_interface_checks_passed_real_wsi_uni_unverified",
+  "base_git_commit": "e75088d55ae7206b9c8120ca302aff5db7e9cb83",
+  "environment": {
+    "torch": "2.6.0+cu124",
+    "numpy": "2.2.6",
+    "h5py": "3.15.1",
+    "pillow": "11.3.0",
+    "test_device": "cpu"
+  },
+  "checks": [
+    {
+      "command": "python -B -m unittest -v test_uni_views test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline",
+      "passed": 34,
+      "seconds": 32.054,
+      "scope": "Full suite before final atomic no-overwrite publication improvement"
+    },
+    {
+      "command": "python -B -m unittest -v test_uni_views",
+      "passed": 17,
+      "seconds": 12.358,
+      "scope": "Final new-module tests after atomic publication improvement, including the added concurrent-writer case"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    },
+    {
+      "command": "ast.parse for changed and added Python files",
+      "files": 9,
+      "status": "passed"
+    }
+  ],
+  "unique_passing_tests": 35,
+  "new_module_passing_tests": 17,
+  "existing_regression_tests": 18,
+  "test_inputs": "Synthetic pixels, fake WSI reader, fake 1024-dimensional encoder; tiny synthetic torch module for wrapper loading",
+  "patient_data_read": false,
+  "real_uni_weights_loaded": false,
+  "real_wsi_pixels_read": false,
+  "patient_feature_extraction_run": false,
+  "patient_training_run": false,
+  "dependencies_installed": false,
+  "unverified": [
+    "Target-computer OpenSlide native library and real SVS decoding",
+    "Target local UNI v1 checkpoint compatibility",
+    "Actual CUDA architecture, inference kernels and memory",
+    "Real throughput and source extraction/preprocessing provenance",
+    "Patient survival performance and usefulness of stability weighting",
+    "Scalable survival training on millions of patches"
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-09",
+  "timezone": "Asia/Shanghai",
+  "status": "passed_synthetic_and_regression_checks",
+  "scope": "Patient-balanced same-patch pathology correlation, separate prediction/auxiliary spaces, and independent within-modality coefficients",
+  "baseline_git_head": "e75088d55ae7206b9c8120ca302aff5db7e9cb83",
+  "baseline_before_changes": {
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views",
+    "tests_run": 35,
+    "passed": 35,
+    "exit_code": 0,
+    "elapsed_seconds": 14.781
+  },
+  "targeted_final_run": {
+    "command": "python -B -m unittest -v test_cancer_local",
+    "tests_run": 16,
+    "passed": 16,
+    "exit_code": 0,
+    "elapsed_seconds": 5.999
+  },
+  "full_suite_final_run": {
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views test_cancer_local",
+    "tests_run": 51,
+    "passed": 51,
+    "exit_code": 0,
+    "elapsed_seconds": 18.357,
+    "single_complete_suite_run": true
+  },
+  "checks": [
+    "Independent NumPy weighted-moment numerical answer",
+    "Autograd against finite differences",
+    "Equal total weight per patient despite repeating one patient's patches",
+    "Masked padding and NaNs excluded from local statistics and gradients",
+    "Centered local objective invariant to constant feature shifts",
+    "Correspondence sensitivity and consistent row reorder invariance",
+    "Local and patient-level auxiliary gradients reach prediction backbones",
+    "Encoder prediction bypasses all auxiliary projectors",
+    "Local head preserves shared parameter initialization and RNG state",
+    "Historical projected prediction and checkpoint parameter layout supported",
+    "Legacy within averaging and independent coefficient overrides",
+    "Four common modes, per-term logs and validation checkpoint selection",
+    "Disabled auxiliary terms use only the reference prediction path",
+    "Invalid local view sources and invalid coefficients rejected",
+    "Synthetic cached-H5 CLI, checkpoint reload and label-free prediction",
+    "Constant dimensions reported without claiming collapse prevention"
+  ],
+  "evidence_limitations": [
+    "Synthetic tensors, fake WSI reader and fake encoder only",
+    "No real UNI weights loaded or real WSI pixels decoded",
+    "No patient training or clinical efficacy evaluation",
+    "No causal, biological disentanglement or novelty claim established",
+    "Training remains full-batch padding; scalable patient minibatches not implemented",
+    "Original cosine-based stability weights unchanged",
+    "DenseTwins-inspired adaptation, with centered weighted correlation and coordinate-identity pairing"
+  ],
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu"
+  },
+  "source_sha256": {
+    "cancer_model.py": "71062efdbebee8f5bd7295fa11b03df557f14c27ad347521fb865fd3c0ce6f64",
+    "cancer_auxiliary.py": "53c5a4a4967eccbd85cf7010d9a5138b8a4706e69d5246adea07af77ffd1de03",
+    "cancer_train.py": "423aeb44f6185b01c2c842b88e8bba7afd2e302d233f8ca03d24c8ebf5bb6f8e",
+    "train_cancer.py": "0155617f2a22ec59967a1aaf51be1731d55d3000c032a6c64eff234be970fe6e",
+    "test_cancer_local.py": "d9c25f0acfd7cbc37c4092eca7208b24a65bc324fd5c9944b2b15805137d99bd"
+  }
+}

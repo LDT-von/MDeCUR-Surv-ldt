@@ -1,0 +1,4 @@
+patient_id,split,wsi_h5,rna_npy,time,event
+FAKE_CASE_001,train,uni_view_outputs/full/FAKE_SLIDE_001.h5,rna/FAKE_CASE_001.npy,2.4,1
+FAKE_CASE_002,val,uni_view_outputs/full/FAKE_SLIDE_002.h5,rna/FAKE_CASE_002.npy,3.1,0
+FAKE_CASE_003,test,uni_view_outputs/full/FAKE_SLIDE_003.h5,rna/FAKE_CASE_003.npy,1.8,1

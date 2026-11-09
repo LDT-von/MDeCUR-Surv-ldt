@@ -1,0 +1,47 @@
+{
+  "status": "synthetic_engineering_benchmark",
+  "patients": 4,
+  "patches_per_patient": 8192,
+  "feature_dim": 1024,
+  "chunk_size": 512,
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "threads": 1
+  },
+  "results": [
+    {
+      "backend": "padded",
+      "peak_process_memory_bytes": 1324187648,
+      "forward_backward_seconds": 0.9346599000018614,
+      "loss": 1.0187022686004639,
+      "gradient_l2": 1.6503278426169508,
+      "max_feature_rows_per_read": 8192,
+      "feature_read_calls": 4
+    },
+    {
+      "backend": "stream",
+      "peak_process_memory_bytes": 488022016,
+      "forward_backward_seconds": 2.1899512999989383,
+      "loss": 1.0187022897442755,
+      "gradient_l2": 1.6503287605555323,
+      "max_feature_rows_per_read": 512,
+      "feature_read_calls": 128
+    }
+  ],
+  "peak_memory_reduction_fraction": 0.6314555442824974,
+  "caveats": [
+    "Generated tensors only; no H5 throughput, real WSI, UNI or patient evaluation",
+    "Fresh-process process peak includes runtime and allocator overhead",
+    "Same fixed patient batch; patient minibatch optimization not benchmarked",
+    "Stream uses checkpoint recomputation and float64 centered local moments"
+  ],
+  "source_sha256": {
+    "cancer_model.py": "71062efdbebee8f5bd7295fa11b03df557f14c27ad347521fb865fd3c0ce6f64",
+    "cancer_auxiliary.py": "53c5a4a4967eccbd85cf7010d9a5138b8a4706e69d5246adea07af77ffd1de03",
+    "cancer_stream.py": "63ee83d587ce7a73f25905e7cd1c4e0e78c9474e0d6deb8bda4b5eb5cddc6556",
+    "benchmark_cancer_stream.py": "48e5bcb14f7685c6c5caf49dc93b6ff73f31f5f58e309e045b27908e53276f43"
+  }
+}

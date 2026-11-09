@@ -1,0 +1,18 @@
+# 癌症代码仓库的会话接续
+
+本仓库是WSI＋RNA的**癌症生存预测研究实现**，不是原始DeCUR仓库，也不是旧槽机制项目。
+
+若以整个工作区打开：先阅读父目录的 `AGENTS.md`、`START_HERE.md`、`PROJECT_HANDOFF.md`，并核对 `WORKSPACE_SNAPSHOT.json` 的日期。完整交接以父目录的 `PROJECT_HANDOFF.md` 为准，用户新指令优先。
+
+如果只复制／打开本子仓库而父目录文件不存在，至少先读 `CANCER_MODEL_README.md`、`START_UNI_VIEWS.md`、`uni_views/README.md`、`uni_views/VALIDATION.json`。这些文件不包含完整的DenseTwins讨论；需要取得整个工作区交接，不能假装已看过。
+
+- 当前主模型是 `cancer_model.py: CancerDeCUR`；`model.py`还保留旧原型类，但其中辅助损失仍被新模型复用。
+- 已实现：同patch图像双视图的冻结UNI v1提取，及`--path-views cached_uni`缓存接入。此模式保留全部patch，要求同次提取的reference＋A/B。
+- 2026-11-09 后续已实现逐patch局部相关目标（`--lambda-local`，要求cached_uni）、预测与辅助投影分离（`--prediction-space encoder`）、病理／RNA独立within系数。完整公式、论文及开关见 `LOCAL_GLOBAL_IMPLEMENTATION.md`。默认保留历史投影预测、局部项关闭。
+- 后续已实现 `--training-backend stream`，包括lazy H5、患者小批量、checkpointed patch分块与完整局部中心矩。见 `STREAM_TRAINING.md`。固定患者batch下分块与完整计算在容差内一致；患者minibatch会改变相关统计覆盖范围，不能称与原全队列目标完全等价。
+- 最新一次完整70项合成／回归检查通过（既有51＋本轮19），回执为 `results/stream_validation_20261109.json`，另有CPU合成峰值内存／耗时基准；旧回执保留历史状态。用户已确认真实数据仍在另一台电脑，尚无真实UNI、SVS、患者训练或CUDA成功回执。
+- 稳定性加权只是候选。对增强稳定不等于预后可靠，零相关不等于独立。解释网络时同时交代预测和辅助路径。
+- 用户要求独立思考，不从旧SlotSPE／槽机制方法引入设计。不因另一个项目里有脚本就把其方法并入本仓库。
+- 当前有未提交／未跟踪工作；检查Git状态，保留已有改动。不要reset、clean或强制覆盖，不声称新功能已push。
+- 另一台有WSI的电脑此前断电；历史报告不等于当前状态。实际患者提取／训练与环境替换按用户明确授权的范围进行，不默认全量启动；已给出的授权不必重复询问。
+- 结构性代码查询遵循父目录的CodeGraph规则；若工具未启用，使用现有搜索读取并如实说明。
