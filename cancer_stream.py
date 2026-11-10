@@ -11,7 +11,7 @@ import torch
 from torch.utils.checkpoint import checkpoint
 
 from cancer_model import CancerDeCUR, piecewise_nll
-from cancer_train import effective_loss_weights
+from cancer_train import effective_loss_weights, validate_modality_config
 from cancer_rna import fit_rna_scaler, transform_rna, rna_noise_view
 from model import correlation_loss, stability_weighted_common, DegenerateCorrelation
 
@@ -107,6 +107,8 @@ def stream_forward(model, bags, rna, chunk_size=2048, include_views=False,
     """
     if not isinstance(chunk_size, int) or chunk_size < 1 or not bags or len(bags) != len(rna):
         raise ValueError('Positive chunk_size and one RNA row per nonempty bag required')
+    if model.modality != 'both' and (include_views or include_local or rna_views is not None):
+        raise ValueError('Auxiliary views require modality=both')
     if include_local and (not include_views or model.local_projector is None):
         raise ValueError('Local summaries require aligned views and a local projector')
     if rna_views is not None and (len(rna_views) != 2 or any(v.shape != rna.shape for v in rna_views)):
@@ -114,14 +116,18 @@ def stream_forward(model, bags, rna, chunk_size=2048, include_views=False,
     parameter = next(model.parameters())
     rna = rna.to(device=parameter.device, dtype=parameter.dtype)
     pooled, moments = [], []
-    for bag in bags:
-        values, local = _stream_patient(model, bag, chunk_size, include_views, include_local, checkpoint_chunks)
-        pooled.append(values)
-        if include_local:
-            moments.append(local)
-    hp = torch.stack([p[0] for p in pooled])
-    hr = model.rna_encoder(rna)
-    p, r = (model.path_projector(hp), model.rna_projector(hr)) if model.prediction_space == 'projected' else (hp, hr)
+    if model.modality != 'rna':
+        for bag in bags:
+            values, local = _stream_patient(model, bag, chunk_size, include_views, include_local, checkpoint_chunks)
+            pooled.append(values)
+            if include_local:
+                moments.append(local)
+        hp = torch.stack([p[0] for p in pooled])
+    else:
+        # Keep the paired cohort contract, but never read patch blocks for RNA-only.
+        hp = rna.new_zeros((len(rna), model.hidden))
+    hr = model.rna_encoder(rna) if model.modality != 'pathology' else torch.zeros_like(hp)
+    p, r = model._prediction_features(hp,hr)
     out = {'log_rates': model.head(torch.cat((p, r), 1)), 'path': p, 'rna': r,
            'path_hidden': hp, 'rna_hidden': hr}
     if include_views:
@@ -211,7 +217,7 @@ def validate_stream_views(cfg):
     """Reject incompatible single-view objectives before any patient file I/O."""
     if cfg.path_views not in ('cached_uni', 'single_view') or cfg.patch_keep != 1:
         raise ValueError('Streaming training requires cached_uni or single_view and patch_keep=1')
-    weights = effective_loss_weights(cfg)
+    weights = validate_modality_config(cfg)
     if cfg.path_views == 'single_view' and (
             cfg.common_mode != 'off' or any(weights.values()) or cfg.rna_noise != 0):
         raise ValueError('single_view is a survival-only baseline: use --mode off, zero all '
@@ -251,7 +257,7 @@ def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
     torch.manual_seed(cfg.seed)
     model_kwargs = dict(path_dim=dim, rna_dim=train['rna'].shape[1], hidden=cfg.hidden,
                         common=cfg.common, bins=len(starts), prediction_space=cfg.prediction_space,
-                        local_dim=cfg.local_dim if cfg.lambda_local else None)
+                        local_dim=cfg.local_dim if cfg.lambda_local else None,modality=cfg.modality)
     model = CancerDeCUR(**model_kwargs).to(device)
     rna_fitted = fit_rna_scaler(train['rna'],cfg.rna_scale_policy,cfg.rna_min_std)
     normalized = transform_rna(train['rna'],rna_fitted)
@@ -265,6 +271,7 @@ def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
                                      patch_chunk_size=patch_chunk_size, device=str(device),
                                      checkpoint_chunks=True, local_moment_dtype='float64',
                                      path_views=cfg.path_views,
+                                     modality=cfg.modality,
                                      correlation_scope='patient_minibatch' if any(weights.values()) else 'disabled'))
     generator = torch.Generator().manual_seed(cfg.seed+1009)
     for epoch in range(1, cfg.epochs+1):

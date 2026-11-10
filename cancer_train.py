@@ -34,6 +34,7 @@ class CancerConfig:
     lambda_rna_within: float | None = None
     rna_scale_policy: str = 'clamp'
     rna_min_std: float = 1e-6
+    modality: str = 'both'
 
 
 def effective_loss_weights(cfg):
@@ -45,6 +46,18 @@ def effective_loss_weights(cfg):
         'common': 0.0 if cfg.common_mode == 'off' else cfg.lambda_common,
         'unique': cfg.lambda_unique,
     }
+
+
+def validate_modality_config(cfg):
+    """Single-modality controls use survival loss only, with no fake partners."""
+    if cfg.modality not in ('both', 'pathology', 'rna'):
+        raise ValueError('modality must be both, pathology or rna')
+    weights = effective_loss_weights(cfg)
+    if cfg.modality != 'both' and (
+            cfg.common_mode != 'off' or any(weights.values()) or cfg.rna_noise != 0):
+        raise ValueError('Single-modality controls require --mode off, zero auxiliary coefficients '
+                         'and --rna-noise 0')
+    return weights
 
 
 def validate_cohort(data, starts, require_labels=True):
@@ -102,7 +115,7 @@ def train_cancer_model(train, validation, starts, cfg):
         raise ValueError('cached_uni must preserve all patches: patch_keep=1')
     if cfg.epochs < 1 or cfg.patience < 1 or cfg.lr <= 0 or not 0 < cfg.patch_keep <= 1 or cfg.rna_noise < 0:
         raise ValueError('Invalid training configuration')
-    weights = effective_loss_weights(cfg)
+    weights = validate_modality_config(cfg)
     if any(not math.isfinite(v) or v < 0 for v in (*weights.values(), cfg.lambda_within, cfg.lambda_common, cfg.strength)):
         raise ValueError('Loss coefficients and weight strength must be finite and nonnegative')
     if not 0 < cfg.min_weight <= 1:
@@ -135,7 +148,7 @@ def train_cancer_model(train, validation, starts, cfg):
     rna_fitted['rna_preprocessing']['validation_max_abs'] = vg.abs().max().item()
     model_kwargs = {'path_dim': x.shape[-1], 'rna_dim': g.shape[-1], 'hidden': cfg.hidden,
                     'common': cfg.common, 'bins': len(starts), 'prediction_space': cfg.prediction_space,
-                    'local_dim': cfg.local_dim if cfg.lambda_local else None}
+                    'local_dim': cfg.local_dim if cfg.lambda_local else None, 'modality':cfg.modality}
     model = CancerDeCUR(**model_kwargs).to(x.device)
     optimizer = torch.optim.AdamW(model.parameters(),lr=cfg.lr,weight_decay=cfg.weight_decay)
     best = math.inf

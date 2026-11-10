@@ -11,7 +11,7 @@ class CancerDeCUR(nn.Module):
     The final head is additive in the learned representation for capacity control.
     """
     def __init__(self, path_dim, rna_dim, hidden=32, common=16, bins=4,
-                 prediction_space='projected', local_dim=None):
+                 prediction_space='projected', local_dim=None, modality='both'):
         super().__init__()
         if not 0 < common < hidden or bins < 1:
             raise ValueError('Require 0 < common < hidden and bins >= 1')
@@ -19,7 +19,13 @@ class CancerDeCUR(nn.Module):
             raise ValueError('prediction_space must be projected or encoder')
         if local_dim is not None and (not isinstance(local_dim, int) or local_dim < 1):
             raise ValueError('local_dim must be a positive integer or None')
+        if modality not in ('both', 'pathology', 'rna'):
+            raise ValueError('modality must be both, pathology or rna')
+        if modality != 'both' and local_dim is not None:
+            raise ValueError('Local auxiliary embeddings require modality=both')
         self.common = common
+        self.hidden = hidden
+        self.modality = modality
         self.prediction_space = prediction_space
         self.patch_encoder = nn.Sequential(nn.Linear(path_dim,hidden), nn.LayerNorm(hidden), nn.GELU())
         self.attention = nn.Sequential(nn.Linear(hidden,hidden//2), nn.Tanh(), nn.Linear(hidden//2,1))
@@ -39,12 +45,26 @@ class CancerDeCUR(nn.Module):
             raise ValueError('Expected patches [B,N,D], RNA [B,G], bool mask [B,N]')
         if mask.shape != patches.shape[:2] or len(rna) != len(patches) or not mask.any(1).all():
             raise ValueError('Invalid batch or patch mask')
-        safe = patches.masked_fill(~mask.unsqueeze(-1),0)
-        features = self.patch_encoder(safe)
-        scores = self.attention(features).squeeze(-1).masked_fill(~mask, -torch.inf)
-        attention = scores.softmax(dim=1)
-        pooled = (features*attention.unsqueeze(-1)).sum(1)
-        return pooled, self.rna_encoder(rna), attention, features
+        features = None
+        if self.modality != 'rna':
+            safe = patches.masked_fill(~mask.unsqueeze(-1),0)
+            features = self.patch_encoder(safe)
+            scores = self.attention(features).squeeze(-1).masked_fill(~mask, -torch.inf)
+            attention = scores.softmax(dim=1)
+            pooled = (features*attention.unsqueeze(-1)).sum(1)
+        else:
+            pooled = rna.new_zeros((len(rna), self.hidden))
+            attention = rna.new_zeros(mask.shape)
+        hr = self.rna_encoder(rna) if self.modality != 'pathology' else torch.zeros_like(pooled)
+        return pooled, hr, attention, features
+
+    def _prediction_features(self, hp, hr):
+        """Keep an omitted branch exactly zero, including projector biases."""
+        if self.prediction_space == 'encoder':
+            return hp, hr
+        p = self.path_projector(hp) if self.modality != 'rna' else torch.zeros_like(hp)
+        r = self.rna_projector(hr) if self.modality != 'pathology' else torch.zeros_like(hr)
+        return p, r
 
     def encode_auxiliary(self, patches, rna, mask, include_local=False):
         """Training embeddings; all auxiliary gradients reach the backbones.
@@ -52,6 +72,8 @@ class CancerDeCUR(nn.Module):
         Local rows retain the complete, aligned bag order. Padding is excluded
         by the local loss, and a cache loader must establish row identity first.
         """
+        if self.modality != 'both':
+            raise ValueError('Auxiliary encodings require modality=both')
         p, r, attention, features = self._encode_backbones(patches, rna, mask)
         out = {'path': self.path_projector(p), 'rna': self.rna_projector(r),
                'attention': attention}
@@ -68,11 +90,7 @@ class CancerDeCUR(nn.Module):
 
     def forward(self, patches, rna, mask):
         hp,hr,attn,_ = self._encode_backbones(patches,rna,mask)
-        if self.prediction_space == 'projected':
-            p,g = self.path_projector(hp),self.rna_projector(hr)
-        else:
-            # Prediction in encoder mode never executes auxiliary projectors.
-            p,g = hp,hr
+        p,g = self._prediction_features(hp,hr)
         return {'log_rates':self.head(torch.cat((p,g),dim=1)),
                 'path':p, 'rna':g, 'attention':attn,
                 'path_hidden':hp, 'rna_hidden':hr}

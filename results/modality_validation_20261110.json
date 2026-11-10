@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-10",
+  "evidence": "Local CPU synthetic/regression checks; real both baseline details are user-forwarded",
+  "focused_tests": {
+    "status": "passed",
+    "count": 9,
+    "seconds": 22.881
+  },
+  "full_suite": {
+    "status": "passed",
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views test_cancer_local test_cancer_stream test_cancer_stream_data test_cancer_stream_cli test_cancer_single_view test_cancer_rna test_cancer_modalities",
+    "count": 102,
+    "seconds": 84.614
+  },
+  "implemented": [
+    "Explicit both/pathology/rna survival controls with shared initialization layout",
+    "Omitted encoder/projector never executes and receives no gradient",
+    "RNA-only stream does not enumerate or read patch blocks",
+    "Default both formula, RNG and old checkpoint compatibility",
+    "Modality saved in constructor kwargs/config/report and restored for inference",
+    "Same paired-cohort fingerprint and RNA preprocessing across controls",
+    "Unimodal auxiliary requests rejected"
+  ],
+  "limits": [
+    "All arms still validate the same paired input manifest and feature hashes at startup",
+    "No new real-patient or CUDA unimodal run was performed locally",
+    "Single-fold validation differences do not establish generalization or biological synergy",
+    "Feature encoder/RNA preprocessing/OS origin provenance remains unverified",
+    "Full DeCUR/local losses still require aligned image views"
+  ],
+  "source_sha256": {
+    "cancer_model.py": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_train.py": "6d9873e73e3b53f562136f6d834d1fb8b748692e729d8fdbde5ec1041eecc946",
+    "cancer_stream.py": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "train_cancer.py": "0d49d75a761ed95536ebf8bf08426d09d233b03da9813bcb0d885abdd67bffb8",
+    "test_cancer_modalities.py": "14dad70ba77a016e13b3a5d1ae67a50471734f80c06d6f68f374188c15f5a472",
+    "cancer_rna.py": "f5e0afca5c3231bc9b6fc4be5ad37c55c93947dd2143689ff5dfedfaccb22ca5",
+    "cancer_stream_data.py": "01ef1067b384129c9590c4879de6a4ab247131058f960e1f08bd0daceaf5c9ee",
+    "cancer_single_view.py": "a2a51ff61cc0c5cefef36acb7e8fa9140e1a7f342d33904a59fd82ec57920ec9"
+  }
+}

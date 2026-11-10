@@ -67,6 +67,8 @@ def main():
     parser.add_argument('--local-dim',type=int,default=16)
     parser.add_argument('--prediction-space',choices=['projected','encoder'],default='projected',
                         help='encoder predicts before auxiliary projection; projected preserves the historical baseline')
+    parser.add_argument('--modality',choices=['both','pathology','rna'],default='both',
+                        help='Survival-only unimodal controls on the same paired cohort; both preserves the default')
     parser.add_argument('--lambda-unique',type=float,default=.001)
     parser.add_argument('--strength',type=float,default=2.)
     parser.add_argument('--path-views',choices=['legacy_patch_dropout','cached_uni','single_view'],default='legacy_patch_dropout',
@@ -92,6 +94,7 @@ def main():
                      lambda_local=args.lambda_local,local_dim=args.local_dim,prediction_space=args.prediction_space,
                      path_views=args.path_views,rna_noise=args.rna_noise,
                      rna_scale_policy=args.rna_scale_policy,rna_min_std=args.rna_min_std,
+                     modality=args.modality,
                      patch_keep=args.patch_keep if args.patch_keep is not None else
                                 (1. if args.path_views in ('cached_uni','single_view') else .8))
     if args.training_backend == 'stream':
@@ -152,6 +155,7 @@ def main():
             'cohort_fingerprint_scheme':fingerprint_scheme,'training_backend':args.training_backend,
             'stream_config':fitted.get('stream_config'),
             'model_kwargs':fitted['model_kwargs'],'effective_loss_weights':fitted['effective_loss_weights'],
+            'modality':args.modality,
             'rna_preprocessing':fitted['rna_preprocessing'],
             'evaluation_split':evaluation_split,'test_evaluated':not args.validation_only,
             'feature_source':'external_single_view_pt_encoder_unverified' if args.path_views == 'single_view' else args.path_views,

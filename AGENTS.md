@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+最新阶段：用户报告39b0563的fold0 mask融合基线已完整运行（19轮、best4、val NLL2.186943/C-index0.6307，非测试），8个RNA坐标屏蔽有效，外测未加载。下一步显式 `--modality both|pathology|rna` 对照已实施，旧both初始化/路径保持兼容，单模态仅生存目标、跳过未选分支；完整102项CPU检查通过，见 `MODALITY_CONTROLS.md`。新单模态目标机结果尚未收到。
+
 最新：用户已转发5090单视图fold0 244训练/60验证两轮CUDA成功，仍非独立测试/局部目标证据。训练常量基因导致验证标准化值约2.174e8，后续已实现可选 `--rna-scale-policy mask --rna-min-std 1e-6`，保存train-only mask、推理/辅助噪声共用，见 `RNA_PREPROCESSING.md`。完整93项合成/回归检查通过。旧clamp行为兼容；旧的“尚无患者训练回执”段落为历史状态。
 
 本仓库是WSI＋RNA的**癌症生存预测研究实现**，不是原始DeCUR仓库，也不是旧槽机制项目。

@@ -1,5 +1,7 @@
 # 训练集低方差RNA屏蔽与fold0完整基线（2026-11-10）
 
+**当前阶段**：用户已转发本页完整fold0基线运行完成（19轮、best4，val NLL2.186943/C-index0.6307，非测试），8项屏蔽有效。已有融合输出保持；后续同队列单模态对照入口与两条新命令见 [MODALITY_CONTROLS.md](MODALITY_CONTROLS.md)。下文80轮命令保留当时执行配置，不代表要求重跑已有both结果。
+
 ## 已收到的目标机运行记录
 
 用户转发报告：单视图CUDA流程已在5090执行，fold0训练244患者/291切片/4,763,402 patch/114事件，验证60患者/69切片/1,232,771 patch/26事件。两轮验证NLL为2.3547、2.2319，验证C-index=0.5640（非测试），未加载外测输入。报告墙钟169.76秒、CPU峰值RSS约27,121 MB（含mmap页）、GPU峰值allocated约33.8 MB。环境沿用trisurv的torch 2.10+cu128，命令级 `LD_LIBRARY_PATH=/home/ubuntu/.conda/envs/trisurv/lib` 解决了继承的libstdc++冲突；未改依赖。以上来自用户报告，本地未直接核验服务器文件/日志。
