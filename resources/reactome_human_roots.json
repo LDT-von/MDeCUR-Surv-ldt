@@ -1,0 +1,18 @@
+{
+  "source": "Reactome human top-level pathway gene set and pathway hierarchy",
+  "source_urls": [
+    "https://reactome.org/download/current/ReactomePathways.gmt.zip",
+    "https://reactome.org/download/current/ReactomePathwaysRelation.txt"
+  ],
+  "source_sha256": {
+    "ReactomePathways.gmt.zip": "6056fcd95dc8f09740c8bb64c2765bea1386ce91b9b19cd10bcd45d30451805c",
+    "ReactomePathwaysRelation.txt": "aa3609ee852442899b400bf4817b36311d820883ecd75259ed77531d93d8f1dc"
+  },
+  "retrieved_utc": "2026-11-10T09:19:24.082419+00:00",
+  "selection": "Human GMT pathway IDs occurring as parents but never as children in human hierarchy; sorted by stable Reactome ID; duplicate symbols within a set removed in source order.",
+  "root_count": 29,
+  "output_sha256": "9879ac3f58005e3ac2d779b84675ca0a3f8a6832f30ed6feb39c56a3b38d5c9e",
+  "gene_identifier": "HUGO gene symbol as provided by Reactome GMT; exact matching only",
+  "licence": "Reactome data and derived files: CC0; https://reactome.org/license",
+  "patient_data_used": false
+}

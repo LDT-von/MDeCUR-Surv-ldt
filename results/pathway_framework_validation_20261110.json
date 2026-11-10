@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-10",
+  "evidence": "Local CPU synthetic/regression checks; no real-patient or CUDA training",
+  "full_suite": {
+    "status": "passed",
+    "seconds": 123.699,
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views test_cancer_local test_cancer_stream test_cancer_stream_data test_cancer_stream_cli test_cancer_single_view test_cancer_rna test_cancer_modalities test_cancer_pathway",
+    "count": 118,
+    "note": "Full suite executed before adding one additional resource-scale test; production source files did not change afterwards."
+  },
+  "additional": [
+    {
+      "status": "passed",
+      "seconds": 5.331,
+      "test": "Frozen 29 Reactome pathways with a large ordered gene schema end-to-end",
+      "count": 1
+    },
+    {
+      "status": "passed",
+      "seconds": 15.52,
+      "test": "Re-run of CLI end-to-end with extended module gradient assertions",
+      "count": 1
+    },
+    {
+      "count": 1,
+      "seconds": 0.021,
+      "status": "passed",
+      "test": "Prediction reads only the unaugmented reference for both view sources"
+    }
+  ],
+  "distinct_tests_covered": 120,
+  "implemented": [
+    "Frozen 29 human Reactome root pathways matched to explicit ordered gene symbols",
+    "Patient-conditioned patch-to-pathway soft matching and explicit survival interaction",
+    "Pathology-only pathway regional anchors and conditioned matched regional local common/private objectives",
+    "Patient-level DeCUR and patient-balanced same-patch pathology consistency",
+    "Single-view encoded feature noise and verified cached UNI image-D4 as distinct view sources",
+    "Rank-aware patient batching and checkpointed full-patch streaming",
+    "Train-only RNA mask, validation-only default, source fingerprints and checkpoint reload",
+    "All 11 default auxiliary terms and prediction interaction active in synthetic end-to-end run"
+  ],
+  "limits": [
+    "No real-patient training, GPU execution or target-server resource benchmark in this run",
+    "Feature-noise perturbations are not WSI image-space augmentation",
+    "Bulk RNA does not provide true patch-level expression correspondence",
+    "Conditional matching can manufacture correlation; independent anchor does not prove biological identifiability",
+    "No claim of novelty, generalization, or clinical benefit",
+    "Changing chunk size changes sampled feature noise; settings must be fixed across comparisons"
+  ],
+  "source_sha256": {
+    "cancer_pathway.py": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream.py": "6f75cad0d62274d90c9ace4e3252d654f8d1f51f90f46b05f44f8daf10618363",
+    "train_pathway.py": "b91c9869dd3c0c6f7c5f4e21456227245495c9f4d9d1f3ad5f6687a6b6ecc2e0",
+    "test_cancer_pathway.py": "c57c84c607a9b424195b19da9a0c44fd575118c0c4c08f295ef97971311afc97",
+    "cancer_model.py": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_stream.py": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "cancer_stream_data.py": "01ef1067b384129c9590c4879de6a4ab247131058f960e1f08bd0daceaf5c9ee",
+    "cancer_rna.py": "f5e0afca5c3231bc9b6fc4be5ad37c55c93947dd2143689ff5dfedfaccb22ca5",
+    "cancer_single_view.py": "a2a51ff61cc0c5cefef36acb7e8fa9140e1a7f342d33904a59fd82ec57920ec9",
+    "model.py": "d58482cc0e1f75e631e711bdb25f0ec61fb77f6f09998677bc841af5de3f4d3f",
+    "resources/reactome_human_roots.gmt": "9879ac3f58005e3ac2d779b84675ca0a3f8a6832f30ed6feb39c56a3b38d5c9e",
+    "resources/reactome_human_roots.json": "0d98059de2f94e7343f34a93cea7f2de61d7f393f0562d7fb8a0ceef780c9ef6",
+    "scripts/freeze_reactome_roots.py": "2ba8178f21f25ef18a5bfb7b5cb4eb410d5a3d475c5a6af1cf15c6a6dd0eb580"
+  }
+}

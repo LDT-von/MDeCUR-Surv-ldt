@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+最新用户明确要求完整新框架而非继续停留于基线：新增 `train_pathway.py`、`cancer_pathway.py`、`cancer_pathway_stream.py` 和固定Reactome顶层GMT，见 `PATHWAY_LOCAL_FRAMEWORK.md`。包含RNA通路编码、条件patch匹配与交互、病理独立锚点和条件匹配的局部共同/独有、患者级DeCUR和病理局部一致性；支持单视图特征噪声或真实cached_uni D4，前者不能当成图像增强。目标机尚无新框架患者运行回执，不可宣称有效或首创；旧single_view基线保留。
+
 最新阶段：用户报告39b0563的fold0 mask融合基线已完整运行（19轮、best4、val NLL2.186943/C-index0.6307，非测试），8个RNA坐标屏蔽有效，外测未加载。下一步显式 `--modality both|pathology|rna` 对照已实施，旧both初始化/路径保持兼容，单模态仅生存目标、跳过未选分支；完整102项CPU检查通过，见 `MODALITY_CONTROLS.md`。新单模态目标机结果尚未收到。
 
 最新：用户已转发5090单视图fold0 244训练/60验证两轮CUDA成功，仍非独立测试/局部目标证据。训练常量基因导致验证标准化值约2.174e8，后续已实现可选 `--rna-scale-policy mask --rna-min-std 1e-6`，保存train-only mask、推理/辅助噪声共用，见 `RNA_PREPROCESSING.md`。完整93项合成/回归检查通过。旧clamp行为兼容；旧的“尚无患者训练回执”段落为历史状态。

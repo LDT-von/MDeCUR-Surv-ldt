@@ -29,6 +29,8 @@
 
 ## 输入清单与运行接口
 
+完整新框架入口为 `train_pathway.py`，而本文件下述`train_cancer.py`保留为基线。RNA通路、patch—RNA软匹配、患者级和局部共同/独有目标、两种视图来源及目标机首轮命令见 [PATHWAY_LOCAL_FRAMEWORK.md](PATHWAY_LOCAL_FRAMEWORK.md)。
+
 新增 `--modality both|pathology|rna`（默认both），单模态仅启用生存目标，跳过未使用编码器；RNA-only stream不读取patch块，但仍核对同一配对输入清单与源文件哈希。结果/检查点记录modality。固定fold0/seed17补病理与RNA两条对照的命令和解释边界见 [MODALITY_CONTROLS.md](MODALITY_CONTROLS.md)。
 
 RNA归一化新增 `--rna-scale-policy mask --rna-min-std 1e-6`，只根据训练集屏蔽低方差坐标，保留输入维度及原文件，推理复用检查点mask；默认clamp兼容历史行为。CLI新增显式 `--patience`（默认15），验证NLL选轮。真实单视图运行报告中的常量基因放大问题、预检与完整fold0命令见 [RNA预处理](RNA_PREPROCESSING.md)。

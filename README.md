@@ -1,5 +1,7 @@
 # Conditional DeCUR-Surv：面向病理—组学生存预测的研究原型
 
+最新：已新增可执行[病理局部—RNA通路共同/独有生存框架](PATHWAY_LOCAL_FRAMEWORK.md)，包含Reactome通路编码、patch—通路软匹配交互、独立病理锚点及条件匹配的局部共同/独有损失、原全局DeCUR和病理局部项。支持现有单视图的明确特征扰动，也支持未来真实UNI图像D4缓存；两者不能混称。首次目标机完整训练尚待执行。
+
 最新：用户转发fold0单视图mask基线完整完成（19轮、NLL最优第4轮，验证C-index=0.6307，非测试）。新增显式 `--modality both|pathology|rna` 同队列生存基线对照，跳过未使用编码分支，旧both路径兼容，见 [单模态对照](MODALITY_CONTROLS.md)。
 
 2026-11-10：用户已转发5090单视图244训练/60验证、两轮CUDA成功记录（验证NLL=2.2319，非独立测试）。后续已补可选训练集低方差RNA屏蔽、保存/复用mask和尺度诊断，以及fold0完整训练说明，见 [RNA预处理](RNA_PREPROCESSING.md)。这项工程修正不证明上游RNA预处理来源或方法效果。
