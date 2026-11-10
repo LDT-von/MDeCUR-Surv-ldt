@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+最新：用户已转发5090单视图fold0 244训练/60验证两轮CUDA成功，仍非独立测试/局部目标证据。训练常量基因导致验证标准化值约2.174e8，后续已实现可选 `--rna-scale-policy mask --rna-min-std 1e-6`，保存train-only mask、推理/辅助噪声共用，见 `RNA_PREPROCESSING.md`。完整93项合成/回归检查通过。旧clamp行为兼容；旧的“尚无患者训练回执”段落为历史状态。
+
 本仓库是WSI＋RNA的**癌症生存预测研究实现**，不是原始DeCUR仓库，也不是旧槽机制项目。
 
 若以整个工作区打开：先阅读父目录的 `AGENTS.md`、`START_HERE.md`、`PROJECT_HANDOFF.md`，并核对 `WORKSPACE_SNAPSHOT.json` 的日期。完整交接以父目录的 `PROJECT_HANDOFF.md` 为准，用户新指令优先。

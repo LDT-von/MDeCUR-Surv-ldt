@@ -45,6 +45,7 @@ def main():
                         help='Choose a prespecified ablation; off disables only the common term')
     parser.add_argument('--seed',type=int,default=17)
     parser.add_argument('--epochs',type=int,default=80)
+    parser.add_argument('--patience',type=int,default=15,help='Stop after this many epochs without validation-NLL improvement')
     parser.add_argument('--hidden',type=int,default=16)
     parser.add_argument('--common',type=int,default=8)
     parser.add_argument('--training-backend',choices=['padded','stream'],default='padded')
@@ -73,19 +74,24 @@ def main():
     parser.add_argument('--patch-keep',type=float,default=None)
     parser.add_argument('--rna-noise',type=float,default=.05,
                         help='Existing RNA feature perturbation; not a validated biological augmentation')
+    parser.add_argument('--rna-scale-policy',choices=['clamp','mask'],default='clamp',
+                        help='mask: exclude training-low-variance genes at every split; clamp preserves historical scaling')
+    parser.add_argument('--rna-min-std',type=float,default=1e-6,
+                        help='Positive train-only std threshold/floor; saved with RNA statistics and mask')
     args=parser.parse_args()
     destination=Path(args.out)
     if destination.exists():
         raise FileExistsError(destination)
     if args.horizon < 0:
         raise ValueError('horizon must be nonnegative')
-    cfg=CancerConfig(seed=args.seed,epochs=args.epochs,common_mode=args.mode,
+    cfg=CancerConfig(seed=args.seed,epochs=args.epochs,patience=args.patience,common_mode=args.mode,
                      hidden=args.hidden,common=args.common,
                      lambda_common=args.lambda_common,lambda_within=args.lambda_within,
                      lambda_unique=args.lambda_unique,strength=args.strength,
                      lambda_path_within=args.lambda_path_within,lambda_rna_within=args.lambda_rna_within,
                      lambda_local=args.lambda_local,local_dim=args.local_dim,prediction_space=args.prediction_space,
                      path_views=args.path_views,rna_noise=args.rna_noise,
+                     rna_scale_policy=args.rna_scale_policy,rna_min_std=args.rna_min_std,
                      patch_keep=args.patch_keep if args.patch_keep is not None else
                                 (1. if args.path_views in ('cached_uni','single_view') else .8))
     if args.training_backend == 'stream':
@@ -130,6 +136,8 @@ def main():
                 'path_dim':fitted['model_kwargs']['path_dim'],
                 'rna_dim':cohort['train']['rna'].shape[-1],
                 'rna_mean':fitted['rna_mean'],'rna_scale':fitted['rna_scale'],
+                'rna_mask':fitted['rna_mask'],'rna_train_std':fitted['rna_train_std'],
+                'rna_preprocessing':fitted['rna_preprocessing'],
                 'starts':starts,'config':asdict(cfg),
                 'training_backend':args.training_backend,'stream_config':fitted.get('stream_config'),
                 'validation_only':args.validation_only,'evaluation_split':evaluation_split,
@@ -144,6 +152,7 @@ def main():
             'cohort_fingerprint_scheme':fingerprint_scheme,'training_backend':args.training_backend,
             'stream_config':fitted.get('stream_config'),
             'model_kwargs':fitted['model_kwargs'],'effective_loss_weights':fitted['effective_loss_weights'],
+            'rna_preprocessing':fitted['rna_preprocessing'],
             'evaluation_split':evaluation_split,'test_evaluated':not args.validation_only,
             'feature_source':'external_single_view_pt_encoder_unverified' if args.path_views == 'single_view' else args.path_views,
             'endpoint':args.endpoint,'time_unit':args.time_unit,'interval_starts':args.starts,

@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-10",
+  "evidence": "Local CPU synthetic/regression checks; 5090 run facts are user-forwarded reports",
+  "focused_tests": {
+    "status": "passed",
+    "count": 8,
+    "seconds": 6.482
+  },
+  "full_suite": {
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views test_cancer_local test_cancer_stream test_cancer_stream_data test_cancer_stream_cli test_cancer_single_view test_cancer_rna",
+    "status": "passed",
+    "count": 93,
+    "seconds": 75.88
+  },
+  "implemented": [
+    "Optional train-only low-variance RNA mask with fixed input dimension",
+    "Saved mask/statistics reused in padded and stream inference and auxiliary noise",
+    "Legacy clamp and old-checkpoint behavior retained",
+    "Explicit CLI patience plus RNA threshold/policy and scale diagnostics",
+    "Synthetic constant-feature held-out explosion reproduced and masked",
+    "Changing masked held-out values leaves predictions and selected parameters unchanged"
+  ],
+  "limits": [
+    "Does not establish upstream RNA preprocessing or gene-selection provenance",
+    "Does not verify the OS time origin or clinical validity",
+    "Does not bound all unmasked held-out values or clip them",
+    "No local real-patient or CUDA run was performed",
+    "Updated preprocessing requires training from scratch in a new output directory"
+  ],
+  "source_sha256": {
+    "cancer_rna.py": "f5e0afca5c3231bc9b6fc4be5ad37c55c93947dd2143689ff5dfedfaccb22ca5",
+    "cancer_train.py": "8d5a70f7abd4de6ad99ed6260fe8c29d3b88053b2c03307d5908bddefe2e12a7",
+    "cancer_stream.py": "85b28cdcd607c52da280c9d9168308accf782e9f7b698f84fb9d8f6a819667df",
+    "train_cancer.py": "927078c804340704aa0e6b07db5b9be12d927ecfb9404823d550016745296e90",
+    "test_cancer_rna.py": "824d7e6a424b90a6e93fced6de389ec5130c833ba6519b862962ed2acadc3ca1",
+    "cancer_model.py": "71062efdbebee8f5bd7295fa11b03df557f14c27ad347521fb865fd3c0ce6f64",
+    "cancer_stream_data.py": "01ef1067b384129c9590c4879de6a4ab247131058f960e1f08bd0daceaf5c9ee",
+    "cancer_single_view.py": "a2a51ff61cc0c5cefef36acb7e8fa9140e1a7f342d33904a59fd82ec57920ec9"
+  }
+}

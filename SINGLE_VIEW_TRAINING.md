@@ -1,5 +1,7 @@
 # 现成单视图特征的全 patch 流式基线（2026-11-10）
 
+**后续更新**：用户已转发5090单视图两轮CUDA运行成功记录。旧clamp在训练常量基因上导致验证标准化值约2.174e8；已新增可选train-only RNA mask及完整fold0训练指令，见 [RNA预处理与下一轮](RNA_PREPROCESSING.md)。下文1/2轮命令保留原工程核验范围，新运行显式使用mask策略。
+
 新增 `--training-backend stream --path-views single_view`，直接安全内存映射现有 `.pt` 浮点张量，不要求原始WSI、坐标属性或UNI权重。每位患者的所有明确列出的切片按清单顺序汇聚，保留全部patch。它是现成特征＋RNA的普通融合生存基线；没有构造A/B视图，没有实施局部目标或新增跨模态交互。
 
 ## 输入与来源
@@ -37,7 +39,7 @@ single_view强制 `patch_keep=1`，`--mode off`，全部有效辅助损失系数
 
 1. 保留既有划分与 `results/repeat_cancer_v*.json`。在原数据目录之外创建新的输入/输出目录，例如 `/data1/decur_runs/BLCA_SINGLE_VIEW_NEW_INPUTS`。从既有fold0映射inner_train→train、inner_val→val；先不导出outer_test输入。
 2. 按临床 `wsi` 列表及已核对的完整切片名，生成每患者有序PT路径列表。RNA保留现有17025基因顺序，逐患者另存向量，记录原始CSV、基因顺序和划分文件哈希。标签用 `clinical/all/blca.csv` 的有效OS月数、`event=1-censorship_os`；不能混用另一套近似缩放的时间。
-3. 输入准备时报告训练集原RNA方差过小的基因数，以及按训练均值/标准差转换后train/val的最大绝对值。保留当前标准差下限 `1e-6`，不自行删OR10X1、不裁剪、不增加特征筛选。RNA生成流程/参照样本与OS时间起点仍记为未知。统计分布本身不能确定其生成机制。
+3. 输入准备时报告训练集原RNA方差过小的基因数，以及按训练均值/标准差转换后train/val的最大绝对值。原smoke保留clamp；后续长训练显式使用 `--rna-scale-policy mask --rna-min-std 1e-6`，按训练集固定低方差屏蔽规则，见上方新说明。原矩阵/基因顺序不改、不按验证值挑基因、不裁剪。RNA生成流程/参照样本与OS时间起点仍记为未知。
 4. 可先从原inner_train/inner_val各选2位患者建立独立的工程检查清单，仍保留每位患者全部patch，运行1轮；通过后用原244/60患者清单运行2轮。两者都是流程核验，不改变正式划分，不使用outer_test，也不据此宣称患者效果或确定最终超参数。报告实际CUDA峰值显存、CPU峰值RSS、耗时、患者/patch数量和有限梯度/损失情况。
 
 从仓库根目录，在已核实的cu128环境中执行。下面的输入/输出路径必须换成实际新建路径；`starts=0`（单区间指数模型）与12个月horizon只用于这次工程核验，不是已选定的最终生存方案：

@@ -12,6 +12,7 @@ from torch.utils.checkpoint import checkpoint
 
 from cancer_model import CancerDeCUR, piecewise_nll
 from cancer_train import effective_loss_weights
+from cancer_rna import fit_rna_scaler, transform_rna, rna_noise_view
 from model import correlation_loss, stability_weighted_common, DegenerateCorrelation
 
 
@@ -140,7 +141,7 @@ def _objective(model, batch, starts, cfg, chunk_size):
     weights = effective_loss_weights(cfg)
     g = batch['rna']
     use_views = any(weights.values())
-    views = (g + cfg.rna_noise*torch.randn_like(g), g + cfg.rna_noise*torch.randn_like(g)) if use_views else None
+    views = tuple(rna_noise_view(g,cfg.rna_noise,batch.get('rna_mask')) for _ in range(2)) if use_views else None
     out = stream_forward(model, batch['bags'], g, chunk_size, use_views,
                          bool(weights['local']), rna_views=views)
     nll = piecewise_nll(out['log_rates'], batch['time'], batch['event'], starts)
@@ -252,13 +253,13 @@ def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
                         common=cfg.common, bins=len(starts), prediction_space=cfg.prediction_space,
                         local_dim=cfg.local_dim if cfg.lambda_local else None)
     model = CancerDeCUR(**model_kwargs).to(device)
-    mean = train['rna'].mean(0)
-    scale = train['rna'].std(0, unbiased=False).clamp_min(1e-6)
-    normalized = (train['rna']-mean)/scale
+    rna_fitted = fit_rna_scaler(train['rna'],cfg.rna_scale_policy,cfg.rna_min_std)
+    normalized = transform_rna(train['rna'],rna_fitted)
+    rna_fitted['rna_preprocessing']['validation_max_abs'] = transform_rna(validation['rna'],rna_fitted).abs().max().item()
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     history, best_state, best_epoch, stale, skipped = [], None, 0, 0, 0
     best = math.inf
-    fitted = dict(model=model, rna_mean=mean, rna_scale=scale, starts=starts.clone(),
+    fitted = dict(model=model, **rna_fitted, starts=starts.clone(),
                   model_kwargs=model_kwargs, effective_loss_weights=weights,
                   stream_config=dict(patient_batch_size=patient_batch_size,
                                      patch_chunk_size=patch_chunk_size, device=str(device),
@@ -274,7 +275,7 @@ def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
             optimizer.zero_grad(set_to_none=True)
             batch = dict(bags=[train['bags'][i] for i in indices.tolist()],
                          rna=normalized[indices].to(device), time=train['time'][indices].to(device),
-                         event=train['event'][indices].to(device))
+                         event=train['event'][indices].to(device),rna_mask=rna_fitted['rna_mask'])
             loss, stats = _objective(model, batch, starts.to(device), cfg, patch_chunk_size)
             loss.backward()
             if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in model.parameters()):
@@ -309,7 +310,7 @@ def predict_stream(fitted, cohort):
     model.eval()
     if not cohort['bags'] or len(cohort['bags']) != len(cohort['rna']):
         raise ValueError('One RNA row per patient bag is required')
-    g = (cohort['rna']-fitted['rna_mean'])/fitted['rna_scale']
+    g = transform_rna(cohort['rna'],fitted)
     outputs = []
     with torch.no_grad():
         for i, bag in enumerate(cohort['bags']):

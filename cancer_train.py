@@ -5,6 +5,7 @@ import math
 import torch
 from cancer_model import CancerDeCUR, piecewise_nll
 from cancer_auxiliary import patient_balanced_local_correlation
+from cancer_rna import fit_rna_scaler, transform_rna, rna_noise_view
 from model import correlation_loss, stability_weighted_common, DegenerateCorrelation
 
 
@@ -31,6 +32,8 @@ class CancerConfig:
     local_dim: int = 16
     lambda_path_within: float | None = None
     lambda_rna_within: float | None = None
+    rna_scale_policy: str = 'clamp'
+    rna_min_std: float = 1e-6
 
 
 def effective_loss_weights(cfg):
@@ -71,13 +74,13 @@ def validate_cohort(data, starts, require_labels=True):
         piecewise_nll(torch.zeros(n,len(starts),device=t.device),t,e,starts)
 
 
-def view_batch(x, g, mask, cfg, cached_views=None):
+def view_batch(x, g, mask, cfg, cached_views=None, rna_mask=None):
     if cfg.path_views == 'cached_uni':
         if cfg.patch_keep != 1 or cached_views is None or len(cached_views) != 2:
             raise ValueError('cached_uni requires two full cached views and patch_keep=1')
         if any(v.shape != x.shape for v in cached_views):
             raise ValueError('Cached views must preserve every input patch row')
-        return [(v,g+cfg.rna_noise*torch.randn_like(g),mask) for v in cached_views]
+        return [(v,rna_noise_view(g,cfg.rna_noise,rna_mask),mask) for v in cached_views]
     if cfg.path_views != 'legacy_patch_dropout' or cached_views is not None:
         raise ValueError('Choose an explicit compatible pathology view source')
     views=[]
@@ -85,7 +88,7 @@ def view_batch(x, g, mask, cfg, cached_views=None):
         chosen = mask & (torch.rand(mask.shape,device=mask.device)<cfg.patch_keep)
         empty = ~chosen.any(1)
         chosen[empty] = mask[empty]
-        views.append((x,g+cfg.rna_noise*torch.randn_like(g),chosen))
+        views.append((x,rna_noise_view(g,cfg.rna_noise,rna_mask),chosen))
     return views
 
 
@@ -126,10 +129,10 @@ def train_cancer_model(train, validation, starts, cfg):
     if any(weights.values()) and len(train['ids']) < 2:
         raise ValueError('Auxiliary correlation requires at least two training patients')
     torch.manual_seed(cfg.seed)
-    mean = train['rna'].mean(0)
-    scale = train['rna'].std(0,unbiased=False).clamp_min(1e-6)
-    x, g, m = train['patches'], (train['rna']-mean)/scale, train['mask']
-    vx, vg, vm = validation['patches'], (validation['rna']-mean)/scale, validation['mask']
+    rna_fitted = fit_rna_scaler(train['rna'], cfg.rna_scale_policy, cfg.rna_min_std)
+    x, g, m = train['patches'], transform_rna(train['rna'],rna_fitted), train['mask']
+    vx, vg, vm = validation['patches'], transform_rna(validation['rna'],rna_fitted), validation['mask']
+    rna_fitted['rna_preprocessing']['validation_max_abs'] = vg.abs().max().item()
     model_kwargs = {'path_dim': x.shape[-1], 'rna_dim': g.shape[-1], 'hidden': cfg.hidden,
                     'common': cfg.common, 'bins': len(starts), 'prediction_space': cfg.prediction_space,
                     'local_dim': cfg.local_dim if cfg.lambda_local else None}
@@ -151,7 +154,7 @@ def train_cancer_model(train, validation, starts, cfg):
                  'path_within_loss':None,'rna_within_loss':None,'unique_loss':None,
                  'local_loss':None,'local_diagnostics':None}
         if any(weights.values()):
-            (x1,g1,m1),(x2,g2,m2) = view_batch(x,g,m,cfg,cached_views)
+            (x1,g1,m1),(x2,g2,m2) = view_batch(x,g,m,cfg,cached_views,rna_fitted['rna_mask'])
             v1 = model.encode_auxiliary(x1,g1,m1,include_local=bool(weights['local']))
             v2 = model.encode_auxiliary(x2,g2,m2,include_local=bool(weights['local']))
             p1,r1,p2,r2 = v1['path'],v1['rna'],v2['path'],v2['rna']
@@ -205,7 +208,7 @@ def train_cancer_model(train, validation, starts, cfg):
             break
     model.load_state_dict(best_state)
     model.eval()
-    return {'model':model,'rna_mean':mean,'rna_scale':scale,'starts':starts.clone(),
+    return {'model':model,**rna_fitted,'starts':starts.clone(),
             'best_epoch':best_epoch,'validation_nll':best,'history':history,'skipped_common':skipped,
             'model_kwargs':model_kwargs,'effective_loss_weights':weights}
 
@@ -215,4 +218,4 @@ def predict(fitted, cohort):
     model = fitted['model']
     model.eval()
     with torch.no_grad():
-        return model(cohort['patches'],(cohort['rna']-fitted['rna_mean'])/fitted['rna_scale'],cohort['mask'])
+        return model(cohort['patches'],transform_rna(cohort['rna'],fitted),cohort['mask'])

@@ -60,7 +60,9 @@ model = CancerDeCUR(**checkpoint['model_kwargs'])
 model.load_state_dict(checkpoint['model_state'], strict=True)
 fitted = dict(model=model, rna_mean=checkpoint['rna_mean'],
               rna_scale=checkpoint['rna_scale'], starts=checkpoint['starts'],
-              stream_config=checkpoint['stream_config'])
+              stream_config=checkpoint['stream_config'],
+              rna_mask=checkpoint.get('rna_mask'),
+              rna_preprocessing=checkpoint.get('rna_preprocessing', {}))
 prediction = predict_stream(fitted, cohort_without_labels)
 ```
 
