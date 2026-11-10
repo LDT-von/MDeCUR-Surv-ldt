@@ -372,6 +372,43 @@ class CancerPathwayTest(unittest.TestCase):
             self.assertTrue(torch.isfinite(gradient).all(), name)
             self.assertGreater(gradient.norm().item(), 0., name)
 
+    def test_stability_weighted_global_common_is_active_and_records_degeneracy(self):
+        torch.manual_seed(471)
+        cfg = PathwayConfig(hidden=4, common=2, local_dim=4, local_common=2,
+                            common_mode='stability')
+        model = PathwayLocalSurvival(6, 8, [[0, 1, 2], [2, 3, 4]], hidden=4, common=2,
+                                     local_dim=4, local_common=2)
+        bags = []
+        for i in range(8):
+            x = torch.randn(4+i, 6)
+            bag = SyntheticBag(f'p{i}', x, x, x)
+            bag.view_source = 'single_view'
+            bags.append(bag)
+        batch = dict(bags=bags, rna=torch.randn(8, 8), time=torch.linspace(.2, 2., 8),
+                     event=torch.tensor([1., 0., 1., 0., 1., 0., 1., 0.]),
+                     rna_mask=torch.ones(8, dtype=torch.bool))
+        loss, stats = pathway_objective(model, batch, torch.tensor([0.]), cfg, 4, 'feature_noise', 22)
+        self.assertFalse(stats['common_skipped'])
+        self.assertTrue(math.isfinite(stats['terms']['global_common']))
+        self.assertGreaterEqual(stats['global_common_ess'], 4.)
+        self.assertLessEqual(stats['global_common_ess'], 8.0001)
+        loss.backward()
+        for name in ('base.path_projector.weight', 'base.rna_projector.weight'):
+            grad = dict(model.named_parameters())[name].grad
+            self.assertIsNotNone(grad, name)
+            self.assertTrue(torch.isfinite(grad).all(), name)
+            self.assertGreater(grad.norm().item(), 0., name)
+
+        # A constant path projection must be recorded as skipped, never silently
+        # replaced by the unweighted objective.
+        with torch.no_grad():
+            model.base.path_projector.weight.zero_()
+            model.base.path_projector.bias.zero_()
+        _, degenerate = pathway_objective(model, batch, torch.tensor([0.]), cfg, 4, 'feature_noise', 22)
+        self.assertTrue(degenerate['common_skipped'])
+        self.assertIsNone(degenerate['terms']['global_common'])
+        self.assertIsNotNone(degenerate['terms']['matched_common'])
+
     def test_feature_noise_checkpoint_and_noncheckpoint_gradients_match(self):
         torch.manual_seed(67)
         base = PathwayLocalSurvival(6, 8, [[0, 1, 2], [2, 3, 4]], hidden=4, common=2,

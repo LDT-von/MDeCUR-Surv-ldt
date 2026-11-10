@@ -46,7 +46,7 @@
 | `--matched-common` | 0.0005 | RNA条件匹配区域与RNA token的共同4维对齐；A/B平均 |
 | `--matched-unique` | 0.0005 | RNA条件匹配区域与RNA token的独有4维去相关；A/B平均 |
 
-默认`--common-mode uniform`采用等权患者级共同相关；方差低时记录维数且保留带epsilon的目标。`stability`/`shuffled`使用原停止梯度稳定权重，遇退化批次会跳过共同项并记录，不能将稳定度视作临床可靠度。对完全塌缩的特征，相关损失有限并不保证有恢复梯度。
+默认`--common-mode uniform`采用等权患者级共同相关；方差低时记录维数且保留带epsilon的目标。下方首轮完整模型命令**显式选择`stability`**，使用两视图的停止梯度稳定权重；`shuffled`用于将来检验权重对应关系。稳定模式遇退化批次会跳过共同项并记录，不能将稳定度视作临床可靠度。对完全塌缩的特征，相关损失有限并不保证有恢复梯度。
 
 默认11个辅助项均开启；各项可通过同名CLI参数设为0。默认固定这些系数只用于首轮研究运行，不代表最佳设置。完整框架对照应保持同一预测架构/输入/患者batch/预算，只关闭待检验损失，再在未用于选参的外测检验。条件匹配损失尤其需要患者配对打乱和独立锚点消融。既有普通融合采用batch=2、较小预测头；本模型默认batch=20且有通路/交互模块，直接比较旧基线只能描述观测，不能将差异归因于某个新损失。
 
@@ -64,14 +64,14 @@ env LD_LIBRARY_PATH=/home/ubuntu/.conda/envs/trisurv/lib python -u train_pathway
   --genes /data1/decur_runs/BLCA_SINGLE_VIEW_NEW_INPUTS/genes.txt \
   --out /data1/decur_runs/BLCA_PATHWAY_LOCAL_SMOKE_SEED17_NEW \
   --view-source feature_noise --feature-noise 0.05 --rna-noise 0.05 \
-  --common-mode uniform --interaction-strength 0.2 \
+  --common-mode stability --strength 2 --min-weight 0.1 --interaction-strength 0.2 \
   --hidden 16 --common 8 --local-dim 8 --local-common 4 \
   --patient-batch-size 20 --patch-chunk-size 2048 --device cuda:0 \
   --epochs 1 --patience 1 --seed 17 --starts 0 --horizon 12 --time-unit months \
   --endpoint 'Dataset-provided OS in months; time origin unverified'
 ```
 
-预检确认所有启用项被计算且有限、交互/局部投影/两个编码器梯度非零、通路与基因覆盖可解释、无非有限梯度或OOM后，直接使用原244/60清单在**新目录**运行完整模型，沿用上述参数，修改：
+预检确认所有启用项被计算且有限、`common_skipped=false`、交互/局部投影/两个编码器梯度非零、通路与基因覆盖可解释、无非有限梯度或OOM后，直接使用原244/60清单在**新目录**运行完整模型，沿用上述参数，修改：
 
 ```text
 --manifest /data1/decur_runs/BLCA_SINGLE_VIEW_NEW_INPUTS/fold0_train_val.csv
@@ -79,7 +79,7 @@ env LD_LIBRARY_PATH=/home/ubuntu/.conda/envs/trisurv/lib python -u train_pathway
 --epochs 80 --patience 15
 ```
 
-使用已验证的trisurv cu128解释器和命令级`LD_LIBRARY_PATH`。终端前台运行、保留完整日志；每epoch打印NLL、总损失、batch人数、耗时、global_common跳过数。默认验证NLL选轮，**不传`--evaluate-test`就不加载test特征/RNA或评估test**。预检失败应保留日志并定位，不静默关损失、丢patch、换队列或用伪图像视图。
+使用已验证的trisurv cu128解释器和命令级`LD_LIBRARY_PATH`。终端前台运行、保留完整日志；每epoch打印NLL、总损失、batch人数、耗时、global_common跳过数。稳定模式如发生跳过须报告次数及原因，不能把对应batch声称为完整共同约束；预检若跳过则先诊断，不能静默改为等权。默认验证NLL选轮，**不传`--evaluate-test`就不加载test特征/RNA或评估test**。预检失败应保留日志并定位，不静默关损失、丢patch、换队列或用伪图像视图。
 
 `checkpoint.pt`包含模型结构/全部通路索引和名称、模型参数、RNA顺序/哈希、训练mask、尺度、系数、视图来源与输入指纹；`report.json`保存各batch各项原始损失、共同项跳过次数、局部方差诊断、模块梯度范数、匹配权重平均熵/最大权重和逐epoch NLL。`val_predictions.csv`包含患者级生存概率、交互logit及匹配分布摘要。高注意力或高相关不等于真实patch RNA表达。
 
@@ -102,6 +102,6 @@ predictions = predict_pathway_model(fitted, cohort_without_labels)
 
 ## 5. 实现证据与科学边界
 
-本地合成检查包括：独立NumPy通路相关答案、已知patch/通路匹配、患者打乱对共同损失的影响、病理独立锚点对同患者RNA改变的前向不变性、匹配/局部/交互参数非零梯度、固定视图全量/分块损失及全部参数梯度一致、特征噪声checkpoint重算一致、源文件变化守卫、仅验证/显式测试的隔离、两种视图CLI和检查点重载。一次完整118项CPU检查通过；其后新增“真实冻结29通路＋大基因顺序的合成端到端”和“预测只读取reference”两项检查另行通过（合计覆盖120个不同检查），并复跑加强后的完整目标梯度检查通过。记录见 [验证回执](results/pathway_framework_validation_20261110.json)。这些检查均未使用真实患者或CUDA。
+本地合成检查包括：独立NumPy通路相关答案、已知patch/通路匹配、患者打乱对共同损失的影响、病理独立锚点对同患者RNA改变的前向不变性、匹配/局部/交互参数非零梯度、固定视图全量/分块损失及全部参数梯度一致、特征噪声checkpoint重算一致、源文件变化守卫、仅验证/显式测试的隔离、两种视图CLI和检查点重载。一次完整118项CPU检查通过；其后新增资源规模、reference隔离与稳定性共同项（含退化跳过）三项检查另行通过，合计覆盖121个不同检查；并复跑加强后的完整目标梯度检查通过。记录见 [验证回执](results/pathway_framework_validation_20261110.json)。这些检查均未使用真实患者或CUDA。
 
 常规生存预测、通路token和patch交互已有[SurvPath](https://arxiv.org/html/2304.06819v2)，病理/组学局部对应已有[MOTCAT](https://arxiv.org/html/2306.08330v2)，密集共同/独有目标参照[DenseTwins](https://arxiv.org/html/2611.04710v1)。这里是这些思想与具体患者级路径/损失的候选组合；尚未完成穷尽查新，不能宣称首创或有效。
