@@ -15,4 +15,4 @@
 
 验证：35个不同的检查已通过，其中新增模块最终17项通过、既有模型与数据18项回归通过。新检查仅使用合成像素、伪 WSI、伪编码器及临时文件；没有读取患者像素、运行真实UNI或进行患者训练。验证细目见 `uni_views/VALIDATION.json`。
 
-尚需目标电脑验证：OpenSlide原生库、实际SVS解码、UNI权重严格加载、GPU架构/显存、真实吞吐和存储。当前训练器仍是全批次padding，不能据此宣称数百万patch的生存训练已经具备扩展性。
+尚需目标电脑验证：OpenSlide原生库、实际SVS解码、UNI权重严格加载、GPU架构/显存、真实吞吐和存储。大队列可选stream后端，见 `STREAM_TRAINING.md`；现成单视图PT基线见 `SINGLE_VIEW_TRAINING.md`。CPU合成检查不能代替真实队列的资源与训练核验。

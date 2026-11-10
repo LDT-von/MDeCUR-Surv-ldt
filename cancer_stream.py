@@ -1,4 +1,4 @@
-"""Lazy cached-UNI training: patient batches and checkpointed patch summaries.
+"""Lazy feature training: patient batches and checkpointed patch summaries.
 
 Patch chunking preserves the objective within a fixed patient batch. Patient
 minibatching changes the population used for each correlation estimate.
@@ -206,14 +206,24 @@ def _validate_stream_cohort(cohort):
         raise ValueError('Invalid streaming patient rows')
 
 
+def validate_stream_views(cfg):
+    """Reject incompatible single-view objectives before any patient file I/O."""
+    if cfg.path_views not in ('cached_uni', 'single_view') or cfg.patch_keep != 1:
+        raise ValueError('Streaming training requires cached_uni or single_view and patch_keep=1')
+    weights = effective_loss_weights(cfg)
+    if cfg.path_views == 'single_view' and (
+            cfg.common_mode != 'off' or any(weights.values()) or cfg.rna_noise != 0):
+        raise ValueError('single_view is a survival-only baseline: use --mode off, zero all '
+                         'auxiliary coefficients and --rna-noise 0; A/B views are unavailable')
+    return weights
+
+
 def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
                        patch_chunk_size=2048, device='cpu'):
     """Select by all-validation reference NLL; test patients are not accepted."""
-    if cfg.path_views != 'cached_uni' or cfg.patch_keep != 1:
-        raise ValueError('Streaming training requires cached_uni and patch_keep=1')
+    weights = validate_stream_views(cfg)
     if cfg.common_mode not in ('off', 'uniform', 'stability', 'shuffled'):
         raise ValueError('Invalid common mode')
-    weights = effective_loss_weights(cfg)
     if any(not math.isfinite(v) or v < 0 for v in (*weights.values(), cfg.lambda_within, cfg.lambda_common, cfg.strength)):
         raise ValueError('Loss coefficients must be finite and nonnegative')
     if (cfg.epochs < 1 or cfg.patience < 1 or not math.isfinite(cfg.lr) or cfg.lr <= 0
@@ -231,6 +241,9 @@ def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
     if (any(b.feature_dim != dim or b.n_patches < 1 for b in train['bags']+validation['bags'])
             or train['rna'].shape[1] != validation['rna'].shape[1]):
         raise ValueError('Incompatible streaming feature dimensions')
+    if any(getattr(b, 'view_source', cfg.path_views) != cfg.path_views
+           for b in train['bags']+validation['bags']):
+        raise ValueError('Streaming bags do not match the configured view source')
     for cohort in (train, validation):
         piecewise_nll(torch.zeros(len(cohort['ids']), len(starts)), cohort['time'], cohort['event'], starts)
     _patient_batches(torch.arange(len(train['ids'])), patient_batch_size, any(weights.values()))
@@ -250,7 +263,8 @@ def train_stream_model(train, validation, starts, cfg, patient_batch_size=16,
                   stream_config=dict(patient_batch_size=patient_batch_size,
                                      patch_chunk_size=patch_chunk_size, device=str(device),
                                      checkpoint_chunks=True, local_moment_dtype='float64',
-                                     correlation_scope='patient_minibatch'))
+                                     path_views=cfg.path_views,
+                                     correlation_scope='patient_minibatch' if any(weights.values()) else 'disabled'))
     generator = torch.Generator().manual_seed(cfg.seed+1009)
     for epoch in range(1, cfg.epochs+1):
         model.train()

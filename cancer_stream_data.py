@@ -16,6 +16,7 @@ import numpy as np
 import torch
 
 from uni_views.core import FEATURE_DIM, json_hash, verify_output
+from cancer_single_view import PTPatientBag
 
 
 FEATURE_NAMES = ('features_reference', 'features_a', 'features_b')
@@ -36,6 +37,7 @@ class _Slide:
 class H5PatientBag:
     """One patient's ordered slides; block tokens are immutable path/start/stop."""
     feature_dim = FEATURE_DIM
+    view_source = 'cached_uni'
 
     def __init__(self, patient_id, cell, manifest_dir):
         if not isinstance(patient_id, str) or not patient_id.strip():
@@ -123,26 +125,36 @@ class H5PatientBag:
         return tuple(torch.from_numpy(array) for array in arrays)
 
 
-def load_stream_manifest(manifest):
-    """Read only RNA, labels and verified H5 descriptors, without bag padding."""
+def load_stream_manifest(manifest, path_views='cached_uni', include_test=True):
+    """Load explicit patient inputs without padding; optionally exclude test I/O.
+
+    Test IDs/split names in the CSV are still checked for duplicate identities,
+    but their feature/RNA paths and labels are not accessed in validation-only mode.
+    """
+    if path_views not in ('cached_uni', 'single_view'):
+        raise ValueError('Choose cached_uni or single_view for streaming input')
+    feature_column = 'wsi_h5' if path_views == 'cached_uni' else 'wsi_pt'
+    bag_class = H5PatientBag if path_views == 'cached_uni' else PTPatientBag
     path = Path(manifest).resolve()
     with path.open(encoding='utf-8-sig', newline='') as handle:
         reader = csv.DictReader(handle)
-        required = {'patient_id', 'split', 'wsi_h5', 'rna_npy', 'time', 'event'}
+        required = {'patient_id', 'split', feature_column, 'rna_npy', 'time', 'event'}
         if not required.issubset(reader.fieldnames or []):
             raise ValueError('Manifest missing required columns')
         rows = list(reader)
     if not rows:
         raise ValueError('Manifest is empty')
-    groups = {split: [] for split in ('train', 'val', 'test')}
+    groups = {split: [] for split in (('train', 'val', 'test') if include_test else ('train', 'val'))}
     seen_ids, seen_slides, seen_paths, seen_files, signatures = set(), set(), set(), set(), set()
     gene_dim = None
     for row in rows:
         ident, split = row['patient_id'].strip(), row['split'].strip().lower()
-        if not ident or ident in seen_ids or split not in groups:
+        if not ident or ident in seen_ids or split not in ('train', 'val', 'test'):
             raise ValueError('Each patient must have a unique nonempty ID and valid split')
         seen_ids.add(ident)
-        bag = H5PatientBag(ident, row['wsi_h5'], path.parent)
+        if split == 'test' and not include_test:
+            continue
+        bag = bag_class(ident, row[feature_column], path.parent)
         if seen_paths.intersection(bag.paths) or seen_files.intersection(bag.file_identities):
             raise ValueError('A physical slide appears in more than one patient or split')
         seen_paths.update(bag.paths)
@@ -151,8 +163,9 @@ def load_stream_manifest(manifest):
             if entry['slide_id'] in seen_slides:
                 raise ValueError('A slide appears in more than one patient or split')
             seen_slides.add(entry['slide_id'])
-            signatures.add((entry['encoder_sha256'], entry['recipe_sha256']))
-        if len(signatures) != 1:
+            if path_views == 'cached_uni':
+                signatures.add((entry['encoder_sha256'], entry['recipe_sha256']))
+        if path_views == 'cached_uni' and len(signatures) != 1:
             raise ValueError('Cohort uses different UNI weights or preprocessing')
         rna = np.load((path.parent / row['rna_npy']).resolve(), allow_pickle=False)
         if (rna.ndim != 1 or not rna.size or not np.issubdtype(rna.dtype, np.number)
@@ -172,7 +185,9 @@ def load_stream_manifest(manifest):
             raise ValueError('Time cannot be represented as finite float32')
         groups[split].append((ident, bag, rna, time, event))
     if any(not group for group in groups.values()):
-        raise ValueError('All three explicit train, val and test partitions are required')
+        raise ValueError('All requested explicit train/val/test partitions must be nonempty')
+    if len({bag.feature_dim for group in groups.values() for _, bag, *_ in group}) != 1:
+        raise ValueError('Single-view feature dimensions must agree across all loaded patients')
     return {split: {'ids': [r[0] for r in group], 'bags': [r[1] for r in group],
                     'rna': torch.from_numpy(np.stack([r[2] for r in group])),
                     'time': torch.tensor([r[3] for r in group], dtype=torch.float32),
@@ -181,10 +196,15 @@ def load_stream_manifest(manifest):
             for split, group in groups.items()}
 
 
-def stream_cohort_fingerprint(cohort):
+def stream_cohort_fingerprint(cohort, path_views='cached_uni'):
     """Hash ordered identities, RNA, labels and content checksums, not paths."""
-    digest = hashlib.sha256(b'cancer-verified-stream-v1')
+    if path_views not in ('cached_uni', 'single_view'):
+        raise ValueError('Invalid streaming fingerprint source')
+    domain = b'cancer-verified-stream-v1' if path_views == 'cached_uni' else b'cancer-single-view-stream-v1'
+    digest = hashlib.sha256(domain)
     for split in ('train', 'val', 'test'):
+        if split not in cohort:
+            continue
         data = cohort[split]
         digest.update(split.encode('utf-8'))
         for ident, bag in zip(data['ids'], data['bags']):

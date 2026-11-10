@@ -10,6 +10,7 @@
 - 已实现：同patch图像双视图的冻结UNI v1提取，及`--path-views cached_uni`缓存接入。此模式保留全部patch，要求同次提取的reference＋A/B。
 - 2026-11-09 后续已实现逐patch局部相关目标（`--lambda-local`，要求cached_uni）、预测与辅助投影分离（`--prediction-space encoder`）、病理／RNA独立within系数。完整公式、论文及开关见 `LOCAL_GLOBAL_IMPLEMENTATION.md`。默认保留历史投影预测、局部项关闭。
 - 后续已实现 `--training-backend stream`，包括lazy H5、患者小批量、checkpointed patch分块与完整局部中心矩。见 `STREAM_TRAINING.md`。固定患者batch下分块与完整计算在容差内一致；患者minibatch会改变相关统计覆盖范围，不能称与原全队列目标完全等价。
+- 2026-11-10新增 `--path-views single_view`：安全mmap现有PT的完整bag普通融合，强制关闭辅助项，不声明UNI来源。stream专用 `--validation-only`支持train/val清单，不加载test特征/RNA或解析其标签。见 `SINGLE_VIEW_TRAINING.md`，最新完整85项合成/回归检查通过；5090数据与基础CUDA kernel信息仅来自用户转发，尚无本项目患者训练回执。
 - 最新一次完整70项合成／回归检查通过（既有51＋本轮19），回执为 `results/stream_validation_20261109.json`，另有CPU合成峰值内存／耗时基准；旧回执保留历史状态。用户已确认真实数据仍在另一台电脑，尚无真实UNI、SVS、患者训练或CUDA成功回执。
 - 稳定性加权只是候选。对增强稳定不等于预后可靠，零相关不等于独立。解释网络时同时交代预测和辅助路径。
 - 用户要求独立思考，不从旧SlotSPE／槽机制方法引入设计。不因另一个项目里有脚本就把其方法并入本仓库。

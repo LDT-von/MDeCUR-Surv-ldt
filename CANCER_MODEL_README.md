@@ -29,6 +29,8 @@
 
 ## 输入清单与运行接口
 
+2026-11-10补充：现有单视图PT可用 `--training-backend stream --path-views single_view`，清单特征列为 `wsi_pt`，保留全部patch及有序多切片；此模式仅做关闭全部辅助项的普通融合。stream新增 `--validation-only`，可只提供train/val，不加载test特征/RNA或解析test标签，输出validation预测和明确的测试未评估标记。格式、可执行命令、目标机接线和85项检查见 [单视图训练说明](SINGLE_VIEW_TRAINING.md)。以下默认padded/三段清单接口继续保留。
+
 模型不下载数据，也不会自动发现本机或服务器上的患者数据。准备一个 CSV，每行一个唯一患者，字段：
 
 ```text

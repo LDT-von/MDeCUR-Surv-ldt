@@ -11,6 +11,6 @@
 5. 默认边缘策略是 error。若需要白底补齐，说明旧流程是否使用过补齐及差异，再给出带 `--edge-policy pad-white` 的具体命令。禁止跳过或重排边缘行。
 6. 准备少量代表性切片、每张前1000个patch的试运行命令，使用新输出目录、`--include-reference`、明确 GPU 和 batch-size。列出两份/三份特征空间、当前空闲磁盘、输入来源和预计显存。用户未给出实际执行范围时，先交付命令与尚缺条件；已有明确授权时按其范围执行。
 7. 试运行以后应报告一次完整读图—计算—写入的耗时、images/s、实际显存、输出行数/坐标/变换/特征校验；比较新 reference 与旧缓存时，先有来源对应证据，再谈相似度。不能靠行数相同就认定逐行一致。
-8. 当前癌症研究训练接口已支持 `--path-views cached_uni`，要求同文件的 reference+A+B。它仍是全批次 padding，不能把“提取分批”误说成“训练已可扩展”。Tri-Surv 的原 loader 尚未改动，若要接入应另外报告需要修改的具体接口。
+8. 当前癌症研究训练接口已支持 `--path-views cached_uni`，要求同文件的 reference+A+B；可选stream后端使用lazy H5、患者batch和checkpointed patch分块，见 `../STREAM_TRAINING.md`。没有三视图时，现成PT只能接入显式的单视图普通融合基线，见 `../SINGLE_VIEW_TRAINING.md`。Tri-Surv 的原 loader 尚未改动，若要接入应另外报告需要修改的具体接口。
 
 请给出：环境和输入检查结果、实际 CSV/配方路径、plan/doctor 输出摘要、待执行的精确试运行命令、仍未验证的项目。不要宣称真实患者效果已验证。

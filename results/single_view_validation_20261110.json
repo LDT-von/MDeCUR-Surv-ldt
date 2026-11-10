@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-10",
+  "evidence": "CPU synthetic and regression checks only",
+  "focused_tests": {
+    "status": "passed",
+    "count": 15,
+    "seconds": 23.659
+  },
+  "full_suite": {
+    "status": "passed",
+    "count": 85,
+    "seconds": 55.737,
+    "command": "python -B -m unittest -v test_cancer_model test_cancer_data test_cancer_metrics test_prototype test_pipeline test_uni_views test_cancer_local test_cancer_stream test_cancer_stream_data test_cancer_stream_cli test_cancer_single_view"
+  },
+  "implemented": [
+    "safe weights_only mmap PT source with complete ordered multi-slide bags",
+    "no eager fallback and no fabricated A/B or UNI identity",
+    "single_view stream survival-only configuration guard",
+    "stream validation-only loader skips test feature/RNA files and label parsing",
+    "train-only RNA scaling and right-censored time=0 support",
+    "content provenance and change guards during checkpoint replay",
+    "checkpoint reload and distinct validation/test reports"
+  ],
+  "limits": [
+    "No real patient extraction, training or CUDA execution was performed here",
+    "5090 data and basic CUDA kernel status were user-forwarded reports, not independently verified here",
+    "RNA preprocessing, gene selection and survival time origin remain unverified",
+    "mmap pages may remain resident; process RAM is not strictly bounded by patch_chunk_size",
+    "single_view does not implement local cross-modal decomposition or pathway interactions"
+  ],
+  "source_sha256": {
+    "cancer_single_view.py": "a2a51ff61cc0c5cefef36acb7e8fa9140e1a7f342d33904a59fd82ec57920ec9",
+    "cancer_stream.py": "4af9308f56e7c8e0a4697b7f65624598fdf6e5c49f41414d6b638406c8fa266c",
+    "cancer_stream_data.py": "01ef1067b384129c9590c4879de6a4ab247131058f960e1f08bd0daceaf5c9ee",
+    "train_cancer.py": "d7f94fdc8acf859fd6fb82e102671085fbd1618bbb6a5ff46b5e2e9ac8e41315",
+    "cancer_model.py": "71062efdbebee8f5bd7295fa11b03df557f14c27ad347521fb865fd3c0ce6f64",
+    "cancer_train.py": "423aeb44f6185b01c2c842b88e8bba7afd2e302d233f8ca03d24c8ebf5bb6f8e",
+    "test_cancer_single_view.py": "34937617c7cacc798b23414df122e0eadb0cb7c71fb76096d17b34534b062bcf"
+  }
+}

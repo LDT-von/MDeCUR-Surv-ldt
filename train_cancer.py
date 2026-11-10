@@ -48,6 +48,8 @@ def main():
     parser.add_argument('--hidden',type=int,default=16)
     parser.add_argument('--common',type=int,default=8)
     parser.add_argument('--training-backend',choices=['padded','stream'],default='padded')
+    parser.add_argument('--validation-only',action='store_true',
+                        help='stream: load/train/validate only; no test inputs or test evaluation')
     parser.add_argument('--patient-batch-size',type=int,default=16,
                         help='stream: patients per correlation batch; a final singleton is merged')
     parser.add_argument('--patch-chunk-size',type=int,default=2048,
@@ -66,8 +68,8 @@ def main():
                         help='encoder predicts before auxiliary projection; projected preserves the historical baseline')
     parser.add_argument('--lambda-unique',type=float,default=.001)
     parser.add_argument('--strength',type=float,default=2.)
-    parser.add_argument('--path-views',choices=['legacy_patch_dropout','cached_uni'],default='legacy_patch_dropout',
-                        help='cached_uni uses aligned full-patch image views; legacy preserves historical synthetic experiments')
+    parser.add_argument('--path-views',choices=['legacy_patch_dropout','cached_uni','single_view'],default='legacy_patch_dropout',
+                        help='cached_uni: verified image views; single_view: external mmap PT survival-only stream baseline')
     parser.add_argument('--patch-keep',type=float,default=None)
     parser.add_argument('--rna-noise',type=float,default=.05,
                         help='Existing RNA feature perturbation; not a validated biological augmentation')
@@ -77,22 +79,6 @@ def main():
         raise FileExistsError(destination)
     if args.horizon < 0:
         raise ValueError('horizon must be nonnegative')
-    manifest=Path(args.manifest).resolve()
-    manifest_hash=hashlib.sha256(manifest.read_bytes()).hexdigest()
-    if args.training_backend == 'stream':
-        if args.path_views != 'cached_uni':
-            raise ValueError('stream backend requires --path-views cached_uni')
-        from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
-        from cancer_stream import train_stream_model, predict_stream
-        cohort=load_stream_manifest(manifest)
-        input_hash=stream_cohort_fingerprint(cohort)
-        fingerprint_scheme='verified-cache-stream-v1'
-    else:
-        if args.device != 'cpu':
-            raise ValueError('Explicit device selection is supported by the stream backend')
-        cohort=load_manifest(manifest,path_views=args.path_views)
-        input_hash=cohort_fingerprint(cohort)
-        fingerprint_scheme='padded-cohort-tensors-v1'
     cfg=CancerConfig(seed=args.seed,epochs=args.epochs,common_mode=args.mode,
                      hidden=args.hidden,common=args.common,
                      lambda_common=args.lambda_common,lambda_within=args.lambda_within,
@@ -101,7 +87,25 @@ def main():
                      lambda_local=args.lambda_local,local_dim=args.local_dim,prediction_space=args.prediction_space,
                      path_views=args.path_views,rna_noise=args.rna_noise,
                      patch_keep=args.patch_keep if args.patch_keep is not None else
-                                (1. if args.path_views == 'cached_uni' else .8))
+                                (1. if args.path_views in ('cached_uni','single_view') else .8))
+    if args.training_backend == 'stream':
+        from cancer_stream import train_stream_model, predict_stream, validate_stream_views
+        validate_stream_views(cfg)
+    elif args.validation_only or args.path_views == 'single_view':
+        raise ValueError('--validation-only and single_view require --training-backend stream')
+    manifest=Path(args.manifest).resolve()
+    manifest_hash=hashlib.sha256(manifest.read_bytes()).hexdigest()
+    if args.training_backend == 'stream':
+        from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
+        cohort=load_stream_manifest(manifest,path_views=args.path_views,include_test=not args.validation_only)
+        input_hash=stream_cohort_fingerprint(cohort,path_views=args.path_views)
+        fingerprint_scheme='single-view-pt-stream-v1' if args.path_views == 'single_view' else 'verified-cache-stream-v1'
+    else:
+        if args.device != 'cpu':
+            raise ValueError('Explicit device selection is supported by the stream backend')
+        cohort=load_manifest(manifest,path_views=args.path_views)
+        input_hash=cohort_fingerprint(cohort)
+        fingerprint_scheme='padded-cohort-tensors-v1'
     starts=torch.tensor(args.starts,dtype=torch.float32)
     if args.training_backend == 'stream':
         fitted=train_stream_model(cohort['train'],cohort['val'],starts,cfg,
@@ -111,14 +115,15 @@ def main():
     else:
         fitted=train_cancer_model(cohort['train'],cohort['val'],starts,cfg)
         prediction_function=predict
-    test=cohort['test']
-    outputs=prediction_function(fitted,{k:v for k,v in test.items() if k not in ('event','time')})
+    evaluation_split='val' if args.validation_only else 'test'
+    evaluation=cohort[evaluation_split]
+    outputs=prediction_function(fitted,{k:v for k,v in evaluation.items() if k not in ('event','time')})
     with torch.no_grad():
-        nll=piecewise_nll(outputs['log_rates'],test['time'],test['event'],starts).item()
+        nll=piecewise_nll(outputs['log_rates'],evaluation['time'],evaluation['event'],starts).item()
         survival=survival_at(outputs['log_rates'],torch.tensor([args.horizon]),starts)[:,0]
-    ci=harrell_c(test['time'].numpy(),test['event'].numpy(),1-survival.numpy())
+    ci=harrell_c(evaluation['time'].numpy(),evaluation['event'].numpy(),1-survival.numpy())
     brier=ipcw_brier(cohort['train']['time'].numpy(),cohort['train']['event'].numpy(),
-                     test['time'].numpy(),test['event'].numpy(),survival.numpy(),args.horizon)
+                     evaluation['time'].numpy(),evaluation['event'].numpy(),survival.numpy(),args.horizon)
     destination.mkdir(parents=True,exist_ok=False)
     torch.save({'model_state':fitted['model'].state_dict(),
                 'model_kwargs':fitted['model_kwargs'],
@@ -127,26 +132,33 @@ def main():
                 'rna_mean':fitted['rna_mean'],'rna_scale':fitted['rna_scale'],
                 'starts':starts,'config':asdict(cfg),
                 'training_backend':args.training_backend,'stream_config':fitted.get('stream_config'),
+                'validation_only':args.validation_only,'evaluation_split':evaluation_split,
                 'effective_loss_weights':fitted['effective_loss_weights']},destination/'checkpoint.pt')
-    with (destination/'test_predictions.csv').open('w',encoding='utf-8',newline='') as handle:
+    prediction_name='validation_predictions.csv' if args.validation_only else 'test_predictions.csv'
+    with (destination/prediction_name).open('w',encoding='utf-8',newline='') as handle:
         writer=csv.writer(handle)
         writer.writerow(['patient_id','survival_at_horizon'])
-        writer.writerows(zip(test['ids'],survival.tolist()))
+        writer.writerows(zip(evaluation['ids'],survival.tolist()))
     report={'status':'research_only','manifest_sha256':manifest_hash,'cohort_input_sha256':input_hash,'config':asdict(cfg),
             'cohort_tensor_sha256':input_hash if args.training_backend == 'padded' else None,
             'cohort_fingerprint_scheme':fingerprint_scheme,'training_backend':args.training_backend,
             'stream_config':fitted.get('stream_config'),
             'model_kwargs':fitted['model_kwargs'],'effective_loss_weights':fitted['effective_loss_weights'],
+            'evaluation_split':evaluation_split,'test_evaluated':not args.validation_only,
+            'feature_source':'external_single_view_pt_encoder_unverified' if args.path_views == 'single_view' else args.path_views,
             'endpoint':args.endpoint,'time_unit':args.time_unit,'interval_starts':args.starts,
             'prediction_horizon':args.horizon,'best_epoch':fitted['best_epoch'],
-            'validation_nll':fitted['validation_nll'],'test_nll':nll,
-            'c_index_risk_at_horizon':ci,'ipcw_brier_at_horizon':brier,
+            'validation_nll':fitted['validation_nll'],
             'patients':{k:len(v['ids']) for k,v in cohort.items()},
             'events':{k:int(v['event'].sum()) for k,v in cohort.items()},
             'skipped_common':fitted['skipped_common'],'history':fitted['history'],
             'view_provenance':{k:v.get('view_provenance') for k,v in cohort.items()},
             'runtime':{'python':platform.python_version(),'torch':torch.__version__,'device':args.device},
             'warning':'Cohort provenance, time origin and split validity must be independently audited.'}
+    if args.validation_only:
+        report.update(validation_c_index_risk_at_horizon=ci,validation_ipcw_brier_at_horizon=brier)
+    else:
+        report.update(test_nll=nll,c_index_risk_at_horizon=ci,ipcw_brier_at_horizon=brier)
     with (destination/'report.json').open('w',encoding='utf-8') as handle:
         json.dump(report,handle,indent=2,ensure_ascii=False)
     print(f'Research output written to {destination}')

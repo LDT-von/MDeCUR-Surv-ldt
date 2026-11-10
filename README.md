@@ -8,6 +8,8 @@
 
 同日后续完成 [stream训练后端](STREAM_TRAINING.md)：lazy H5、患者小批量与checkpointed patch分块。最新一次完整70项合成检查通过，并实测合成输入下的CPU峰值内存／耗时。默认旧后端保留，真实队列与GPU尚未验证。
 
+2026-11-10 新增 [单视图全patch流式基线](SINGLE_VIEW_TRAINING.md)：`single_view`安全mmap现有PT，不推断编码器来源、不伪造A/B；`--validation-only`只加载训练/验证输入并跳过测试评估。最新完整85项合成/回归检查通过，仍无本项目真实患者或CUDA训练证据。5090侧数据/基础kernel信息来自用户转发报告。
+
 新增独立的 [UNI 同 patch 双视图工具](uni_views/README.md)：从 WSI＋已有坐标读取完整 patch，在图像上旋转/镜像后用冻结 UNI v1 分批提取两份特征；新癌症训练接口 `--path-views cached_uni` 不再随机删除 patch。未增强 reference 为可选提取项，但严格训练接入要求它，以避免将未经核实的旧特征与新视图混用。仅经合成接口检查，真实 WSI/UNI 和患者效果尚未验证。给有数据电脑的接入说明见 [HANDOFF](uni_views/HANDOFF.md)。
 
 ## 1. 问题与核心思路

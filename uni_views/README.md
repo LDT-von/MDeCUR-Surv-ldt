@@ -91,7 +91,7 @@ python train_cancer.py --manifest patients.csv --out runs/NEW_CACHED_VIEWS_RUN -
 
 以上生存参数只是接口示例，需要遵循真实终点/时间单位方案。新模式强制 `patch_keep=1`；与输入相同的 mask 应用于两份视图，不做第二次 patch 抽样。RNA 仍是原实现的特征噪声，`--rna-noise` 可显式设置，这不是已验证的基因增强方法。
 
-**当前训练器仍为全批次 padding 的研究实现。新特征提取器是分批流式的，但这不等于训练器已经能承载数百万 patch。** 加载三份特征后，RAM 和 padding 需求可能很高；在目标项目集成可扩展训练前不要直接把整个 BLCA 队列塞入此示例训练器。本次没有修改 Tri-Surv 的 resnet50 硬编码，也没有声称其原 loader 可直接读取本输出。
+默认训练器保留全批次padding，加载三份特征时RAM需求可能很高；大队列使用新增 `--training-backend stream`，见 [流式训练说明](../STREAM_TRAINING.md)。真实H5/CUDA资源与吞吐仍待目标机核验。没有三视图的现成PT基线见 [单视图说明](../SINGLE_VIEW_TRAINING.md)，不能冒充本工具的双视图缓存。本次没有修改Tri-Surv的resnet50硬编码，也没有声称其原loader可直接读取本输出。
 
 ## 6. 本地验证边界
 

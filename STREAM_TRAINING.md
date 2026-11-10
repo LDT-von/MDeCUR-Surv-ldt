@@ -1,5 +1,7 @@
 # 按患者与patch分块训练：2026-11-09
 
+2026-11-10更新：新增现成PT的 `single_view` 生存基线与stream专用 `--validation-only`，完整85项检查通过。见 [单视图训练与5090接线](SINGLE_VIEW_TRAINING.md)。下文三视图数学、70项回执与CPU基准保留其原始适用范围。
+
 用户确认真实WSI、坐标和UNI权重仍在另一台电脑，本轮只完成本地改造与合成检查。新增 `--training-backend stream` 已接入现有癌症CLI；默认 `padded` 保留旧接口。
 
 ## 已解决的工程问题
