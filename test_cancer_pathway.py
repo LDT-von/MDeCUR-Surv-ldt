@@ -389,6 +389,7 @@ class CancerPathwayTest(unittest.TestCase):
                      rna_mask=torch.ones(8, dtype=torch.bool))
         loss, stats = pathway_objective(model, batch, torch.tensor([0.]), cfg, 4, 'feature_noise', 22)
         self.assertFalse(stats['common_skipped'])
+        self.assertIsNone(stats['common_skip_reason'])
         self.assertTrue(math.isfinite(stats['terms']['global_common']))
         self.assertGreaterEqual(stats['global_common_ess'], 4.)
         self.assertLessEqual(stats['global_common_ess'], 8.0001)
@@ -406,8 +407,44 @@ class CancerPathwayTest(unittest.TestCase):
             model.base.path_projector.bias.zero_()
         _, degenerate = pathway_objective(model, batch, torch.tensor([0.]), cfg, 4, 'feature_noise', 22)
         self.assertTrue(degenerate['common_skipped'])
+        self.assertEqual(degenerate['common_skip_reason'], 'Degenerate weighted common feature variance')
         self.assertIsNone(degenerate['terms']['global_common'])
         self.assertIsNotNone(degenerate['terms']['matched_common'])
+
+    def test_shuffled_common_keeps_subsequent_rna_views_identical(self):
+        from cancer_rna import rna_noise_view
+        torch.manual_seed(471)
+        cfg = PathwayConfig(hidden=4, common=2, local_dim=4, local_common=2,
+                            common_mode='stability')
+        model = PathwayLocalSurvival(6, 8, [[0, 1, 2], [2, 3, 4]], hidden=4, common=2,
+                                     local_dim=4, local_common=2)
+        bags = []
+        for i in range(8):
+            x = torch.randn(4+i, 6)
+            bag = SyntheticBag(f'p{i}', x, x, x)
+            bag.view_source = 'single_view'
+            bags.append(bag)
+        batch = dict(bags=bags, rna=torch.randn(8, 8), time=torch.linspace(.2, 2., 8),
+                     event=torch.tensor([1., 0., 1., 0., 1., 0., 1., 0.]),
+                     rna_mask=torch.ones(8, dtype=torch.bool))
+        def collect(mode):
+            views = []
+            def capture(*args, **kwargs):
+                value = rna_noise_view(*args, **kwargs)
+                views.append(value.clone())
+                return value
+            torch.manual_seed(991)
+            with torch.no_grad(), patch('cancer_pathway_stream.rna_noise_view', side_effect=capture):
+                for seed in (31, 32):
+                    pathway_objective(model, batch, torch.tensor([0.]), replace(cfg, common_mode=mode),
+                                      4, 'feature_noise', seed)
+            return views, torch.get_rng_state()
+        reference, reference_state = collect('stability')
+        shuffled, shuffled_state = collect('shuffled')
+        self.assertEqual(len(reference), 4)
+        for a, b in zip(reference, shuffled):
+            torch.testing.assert_close(a, b, rtol=0, atol=0)
+        self.assertTrue(torch.equal(reference_state, shuffled_state))
 
     def test_feature_noise_checkpoint_and_noncheckpoint_gradients_match(self):
         torch.manual_seed(67)
@@ -511,6 +548,11 @@ class CancerPathwayTest(unittest.TestCase):
         self.assertEqual(report['view_source'], 'feature_noise')
         self.assertIn('not image-space', report['view_source_description'])
         self.assertEqual(report['patients'], {'train': 7, 'val': 2})
+        self.assertEqual(report['evaluation_risk_numerics']['legacy_probability_risk_c'],
+                         report['evaluation_c_index_risk_at_horizon'])
+        self.assertIn('legacy_v1', report['metric_conventions']['ipcw_brier'])
+        self.assertEqual(report['stream_config']['auxiliary_rng_scheme'],
+                         'rna_global__weight_shuffle_isolated_v1')
         self.assertFalse(report['test_evaluated'])
         self.assertFalse((destination/'test_predictions.csv').exists())
         self.assertEqual(report['minimum_patient_batch'], 5)

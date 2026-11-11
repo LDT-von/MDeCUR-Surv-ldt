@@ -1,0 +1,23 @@
+{
+  "evidence": "CPU synthetic/regression only; no patient data or server access",
+  "tests": 145,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 98.90916939999443,
+  "python": "3.10.11",
+  "torch": "2.6.0+cu124",
+  "source_sha256": {
+    "cancer_survival_diagnostics.py": "c586ff2008c6f3644552dea91ecb02a090214553584b96941948d0de4f003dcf",
+    "cancer_metrics.py": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_pathway_stream.py": "b06335a79ba6a55a08bb6b1c6b2711dcda648eb7ed5bcdfbccbadc1540cfb54c",
+    "model.py": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "train_pathway.py": "27e3ec95ca869b5e6ba4174f30c6da06dd7d215a323c585f8889f13c3235555b",
+    "paired_pathway_validation.py": "223661eaac21be62f5857feece7872e2c2a5689935daaa0fac8395fc44248c1b",
+    "research_survival_audit.py": "fed17f58bc8601d3efc1391f26ab3936383313df2d115aed7231a308667b5df7",
+    "test_survival_audit.py": "00bd4476e668ef2fe0df963955109832f11db064c0a5e16e217799064af0044b",
+    "test_cancer_pathway.py": "588aa22f1851dcc0bf28be4feccb205cd63ba8589cf9a15c2804c41122b0ffcd",
+    "test_paired_pathway_validation.py": "95f2c4b06962f6cbda65390a13fb2df78e36bb35c4d9ed022fbda0862094fbfd"
+  }
+}

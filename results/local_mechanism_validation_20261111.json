@@ -1,0 +1,21 @@
+{
+  "evidence": "CPU synthetic/regression checks only; no server or patient data",
+  "success": true,
+  "tests": 138,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 116.43024680000963,
+  "python": "3.10.11",
+  "torch": "2.6.0+cu124",
+  "source_sha256": {
+    "cancer_pathway_stream.py": "6184f6755c13ae3c82a04b1658d428c6467e9024bfd0369fda011e1e922be92d",
+    "cancer_stability_candidates.py": "f64e8ef72178eaaec0446212d7ed469d3c656ba4cd2b25dd732fc04294787e2d",
+    "research_framework_audit.py": "c7c49287bd6b245a0410c83977cae177a19327351c607574a7bab3ab0aa4fab7",
+    "test_framework_mechanism_audit.py": "d1d8351e6d6d87f2a8e6255d33089e578c8ee29d8dcfb960d3e547c369d85298",
+    "test_cancer_pathway.py": "8b3fed2a04aa883701aefd39295f888f427034e5f3b688847c773c7487f88e85",
+    "diagnose_pathway_query_permutation.py": "42f42c13f20874225caf467808907d334f071cf738382dc6ca58fba9004f10ba",
+    "paired_pathway_validation.py": "0130b2430566403e8bc9aade72307142853b63db2f27cf34d0b51696548d7044",
+    "scripts/make_development_folds.py": "c21128d29f35fcb6bb4b3e41beb783f528d1ccd171c60a9aa61e8f122b13d51b"
+  }
+}

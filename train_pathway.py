@@ -21,6 +21,7 @@ from cancer_pathway import read_pathway_mapping
 from cancer_pathway_stream import (PathwayConfig, effective_weights, minimum_batch_size,
                                    predict_pathway_model, train_pathway_model, validate_config)
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
+from cancer_survival_diagnostics import METRIC_CONVENTIONS, cumulative_hazard_at, horizon_risk_audit
 
 
 def sha256_file(path):
@@ -109,6 +110,8 @@ def main():
         nll = piecewise_nll(outputs['log_rates'], evaluation['time'], evaluation['event'], starts).item()
         survival = survival_at(outputs['log_rates'], torch.tensor([args.horizon]), starts)[:, 0]
     c_index = harrell_c(evaluation['time'].numpy(), evaluation['event'].numpy(), 1-survival.numpy())
+    risk_audit = horizon_risk_audit(outputs['log_rates'], evaluation['time'], evaluation['event'], starts, args.horizon)
+    hazard = cumulative_hazard_at(outputs['log_rates'], args.horizon, starts)
     brier = ipcw_brier(cohort['train']['time'].numpy(), cohort['train']['event'].numpy(),
                        evaluation['time'].numpy(), evaluation['event'].numpy(), survival.numpy(), args.horizon)
     destination.mkdir(parents=True, exist_ok=False)
@@ -125,12 +128,12 @@ def main():
     with (destination/f'{split}_predictions.csv').open('w', encoding='utf-8', newline='') as handle:
         writer = csv.writer(handle)
         writer.writerow(['patient_id', 'survival_at_horizon', 'interaction_logit_mean',
-                         'matching_normalized_entropy_mean', 'matching_max_weight_mean'])
+                         'matching_normalized_entropy_mean', 'matching_max_weight_mean', 'cumulative_hazard_at_horizon'])
         writer.writerows((identity, float(probability), float(interaction.mean()),
-                          float(entropy.mean()), float(max_weight.mean()))
-                         for identity, probability, interaction, entropy, max_weight in
+                          float(entropy.mean()), float(max_weight.mean()), float(cumulative))
+                         for identity, probability, interaction, entropy, max_weight, cumulative in
                          zip(evaluation['ids'], survival, outputs['interaction_logits'],
-                             outputs['matching_normalized_entropy'], outputs['matching_max_weight']))
+                             outputs['matching_normalized_entropy'], outputs['matching_max_weight'], hazard))
     cuda = None
     if str(args.device).startswith('cuda'):
         gpu = torch.device(args.device)
@@ -155,6 +158,7 @@ def main():
         'best_epoch': fitted['best_epoch'], 'validation_nll': fitted['validation_nll'],
         'evaluation_split': split, 'evaluation_nll': nll,
         'evaluation_c_index_risk_at_horizon': c_index, 'evaluation_ipcw_brier_at_horizon': brier,
+        'evaluation_risk_numerics': risk_audit, 'metric_conventions': METRIC_CONVENTIONS,
         'patients': {name: len(data['ids']) for name, data in cohort.items()},
         'events': {name: int(data['event'].sum()) for name, data in cohort.items()},
         'patches': {name: sum(bag.n_patches for bag in data['bags']) for name, data in cohort.items()},

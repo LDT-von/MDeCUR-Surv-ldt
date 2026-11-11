@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+2026-11-11服务器交付：先读 `SERVER_NEXT_STEPS_20261111.md`。用户转发核查确认旧参考/matched-off/uniform三臂均已完成，结果仅为同60名患者的选轮验证；interaction-off/query/配对分析尚未运行。下一批先做旧结果分析，再在同一新版本上配套训练参考与interaction-off；不混用新旧协议、不自动扩展五折。新shuffled随机流和指标元数据已记录，差值权重仍未启用。发布前147项CPU合成/回归检查通过，真实目标环境仍须核验；所有既有患者实验产物与未跟踪合成文件须保留。
+
 最新用户明确要求完整新框架而非继续停留于基线：新增 `train_pathway.py`、`cancer_pathway.py`、`cancer_pathway_stream.py` 和固定Reactome顶层GMT，见 `PATHWAY_LOCAL_FRAMEWORK.md`。包含RNA通路编码、条件patch匹配与交互、病理独立锚点和条件匹配的局部共同/独有、患者级DeCUR和病理局部一致性；支持单视图特征噪声或真实cached_uni D4，前者不能当成图像增强。目标机尚无新框架患者运行回执，不可宣称有效或首创；旧single_view基线保留。
 
 最新阶段：用户报告39b0563的fold0 mask融合基线已完整运行（19轮、best4、val NLL2.186943/C-index0.6307，非测试），8个RNA坐标屏蔽有效，外测未加载。下一步显式 `--modality both|pathology|rna` 对照已实施，旧both初始化/路径保持兼容，单模态仅生存目标、跳过未选分支；完整102项CPU检查通过，见 `MODALITY_CONTROLS.md`。新单模态目标机结果尚未收到。

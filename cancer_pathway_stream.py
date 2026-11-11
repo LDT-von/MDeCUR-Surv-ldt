@@ -316,7 +316,8 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                                     view_seed=view_seed)
     loss = piecewise_nll(output['log_rates'], batch['time'], batch['event'], starts)
     stats = {'patients': len(rna), 'train_nll': loss.detach().item(),
-             'common_skipped': False, 'terms': {name: None for name in LOSS_NAMES},
+             'common_skipped': False, 'common_skip_reason': None,
+             'terms': {name: None for name in LOSS_NAMES},
              'pathway_diagnostics': {}, 'patch_diagnostics': None,
              'interaction_abs_mean': output['interaction_logits'].detach().abs().mean().item(),
              'interaction_contribution_abs_mean': (cfg.interaction_strength*output['interaction_logits']).detach().abs().mean().item(),
@@ -341,16 +342,23 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                         ((p.var(0, unbiased=False) < 1e-4) | (r.var(0, unbiased=False) < 1e-4)).sum().item())
                     stats['global_common_ess'] = float(len(rna))
                 else:
+                    # Shuffling the weights must not alter subsequent RNA views.
+                    shuffle_generator = None
+                    if cfg.common_mode == 'shuffled':
+                        shuffle_generator = torch.Generator(device=aux['global_p1'].device)
+                        shuffle_generator.manual_seed((int(view_seed)+0x5A17ED) % (2**63-1))
                     term, diagnostic = stability_weighted_common(
                         aux['global_p1'][:, :cfg.common], aux['global_p2'][:, :cfg.common],
                         aux['global_r1'][:, :cfg.common], aux['global_r2'][:, :cfg.common],
                         strength=cfg.strength, min_weight=cfg.min_weight,
-                        shuffle_weights=cfg.common_mode == 'shuffled')
+                        shuffle_weights=cfg.common_mode == 'shuffled',
+                        shuffle_generator=shuffle_generator)
                     stats['global_common_ess'] = diagnostic['ess'].item()
                 loss = loss+weights['global_common']*term
                 stats['terms']['global_common'] = term.detach().item()
-            except DegenerateCorrelation:
+            except DegenerateCorrelation as error:
                 stats['common_skipped'] = True
+                stats['common_skip_reason'] = str(error)
         if weights['patch_within']:
             loss = loss+weights['patch_within']*output['patch_loss']
             stats['terms']['patch_within'] = output['patch_loss'].detach().item()
@@ -426,6 +434,7 @@ def train_pathway_model(train, validation, starts, cfg, pathway_mapping, patient
                                  'view_source': view_source, 'device': str(device),
                                  'feature_noise': cfg.feature_noise if view_source == 'feature_noise' else None,
                                  'rna_noise': cfg.rna_noise, 'minimum_patient_batch': minimum,
+                                 'auxiliary_rng_scheme': 'rna_global__weight_shuffle_isolated_v1',
                                  'correlation_scope': 'per_pathway_across_patient_minibatch',
                                  'checkpoint_chunks': True})
     generator = torch.Generator().manual_seed(cfg.seed+1009)

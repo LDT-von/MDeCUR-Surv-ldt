@@ -1,0 +1,114 @@
+{
+  "evidence": "known-answer CPU synthetic audit; no patient data or server access",
+  "probability_saturation": {
+    "1.0": {
+      "horizon": 1.0,
+      "legacy_probability_risk_c": {
+        "value": 1.0,
+        "comparable_pairs": 1
+      },
+      "cumulative_hazard_risk_c": {
+        "value": 1.0,
+        "comparable_pairs": 1
+      },
+      "probability_risk_exactly_one": 0,
+      "probability_risk_exactly_zero": 0,
+      "comparable_pairs_tied_only_in_probability_risk": 0,
+      "unique_probability_risk_values": 2,
+      "unique_cumulative_hazard_values": 2,
+      "risk_definition": "H(h)=sum_k softplus(logit_k)+1e-8 times interval exposure; computed in float64",
+      "scope": "full follow-up strict-time concordance using horizon risk; not time-dependent C"
+    },
+    "12.0": {
+      "horizon": 12.0,
+      "legacy_probability_risk_c": {
+        "value": 0.5,
+        "comparable_pairs": 1
+      },
+      "cumulative_hazard_risk_c": {
+        "value": 1.0,
+        "comparable_pairs": 1
+      },
+      "probability_risk_exactly_one": 2,
+      "probability_risk_exactly_zero": 0,
+      "comparable_pairs_tied_only_in_probability_risk": 1,
+      "unique_probability_risk_values": 1,
+      "unique_cumulative_hazard_values": 2,
+      "risk_definition": "H(h)=sum_k softplus(logit_k)+1e-8 times interval exposure; computed in float64",
+      "scope": "full follow-up strict-time concordance using horizon risk; not time-dependent C"
+    }
+  },
+  "crossing_hazards": {
+    "rates": [
+      [
+        0.08,
+        0.015
+      ],
+      [
+        0.015,
+        0.08
+      ]
+    ],
+    "starts": [
+      0.0,
+      12.0
+    ],
+    "horizons": [
+      12.0,
+      24.0,
+      36.0
+    ],
+    "survival": [
+      [
+        0.382892885975112,
+        0.3198190218163039,
+        0.2671353019658504
+      ],
+      [
+        0.835270211411272,
+        0.3198190218163039,
+        0.1224564282529819
+      ]
+    ],
+    "interpretation": "Known two-interval curves cross at 24; single-interval positive rates cannot cross."
+  },
+  "random_stream": {
+    "legacy_next_noise_matches_reference": false,
+    "legacy_max_next_noise_difference": 2.0710349082946777,
+    "isolated_next_noise_matches_reference": true,
+    "isolated_max_next_noise_difference": 0.0
+  },
+  "nan_horizon_rejected": true,
+  "ipcw_tie_example": {
+    "legacy_computed": 0.08750000000000001,
+    "legacy_expected": 0.0875,
+    "reverse_km_left_event_expected": 0.11,
+    "sksurv_028_right_event_expected": 0.13,
+    "external_library_executed": false,
+    "external_expected_source": "https://github.com/sebp/scikit-survival/blob/v0.28.0/sksurv/metrics.py"
+  },
+  "metric_conventions": {
+    "harrell_c": "strict observed-time pairs: t_j > t_i and event_i=1; exact risk ties score 0.5",
+    "ipcw_brier": "legacy_v1: training censor KM with all ties in risk set; event G(t-), survivor G(h); divide by all evaluation subjects",
+    "selection": "validation NLL; strict decrease retains earliest tied minimum"
+  },
+  "source_sha256": {
+    "research_survival_audit.py": "fed17f58bc8601d3efc1391f26ab3936383313df2d115aed7231a308667b5df7",
+    "cancer_survival_diagnostics.py": "c586ff2008c6f3644552dea91ecb02a090214553584b96941948d0de4f003dcf",
+    "cancer_metrics.py": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_model.py": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "model.py": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "cancer_pathway_stream.py": "b06335a79ba6a55a08bb6b1c6b2711dcda648eb7ed5bcdfbccbadc1540cfb54c",
+    "train_pathway.py": "27e3ec95ca869b5e6ba4174f30c6da06dd7d215a323c585f8889f13c3235555b"
+  },
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu"
+  },
+  "limits": [
+    "Examples establish numerical and protocol issues, not their prevalence in existing patient runs.",
+    "The two-interval example is prescribed, not a fitted model or a patient performance improvement.",
+    "Legacy metric tie definitions are preserved; external values are hand calculations from the cited implementation."
+  ]
+}

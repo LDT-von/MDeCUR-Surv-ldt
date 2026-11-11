@@ -1,0 +1,31 @@
+{
+  "evidence": "CPU synthetic/regression only; no server access or patient data",
+  "release_base": "c5c476e3d51164e928b15a3821acfc3dda335eae",
+  "tests": 147,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 102.25021910000942,
+  "python": "3.10.11",
+  "torch": "2.6.0+cu124",
+  "source_sha256": {
+    "cancer_metrics.py": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_pathway_stream.py": "b06335a79ba6a55a08bb6b1c6b2711dcda648eb7ed5bcdfbccbadc1540cfb54c",
+    "model.py": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "train_pathway.py": "27e3ec95ca869b5e6ba4174f30c6da06dd7d215a323c585f8889f13c3235555b",
+    "cancer_stability_candidates.py": "f64e8ef72178eaaec0446212d7ed469d3c656ba4cd2b25dd732fc04294787e2d",
+    "cancer_survival_diagnostics.py": "c586ff2008c6f3644552dea91ecb02a090214553584b96941948d0de4f003dcf",
+    "paired_pathway_validation.py": "113861d0d483eba3b80fd3e51cbbfd02869985fe849bfdc6cb3dbc48e68f0212",
+    "diagnose_pathway_query_permutation.py": "deab974805608bb19b830558a00f4fa13bf8bcee38c9e40dbfb8202191cb210a",
+    "research_framework_audit.py": "7b9746092fc2c462ad2ddc92cf7c7fa6a941aeb9b6076f46be7f8145ef5f6411",
+    "research_survival_audit.py": "fed17f58bc8601d3efc1391f26ab3936383313df2d115aed7231a308667b5df7",
+    "scripts/make_development_folds.py": "c21128d29f35fcb6bb4b3e41beb783f528d1ccd171c60a9aa61e8f122b13d51b",
+    "test_cancer_pathway.py": "588aa22f1851dcc0bf28be4feccb205cd63ba8589cf9a15c2804c41122b0ffcd",
+    "test_paired_pathway_validation.py": "6ee232edc512edcc453854980dae9113e31601b5796a749975225a11949608cd",
+    "test_diagnose_pathway_query_permutation.py": "4461429f23c4c0ab1592cae3047d38f2fa79054065ab4adc64e33b288c1dba19",
+    "test_framework_mechanism_audit.py": "9996526aa4e1437f812cfadc42064f7d2c85301a4479d1fc48bd3250e42d87e9",
+    "test_survival_audit.py": "00bd4476e668ef2fe0df963955109832f11db064c0a5e16e217799064af0044b",
+    "scripts/test_make_development_folds.py": "7402b09c94629a7806441cf7f56c894837aa7e90f4015cad313f130140b3ef73"
+  }
+}

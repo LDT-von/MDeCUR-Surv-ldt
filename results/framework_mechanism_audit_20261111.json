@@ -1,0 +1,244 @@
+{
+  "evidence": "constructed CPU mechanism checks only; no patient data",
+  "seeds": [
+    17,
+    29,
+    43
+  ],
+  "matching_null": [
+    {
+      "patients": 576,
+      "dimension": 4,
+      "temperature": 0.2,
+      "construction": "Cartesian product: pathology amplitude x target RNA basis x independent query basis",
+      "raw_pathology_independent_of_rna_by_construction": true,
+      "analytic_unregularized_diagonal": 0.9979231545598282,
+      "closed_form_pool_max_error": 8.881784197001252e-16,
+      "own_query": {
+        "diagonal_mean": 0.9975085522060192,
+        "off_diagonal_max_abs": 5.001438689389842e-20,
+        "identity_loss": 2.4829248440528948e-05,
+        "low_variance_coordinates": 0,
+        "path_coordinate_variances": [
+          0.23187006119615575,
+          0.2318700611961556,
+          0.23187006119615555,
+          0.23187006119615544
+        ]
+      },
+      "independent_query": {
+        "diagonal_mean": 0.0,
+        "off_diagonal_max_abs": 0.0,
+        "identity_loss": 4.0,
+        "low_variance_coordinates": 0,
+        "path_coordinate_variances": [
+          0.2318700611961557,
+          0.23187006119615575,
+          0.2318700611961555,
+          0.23187006119615555
+        ]
+      },
+      "pathology_only_anchor": {
+        "diagonal_mean": 0.0,
+        "off_diagonal_max_abs": 0.0,
+        "identity_loss": 4.0,
+        "low_variance_coordinates": 4,
+        "path_coordinate_variances": [
+          9.367849418028906e-08,
+          9.593344889819669e-10,
+          1.1954353014094632e-08,
+          2.2893820607494622e-08
+        ]
+      },
+      "detach_query_max_difference": 0.0
+    },
+    {
+      "patients": 576,
+      "dimension": 4,
+      "temperature": 0.2,
+      "construction": "Cartesian product: pathology amplitude x target RNA basis x independent query basis",
+      "raw_pathology_independent_of_rna_by_construction": true,
+      "analytic_unregularized_diagonal": 0.9979231545598282,
+      "closed_form_pool_max_error": 8.881784197001252e-16,
+      "own_query": {
+        "diagonal_mean": 0.9975085522060192,
+        "off_diagonal_max_abs": 5.001438689389842e-20,
+        "identity_loss": 2.4829248440528948e-05,
+        "low_variance_coordinates": 0,
+        "path_coordinate_variances": [
+          0.23187006119615575,
+          0.2318700611961556,
+          0.23187006119615555,
+          0.23187006119615544
+        ]
+      },
+      "independent_query": {
+        "diagonal_mean": 0.0,
+        "off_diagonal_max_abs": 0.0,
+        "identity_loss": 4.0,
+        "low_variance_coordinates": 0,
+        "path_coordinate_variances": [
+          0.2318700611961557,
+          0.23187006119615575,
+          0.2318700611961555,
+          0.23187006119615555
+        ]
+      },
+      "pathology_only_anchor": {
+        "diagonal_mean": 0.0,
+        "off_diagonal_max_abs": 0.0,
+        "identity_loss": 4.0,
+        "low_variance_coordinates": 4,
+        "path_coordinate_variances": [
+          7.116797538678072e-08,
+          2.3061646137823763e-09,
+          1.2038986881685243e-07,
+          3.540543772621296e-08
+        ]
+      },
+      "detach_query_max_difference": 0.0
+    },
+    {
+      "patients": 576,
+      "dimension": 4,
+      "temperature": 0.2,
+      "construction": "Cartesian product: pathology amplitude x target RNA basis x independent query basis",
+      "raw_pathology_independent_of_rna_by_construction": true,
+      "analytic_unregularized_diagonal": 0.9979231545598282,
+      "closed_form_pool_max_error": 8.881784197001252e-16,
+      "own_query": {
+        "diagonal_mean": 0.9975085522060192,
+        "off_diagonal_max_abs": 5.001438689389842e-20,
+        "identity_loss": 2.4829248440528948e-05,
+        "low_variance_coordinates": 0,
+        "path_coordinate_variances": [
+          0.23187006119615575,
+          0.2318700611961556,
+          0.23187006119615555,
+          0.23187006119615544
+        ]
+      },
+      "independent_query": {
+        "diagonal_mean": 0.0,
+        "off_diagonal_max_abs": 0.0,
+        "identity_loss": 4.0,
+        "low_variance_coordinates": 0,
+        "path_coordinate_variances": [
+          0.2318700611961557,
+          0.23187006119615575,
+          0.2318700611961555,
+          0.23187006119615555
+        ]
+      },
+      "pathology_only_anchor": {
+        "diagonal_mean": 0.0,
+        "off_diagonal_max_abs": 0.0,
+        "identity_loss": 4.0,
+        "low_variance_coordinates": 4,
+        "path_coordinate_variances": [
+          1.2783893891966726e-07,
+          1.0532029648399017e-07,
+          7.141420332937795e-08,
+          3.924425983217156e-08
+        ]
+      },
+      "detach_query_max_difference": 0.0
+    }
+  ],
+  "unique_nonlinear_null": {
+    "zero_target_loss": 6.37701292941843e-35,
+    "linear_correlation": 9.385087033965508e-18,
+    "path_variance": 0.08924453279999996,
+    "low_variance_coordinates": 0,
+    "exact_nonlinear_dependence": "path = RNA**2 - mean(RNA**2)"
+  },
+  "stability_shift": [
+    {
+      "legacy_original": {
+        "stable_half_mean": 0.9989728652953989,
+        "noisy_half_mean": 0.6573127845343727,
+        "ess_fraction": 0.9439281548989568
+      },
+      "legacy_shifted": {
+        "stable_half_mean": 0.999999922974295,
+        "noisy_half_mean": 0.999944289159305,
+        "ess_fraction": 0.9999999989389108
+      },
+      "legacy_shift_max_weight_change": 0.7873458933121744,
+      "candidate": {
+        "stable_half_mean": 0.9982142828680716,
+        "noisy_half_mean": 0.3199430812794123,
+        "ess_fraction": 0.7773830701956885
+      },
+      "candidate_shift_max_weight_change": 5.162537064506978e-15,
+      "candidate_joint_rescale_max_weight_change": 1.6653345369377348e-16,
+      "candidate_detached": true,
+      "scale_source": "2048 independent synthetic training-reference rows, frozen",
+      "sensitivity_is_not_clinical_reliability": true
+    },
+    {
+      "legacy_original": {
+        "stable_half_mean": 0.9989889902467246,
+        "noisy_half_mean": 0.6386245102205259,
+        "ess_fraction": 0.942613857125421
+      },
+      "legacy_shifted": {
+        "stable_half_mean": 0.9999999288139033,
+        "noisy_half_mean": 0.9999474366698577,
+        "ess_fraction": 0.9999999991313312
+      },
+      "legacy_shift_max_weight_change": 0.6622090230510372,
+      "candidate": {
+        "stable_half_mean": 0.998272826692574,
+        "noisy_half_mean": 0.31349788171680426,
+        "ess_fraction": 0.7783421831807456
+      },
+      "candidate_shift_max_weight_change": 3.4416913763379853e-15,
+      "candidate_joint_rescale_max_weight_change": 1.1102230246251565e-16,
+      "candidate_detached": true,
+      "scale_source": "2048 independent synthetic training-reference rows, frozen",
+      "sensitivity_is_not_clinical_reliability": true
+    },
+    {
+      "legacy_original": {
+        "stable_half_mean": 0.9988633489172043,
+        "noisy_half_mean": 0.6278399423092318,
+        "ess_fraction": 0.9384965440151156
+      },
+      "legacy_shifted": {
+        "stable_half_mean": 0.9999999230391114,
+        "noisy_half_mean": 0.9999436804942298,
+        "ess_fraction": 0.9999999990041141
+      },
+      "legacy_shift_max_weight_change": 0.6540579593421448,
+      "candidate": {
+        "stable_half_mean": 0.9981949086925794,
+        "noisy_half_mean": 0.30162009407295526,
+        "ess_fraction": 0.7647568030359786
+      },
+      "candidate_shift_max_weight_change": 3.164135620181696e-15,
+      "candidate_joint_rescale_max_weight_change": 1.6653345369377348e-16,
+      "candidate_detached": true,
+      "scale_source": "2048 independent synthetic training-reference rows, frozen",
+      "sensitivity_is_not_clinical_reliability": true
+    }
+  ],
+  "source_sha256": {
+    "research_framework_audit.py": "739dabca202803e928f015dfa6950e427ecb789543075d0e2b54652d124b179e",
+    "cancer_stability_candidates.py": "f64e8ef72178eaaec0446212d7ed469d3c656ba4cd2b25dd732fc04294787e2d",
+    "cancer_pathway.py": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream.py": "6f75cad0d62274d90c9ace4e3252d654f8d1f51f90f46b05f44f8daf10618363",
+    "model.py": "d58482cc0e1f75e631e711bdb25f0ec61fb77f6f09998677bc841af5de3f4d3f"
+  },
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu"
+  },
+  "limits": [
+    "Selection null uses controlled post-encoder patch/token inputs and known linear matching maps, not patient checkpoint inference.",
+    "Constructed nulls establish allowed failure modes, not their prevalence or effect in trained models.",
+    "The candidate weight is research-only; fixed representation scales and hyperparameters require separate evaluation.",
+    "Repeated seeds here vary only the synthetic setup; they are not independent patient evidence."
+  ]
+}

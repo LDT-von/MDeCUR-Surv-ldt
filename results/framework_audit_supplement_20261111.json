@@ -1,0 +1,12 @@
+{
+  "evidence": "CPU synthetic only; supplement after finite-population and rank report clarification",
+  "tests": 4,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "source_sha256": {
+    "research_framework_audit.py": "7b9746092fc2c462ad2ddc92cf7c7fa6a941aeb9b6076f46be7f8145ef5f6411",
+    "test_framework_mechanism_audit.py": "9996526aa4e1437f812cfadc42064f7d2c85301a4479d1fc48bd3250e42d87e9",
+    "cancer_stability_candidates.py": "f64e8ef72178eaaec0446212d7ed469d3c656ba4cd2b25dd732fc04294787e2d"
+  }
+}

@@ -93,7 +93,7 @@ def decur_auxiliary(p1, p2, g1, g2, common, off_weight=0.005):
 
 def stability_weighted_common(p1, p2, g1, g2, strength=2.0, min_weight=0.1,
                               off_weight=0.005, eps=1e-4, min_ess_fraction=0.5,
-                              shuffle_weights=False):
+                              shuffle_weights=False, shuffle_generator=None):
     """Candidate only: view-stability weighted common correlation.
 
     The weights are detached and measure sensitivity to the chosen views only.
@@ -111,7 +111,8 @@ def stability_weighted_common(p1, p2, g1, g2, strength=2.0, min_weight=0.1,
         dg = ((1-F.cosine_similarity(g1,g2,dim=1,eps=eps))/2).clamp(0,1)
         weights = torch.exp(-strength*(dp+dg)).clamp(min=min_weight,max=1)
         if shuffle_weights:
-            weights = weights[torch.randperm(len(weights),device=weights.device)]
+            weights = weights[torch.randperm(len(weights),device=weights.device,
+                                            generator=shuffle_generator)]
         ess = weights.sum().square()/weights.square().sum()
         if ess < min_ess_fraction*p1.shape[0]:
             raise DegenerateCorrelation('Insufficient effective sample size')
