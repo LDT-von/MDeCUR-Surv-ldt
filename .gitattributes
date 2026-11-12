@@ -1,0 +1,3 @@
+# The frozen Reactome GMT is hashed byte-exactly against its recorded source
+# metadata, so its line endings must stay LF on every platform.
+*.gmt text eol=lf

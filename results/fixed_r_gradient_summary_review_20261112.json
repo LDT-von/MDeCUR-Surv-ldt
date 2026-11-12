@@ -1,0 +1,27 @@
+{
+  "purpose": "Local CPU release validation for the read-only fixed-R gradient summary re-report",
+  "date": "2026-11-12",
+  "scope": [
+    "extract_fixed_r_gradient_summary.py reads one existing audit JSON only; no checkpoint, manifest, patient file or model is loaded and no gradient is computed",
+    "new module tests are 6 distinct checks covering the corrected aggregate label, absolute norms, distinct-batch counting, CLI overwrite refusal, nonfinite rejection and missing-record rejection",
+    "an unrelated pre-existing failure of the frozen Reactome GMT byte hash was found and fixed with a repository .gitattributes rule; the frozen GMT is unchanged in content and still hashes to its recorded source value"
+  ],
+  "checks": {
+    "new_module_targeted": 6,
+    "unittest_discover": 174,
+    "scripts_test_make_development_folds": 2
+  },
+  "results": {
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unittest_discover_seconds": 170.147,
+    "scripts_seconds": 0.118
+  },
+  "not_performed": [
+    "no patient data, checkpoint, manifest or feature file was read on this machine",
+    "no CUDA run, no training, no optimizer step, no validation or test inference",
+    "no cross-validation, no outer_test access, no loss coefficient or training implementation change",
+    "the real fixed-R audit JSON was not read here; its fields remain unverified until the read-only extractor runs on the server copy"
+  ]
+}
