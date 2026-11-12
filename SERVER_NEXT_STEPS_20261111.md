@@ -1,5 +1,7 @@
 # 5090 拉取更新与下一批实验
 
+2026-11-12状态补充：用户转发回报称本批已全部完成，包括目标环境147项检查、旧结果配对/query诊断、新R/I训练及其配对分析；见 `EXPERIMENT_REVIEW_20261112.md`。下列是该批的历史执行协议，不能因再次阅读而重复启动。两条旧消融的实际report位于`model_output/`，下文路径已修正。
+
 这是给服务器助手的可执行交接。用户已要求在核实运行情况后推送Windows更新，随后由服务器窗口拉取并开展预定实验。Windows助手本次没有连接服务器。以下现状来自用户转发的服务器只读回报，不是本机独立复核。
 
 ## 1. 已知服务器状态与结果
@@ -40,14 +42,14 @@
 python paired_pathway_validation.py \
   --manifest /data1/decur_runs/BLCA_SINGLE_VIEW_NEW_INPUTS/fold0_train_val.csv \
   --reference /data1/decur_runs/BLCA_PATHWAY_LOCAL_FULL_FOLD0_SEED17_NEW \
-  --candidate /data1/decur_runs/ABLATION_MATCHED_OFF_FOLD0_SEED17_20261110 \
+  --candidate /data1/decur_runs/ABLATION_MATCHED_OFF_FOLD0_SEED17_20261110/model_output \
   --comparison matched-off --bootstrap 2000 --seed 20261110 \
   --out "${RUN}/paired_matched_off.json"
 
 python paired_pathway_validation.py \
   --manifest /data1/decur_runs/BLCA_SINGLE_VIEW_NEW_INPUTS/fold0_train_val.csv \
   --reference /data1/decur_runs/BLCA_PATHWAY_LOCAL_FULL_FOLD0_SEED17_NEW \
-  --candidate /data1/decur_runs/ABLATION_UNIFORM_COMMON_FOLD0_SEED17_20261110 \
+  --candidate /data1/decur_runs/ABLATION_UNIFORM_COMMON_FOLD0_SEED17_20261110/model_output \
   --comparison uniform-common --bootstrap 2000 --seed 20261110 \
   --out "${RUN}/paired_uniform_common.json"
 ```

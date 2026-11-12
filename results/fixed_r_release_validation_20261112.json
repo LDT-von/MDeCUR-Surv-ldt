@@ -1,0 +1,23 @@
+{
+  "evidence": "CPU synthetic/regression only; no server access or patient data",
+  "base_commit": "b4d95371c9ef96835112efd6e1b5ee78d76f57db",
+  "tests": 156,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 106.32294109999202,
+  "python": "3.10.11",
+  "torch": "2.6.0+cu124",
+  "source_sha256": {
+    "diagnose_fixed_r_decomposition.py": "f138309fc64d8ea17c094a65d417a5a9a514bb8f5e8522468e9bbfddf570ad9d",
+    "test_fixed_r_decomposition.py": "d2d92cff4bf7fa39730f0295eabe9d88345535360de772122dd3987ae5fae91c",
+    "diagnose_pathway_query_permutation.py": "deab974805608bb19b830558a00f4fa13bf8bcee38c9e40dbfb8202191cb210a",
+    "cancer_pathway.py": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream.py": "b06335a79ba6a55a08bb6b1c6b2711dcda648eb7ed5bcdfbccbadc1540cfb54c",
+    "cancer_metrics.py": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_model.py": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_rna.py": "f5e0afca5c3231bc9b6fc4be5ad37c55c93947dd2143689ff5dfedfaccb22ca5",
+    "cancer_survival_diagnostics.py": "c586ff2008c6f3644552dea91ecb02a090214553584b96941948d0de4f003dcf"
+  }
+}
