@@ -305,7 +305,7 @@ def pathway_stream_forward(model, bags, rna, chunk_size=2048, view_source='featu
     return output
 
 
-def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_seed):
+def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_seed, *, return_components=False):
     weights = effective_weights(cfg)
     use_views = any(weights.values())
     rna = batch['rna']
@@ -315,6 +315,7 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                                     rna_views=rna_views, feature_noise=cfg.feature_noise,
                                     view_seed=view_seed)
     loss = piecewise_nll(output['log_rates'], batch['time'], batch['event'], starts)
+    components = {'survival': loss}
     stats = {'patients': len(rna), 'train_nll': loss.detach().item(),
              'common_skipped': False, 'common_skip_reason': None,
              'terms': {name: None for name in LOSS_NAMES},
@@ -333,6 +334,7 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                 term = correlation_loss(x, y, target)
                 loss = loss+weights[name]*term
                 stats['terms'][name] = term.detach().item()
+                components[name] = term
         if weights['global_common']:
             try:
                 if cfg.common_mode == 'uniform':
@@ -356,12 +358,14 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                     stats['global_common_ess'] = diagnostic['ess'].item()
                 loss = loss+weights['global_common']*term
                 stats['terms']['global_common'] = term.detach().item()
+                components['global_common'] = term
             except DegenerateCorrelation as error:
                 stats['common_skipped'] = True
                 stats['common_skip_reason'] = str(error)
         if weights['patch_within']:
             loss = loss+weights['patch_within']*output['patch_loss']
             stats['terms']['patch_within'] = output['patch_loss'].detach().item()
+            components['patch_within'] = output['patch_loss']
             stats['patch_diagnostics'] = output['patch_diagnostics']
         for name, x, y, target in (
                 ('pathway_path_within', aux['local_p1'], aux['local_p2'], 1),
@@ -372,6 +376,7 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                 term, diagnostic = pathway_correlation_loss(x, y, target)
                 loss = loss+weights[name]*term
                 stats['terms'][name] = term.detach().item()
+                components[name] = term
                 stats['pathway_diagnostics'][name] = diagnostic
         for name, target, selection in (
                 ('matched_common', 1, slice(None, cfg.local_common)),
@@ -384,10 +389,13 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                 term = (a+b)/2
                 loss = loss+weights[name]*term
                 stats['terms'][name] = term.detach().item()
+                components[name] = term
                 stats['pathway_diagnostics'][name] = {'view_a': diag_a, 'view_b': diag_b}
     if not torch.isfinite(loss):
         raise FloatingPointError('Pathway model loss is not finite')
     stats['total_loss'] = loss.detach().item()
+    if return_components:
+        return loss, stats, components
     return loss, stats
 
 

@@ -1,0 +1,24 @@
+{
+  "evidence": "CPU synthetic/regression only, no server access or patient data",
+  "base_commit": "689e2af7958037be497dcb51e4aef9762f9c1d3b",
+  "tests": 162,
+  "success": true,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 120.03608029999305,
+  "python": "3.10.11",
+  "torch": "2.6.0+cu124",
+  "source_sha256": {
+    "pathway_gradient_audit.py": "78476e12eed7681b780a8857b0428daf071bde5cd08e0131e90f2aceb748725b",
+    "research_gradient_study.py": "cb405343b467abe312cf0b37abb8b9b72262d313023982688b319a8ad5b99048",
+    "test_pathway_gradient_audit.py": "77c6dfee893333ca65a92da3b23498295ab76d73f01c32406504664fd9979d1c",
+    "cancer_pathway_stream.py": "59180528056592ec5f55c176b0cdd8929d2500b6ab94c5f4e5d88a1cad90a0cb",
+    "cancer_pathway.py": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_model.py": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "model.py": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "cancer_rna.py": "f5e0afca5c3231bc9b6fc4be5ad37c55c93947dd2143689ff5dfedfaccb22ca5",
+    "cancer_auxiliary.py": "53c5a4a4967eccbd85cf7010d9a5138b8a4706e69d5246adea07af77ffd1de03",
+    "cancer_stream.py": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321"
+  }
+}

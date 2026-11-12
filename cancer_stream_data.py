@@ -125,14 +125,17 @@ class H5PatientBag:
         return tuple(torch.from_numpy(array) for array in arrays)
 
 
-def load_stream_manifest(manifest, path_views='cached_uni', include_test=True):
+def load_stream_manifest(manifest, path_views='cached_uni', include_test=True, *, train_only=False):
     """Load explicit patient inputs without padding; optionally exclude test I/O.
 
     Test IDs/split names in the CSV are still checked for duplicate identities,
     but their feature/RNA paths and labels are not accessed in validation-only mode.
+    train_only additionally excludes validation I/O, and requires include_test=False.
     """
     if path_views not in ('cached_uni', 'single_view'):
         raise ValueError('Choose cached_uni or single_view for streaming input')
+    if type(train_only) is not bool or (train_only and include_test):
+        raise ValueError('train_only requires include_test=False')
     feature_column = 'wsi_h5' if path_views == 'cached_uni' else 'wsi_pt'
     bag_class = H5PatientBag if path_views == 'cached_uni' else PTPatientBag
     path = Path(manifest).resolve()
@@ -144,7 +147,8 @@ def load_stream_manifest(manifest, path_views='cached_uni', include_test=True):
         rows = list(reader)
     if not rows:
         raise ValueError('Manifest is empty')
-    groups = {split: [] for split in (('train', 'val', 'test') if include_test else ('train', 'val'))}
+    requested = ('train',) if train_only else (('train', 'val', 'test') if include_test else ('train', 'val'))
+    groups = {split: [] for split in requested}
     seen_ids, seen_slides, seen_paths, seen_files, signatures = set(), set(), set(), set(), set()
     gene_dim = None
     for row in rows:
@@ -152,7 +156,7 @@ def load_stream_manifest(manifest, path_views='cached_uni', include_test=True):
         if not ident or ident in seen_ids or split not in ('train', 'val', 'test'):
             raise ValueError('Each patient must have a unique nonempty ID and valid split')
         seen_ids.add(ident)
-        if split == 'test' and not include_test:
+        if split not in groups:
             continue
         bag = bag_class(ident, row[feature_column], path.parent)
         if seen_paths.intersection(bag.paths) or seen_files.intersection(bag.file_identities):

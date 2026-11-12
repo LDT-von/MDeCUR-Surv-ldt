@@ -1,0 +1,20 @@
+.....................................................{"epoch": 1, "train_nll": 3.047065496444702, "total_loss": 3.055238532012084, "validation_nll": 1.3478524684906006, "best_epoch": 1, "best_validation_nll": 1.3478524684906006, "seconds": 0.18208120000781491, "batch_patient_counts": [7], "global_common_skipped_batches": 0}
+{"epoch": 2, "train_nll": 3.007814645767212, "total_loss": 3.015861958948109, "validation_nll": 1.3428895473480225, "best_epoch": 2, "best_validation_nll": 1.3428895473480225, "seconds": 0.19834339997032657, "batch_patient_counts": [7], "global_common_skipped_batches": 0}
+...........................................{"permutation": 1, "of": 3, "difference": {"nll": -3.814697265625e-06, "harrell_c": 0.0, "ipcw_brier": 1.1920928955078125e-07}}
+{"permutation": 2, "of": 3, "difference": {"nll": 0.000133514404296875, "harrell_c": 0.0, "ipcw_brier": 0.0}}
+{"permutation": 3, "of": 3, "difference": {"nll": -0.0001068115234375, "harrell_c": 0.0, "ipcw_brier": 1.1920928955078125e-07}}
+.........{"validation_patient": 1, "of": 4}
+{"validation_patient": 2, "of": 4}
+{"validation_patient": 3, "of": 4}
+{"validation_patient": 4, "of": 4}
+............{"batch_index": 0, "repeat": 11, "patients": 6, "seconds": 0.6281849999795668, "gradient_reconstruction": {"absolute_l2_error": 7.915958758201596e-07, "direct_total_norm": 15.820098368637497, "relative_l2_error": 5.0037354849161766e-08}}
+{"batch_index": 0, "repeat": 22, "patients": 6, "seconds": 0.6696468999725766, "gradient_reconstruction": {"absolute_l2_error": 5.863537916871233e-07, "direct_total_norm": 15.819923176413216, "relative_l2_error": 3.706426290118463e-08}}
+{"batch_index": 1, "repeat": 11, "patients": 6, "seconds": 0.6553054999676533, "gradient_reconstruction": {"absolute_l2_error": 5.395702231183014e-07, "direct_total_norm": 13.35786102320752, "relative_l2_error": 4.0393459864634716e-08}}
+{"batch_index": 1, "repeat": 22, "patients": 6, "seconds": 0.6562185999937356, "gradient_reconstruction": {"absolute_l2_error": 4.753475635123227e-07, "direct_total_norm": 13.357906728057255, "relative_l2_error": 3.558548305430908e-08}}
+{"batch_index": 2, "repeat": 11, "patients": 6, "seconds": 0.7609295999864116, "gradient_reconstruction": {"absolute_l2_error": 5.984325409009325e-07, "direct_total_norm": 14.865776143415198, "relative_l2_error": 4.025572127063197e-08}}
+{"batch_index": 2, "repeat": 22, "patients": 6, "seconds": 0.7301376999821514, "gradient_reconstruction": {"absolute_l2_error": 6.676504931922499e-07, "direct_total_norm": 14.865529643430687, "relative_l2_error": 4.491266098193112e-08}}
+.....................................................
+----------------------------------------------------------------------
+Ran 170 tests in 165.468s
+
+OK
