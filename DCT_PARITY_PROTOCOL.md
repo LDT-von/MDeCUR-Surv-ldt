@@ -235,3 +235,103 @@ fold 间波动很大（0.6573–0.7304），本仓库目前只跑了 fold0，
 - 未使用 UNI2-h（按约定先用 UNI v1 `.pt`）
 - 未触碰 outer test
 - 未修改训练实现与 loss 系数
+
+## 13. fold0 对照组（2026-11-13）
+
+在同一协议（同一清单、同一分箱、同一 patch 预算、同一 seed 3、同一按 val
+C-index 峰值选轮）下运行的一组对照，用来回答"0.7361 这个分数是谁贡献的"。
+全部产物在 `/data1/decur_runs/PARITY_DCT_FOLD0/`。
+
+### 13.1 结果
+
+| 对照 | 设置 | 均值 C | 峰值 C | 说明 |
+|---|---|---|---|---|
+| 全模型 | `--disable-auxiliary`，batch 8 | 0.6929 | **0.7361** | 参考运行 |
+| 推理时病理置零 | 同一 checkpoint，推理期病理置零 | — | **0.7686** | 病理是噪声 |
+| 推理时 RNA 置零 | 同一 checkpoint，推理期 RNA 置零 | — | 0.5531 | 分数完全依赖 RNA |
+| `rna_only` | 训练+推理都去掉病理 | 0.6938 | 0.7639 | 无病理更差 |
+| `null` | 训练标签置乱 | 0.5648 | 0.6363 | 无标签泄漏，但 null 也能刷到 0.64 |
+| `path_only` | 训练+推理都去掉 RNA | 0.513 | 0.543 | 纯病理接近随机 |
+| raw RNA 岭回归 | 17025 维原始表达直接岭回归 | — | **0.7472** | 无深度模型即接近全模型 |
+| 协同交互关掉 | 同一 checkpoint，`interaction_strength=0` | — | 0.7314 | 协同分支贡献 ≈ 0.005 |
+
+### 13.2 结论（重要）
+
+1. **0.7361 的高分主要来自 TCGA-BLCA 的 RNA 预后信号**，不是病理分支，
+   也不是通路解耦模块。raw RNA 岭回归已达 0.7472，去掉病理反而升到 0.7686。
+2. **协同交互分支没有可测量的预测增量**：关掉后只掉 0.005，77 人验证集上
+   远小于噪声（同一协议下 null 对照都能到 0.6363）。
+   匹配锐度也支持这一读数：归一化匹配熵 0.633、最大匹配权重 0.046，
+   即软匹配是弥散的，没有"挑出少数关键区域"的行为。
+3. **统计功效不足**：val 只有 77 人 / 27 事件，且 checkpoint 按 val C-index
+   峰值选轮。0.01 量级的差异在此协议下没有意义。
+4. BLCA 队列 RNA 信号太强，**不适合**用来评估病理模块的增量贡献；
+   评估解耦模块需要 5 折 OOF（SE≈0.011）和 RNA 预后更弱的队列（BRCA/GBM）。
+
+### 13.3 交互分支的量级说明
+
+| 量 | 数值 | 含义 |
+|---|---|---|
+| `|interaction| / |base|` | 1.948 | 交互项原始幅度约为 base logits 的 2 倍 |
+| 实际贡献 `0.2 × |interaction|` | 0.390 | 乘以 `interaction_strength=0.2` 后的净贡献 |
+| base logits 绝对均值 | 2.86 | — |
+
+**可比量是 logit 跨度占比，不是 raw 交互幅值**。raw 交互 5.34 与 base 2.86
+不在同一尺度上（一个未缩放、一个已缩放），不能直接相除后宣称"交互主导"。
+
+## 14. 辅助损失对照协议（2026-11-13）
+
+前面的所有对照都用 `--disable-auxiliary`，也就是 **11 项解耦辅助损失权重全为 0、
+`common_mode=off`**。这意味着"解耦模块是否有效"这个问题**从未被检验过**。
+本节记录补上这一对照的协议。
+
+### 14.1 关键约束：批次大小是混淆变量
+
+`minimum_batch_size` 给出秩下界：开启 `global_path_within` /`global_rna_within`
+时要求 `patient_batch_size >= hidden + 1 = 17`。而参考运行用的是 batch 8。
+因此**不能**拿"辅助开启"的结果直接和"batch 8 的参考运行"比。
+
+对照设计（两个 arm 完全对称）：
+
+| arm | 辅助损失 | batch | 其余一切 |
+|---|---|---|---|
+| `aux_on` | 本仓库方法的默认权重，11 项全开 | 17 | 相同 |
+| `aux_off` | 全部权重 0，`common_mode=off` | 17 | 相同 |
+
+批次大小、清单、分箱、patch 预算、lr/weight-decay/seed、选轮规则全部相同，
+**唯一差别是辅助项是否贡献梯度**。
+
+运行：
+
+```bash
+bash scripts/run_aux_comparison.sh
+```
+
+### 14.2 诊断记录
+
+trainer 现在按 epoch 汇总辅助项与通路诊断，写入 `report.json` 的
+`history[*].auxiliary_terms` 与 `history[*].pathway_diagnostics`，
+`controls.auxiliary_weight_overrides` 记录本次覆盖的权重。
+
+### 14.3 冒烟测试已观察到的现象（2 轮，batch 17）
+
+| 项 | 目标对角 | 实测对角 | 解读 |
+|---|---|---|---|
+| `pathway_path_within` | 1 | 0.983 | 视图自洽达成 |
+| `pathway_rna_within` | 1 | 0.992 | 视图自洽达成 |
+| `pathway_common` | 1 | **0.002** | 共同子空间几乎不相关 |
+| `pathway_unique` | 0 | -0.003 | 独有子空间已正交 |
+
+即：**视图一致性成立，但"病理–RNA 共同信息"这一步没有学到**。
+同时匹配归一化熵从 0.633 升到 0.91，辅助训练让软匹配更弥散。
+
+## 15. 新增 CLI
+
+`train_pathway_parity.py`：
+
+- `--auxiliary-weight NAME=VALUE`（可重复）—— 覆盖单项辅助损失权重；
+  与 `--disable-auxiliary` 互斥。
+- `--common-mode {off,uniform,stability,shuffled}` —— 指定全局共同子空间的估计方式。
+
+训练批次改用 `patient_batches`，尾批次不足秩下界时**合并**而不是丢弃。
+

@@ -22,6 +22,7 @@ from dataclasses import asdict
 import csv
 import hashlib
 import json
+import math
 from pathlib import Path
 import platform
 import time
@@ -35,7 +36,7 @@ from cancer_parity import (_json_float, discrete_nll, discrete_survival, dct_bin
 from cancer_parity_bag import BudgetedPatientBag
 from cancer_pathway import PathwayLocalSurvival, read_pathway_mapping
 from cancer_pathway_stream import (PathwayConfig, effective_weights, minimum_batch_size,
-                                   pathway_objective, validate_config)
+                                   patient_batches, pathway_objective, validate_config)
 from cancer_rna import fit_rna_scaler, transform_rna
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 
@@ -73,16 +74,102 @@ def make_parser():
                         help='The reference pipeline feeds the raw expression values')
     parser.add_argument('--disable-auxiliary', action='store_true',
                         help='Turn every auxiliary correlation term off')
+    parser.add_argument('--shuffle-train-labels', action='store_true',
+                        help='Permute the training survival labels; the score must collapse to chance')
+    parser.add_argument('--freeze-modality', choices=['none', 'pathology', 'rna'], default='none',
+                        help='Zero one modality at training time; the remaining one must carry the score')
     parser.add_argument('--endpoint', required=True)
     parser.add_argument('--time-unit', required=True)
     parser.add_argument('--split-name', required=True, help='Name of the split, for the report')
+    parser.add_argument('--auxiliary-weight', action='append', default=[], metavar='NAME=VALUE',
+                        help='Override one auxiliary loss weight; repeatable.  Every override '
+                             'switches the auxiliary path on, so the run no longer matches the '
+                             'auxiliary-disabled control unless the same override is given there.')
+    parser.add_argument('--common-mode', choices=['off', 'uniform', 'stability', 'shuffled'],
+                        default=None,
+                        help='How the global common subspace is estimated; the default keeps the '
+                             'configured value')
     return parser
+
+
+def _finite_or_none(value):
+    """Keep the JSON report free of NaN and infinity."""
+    if value is None:
+        return None
+    value = float(value)
+    return value if math.isfinite(value) else None
+
+
+def _parse_auxiliary_overrides(values):
+    """Turn ``NAME=VALUE`` strings into a validated weight mapping."""
+    from cancer_pathway_stream import LOSS_NAMES
+    overrides = {}
+    for item in values:
+        if '=' not in item:
+            raise ValueError(f'Expected NAME=VALUE for --auxiliary-weight, got {item!r}')
+        name, _, raw = item.partition('=')
+        name = name.strip()
+        if name not in LOSS_NAMES:
+            raise ValueError(f'Unknown auxiliary loss term {name!r}; expected one of {LOSS_NAMES}')
+        try:
+            weight = float(raw)
+        except ValueError as error:
+            raise ValueError(f'Auxiliary weight for {name!r} is not a number') from error
+        if not math.isfinite(weight) or weight < 0:
+            raise ValueError(f'Auxiliary weight for {name!r} must be finite and nonnegative')
+        overrides[name] = weight
+    return overrides
 
 
 def _budget(data, num_patches, mode, seed):
     """Wrap every patient bag with the reference patch budget."""
     return dict(data, bags=[BudgetedPatientBag(bag, num_patches, mode, seed)
                             for bag in data['bags']])
+
+
+class _ZeroBag:
+    """A patient bag whose patch rows are all zeros.
+
+    The row count is preserved so that the pooling still sees the same number
+    of rows; only the feature content is removed.  This isolates how much of
+    the score the pathology branch carries.
+    """
+
+    def __init__(self, source, num_patches):
+        self.patient_id = source.patient_id
+        self.feature_dim = source.feature_dim
+        self.view_source = getattr(source, 'view_source', 'single_view')
+        self.n_patches = num_patches
+        self.padding = num_patches
+
+    def resample(self, seed=0):
+        """A frozen bag has no rows to redraw."""
+        return self
+
+    def blocks(self, chunk_size):
+        for start in range(0, self.n_patches, chunk_size):
+            yield ('<parity-budget>', start, min(start+chunk_size, self.n_patches))
+
+    def read_block(self, token, names):
+        path, start, stop = token
+        if not 0 <= start < stop <= self.n_patches:
+            raise ValueError('Invalid block row range')
+        return (torch.zeros((stop-start, self.feature_dim), dtype=torch.float32),)
+
+    def assert_unchanged(self):
+        return None
+
+    def close(self):
+        return None
+
+    @property
+    def provenance(self):
+        return []
+
+
+def _freeze_bags(bags, num_patches):
+    """Replace every patch row with zeros."""
+    return [_ZeroBag(bag, num_patches) for bag in bags]
 
 
 def load_survival_reference(path):
@@ -149,6 +236,17 @@ def main():
     censorship = {split: 1-values for split, values in (('train', train_event),
                                                         ('val', val_event))}
 
+    # The null control permutes the training labels only.  The validation
+    # labels stay untouched, so a model that still reaches a high validation
+    # C-index would be reading something other than the training outcome.
+    if args.shuffle_train_labels:
+        generator = np.random.default_rng(args.seed)
+        permutation = generator.permutation(len(train_time))
+        train_time = train_time[permutation]
+        train_event = train_event[permutation]
+        labels['train'] = torch.from_numpy(discretize_labels(train_time, edges))
+        censorship['train'] = 1-train_event
+
     gene_count = len(Path(args.genes).read_text(encoding='utf-8-sig').splitlines())
     pathway_mapping = read_pathway_mapping(args.genes, args.pathways, gene_count, min_genes=1)
 
@@ -161,15 +259,33 @@ def main():
     cfg = PathwayConfig(epochs=args.epochs, patience=args.epochs+1, lr=args.lr,
                         weight_decay=args.weight_decay, seed=args.seed,
                         rna_scale_policy=args.rna_scale_policy)
+    overrides = _parse_auxiliary_overrides(args.auxiliary_weight)
+    if args.disable_auxiliary and overrides:
+        raise ValueError('--disable-auxiliary and --auxiliary-weight contradict each other')
     if args.disable_auxiliary:
         from cancer_pathway_stream import LOSS_NAMES
         cfg = PathwayConfig(**{**asdict(cfg),
                                **{name: 0. for name in LOSS_NAMES},
                                'common_mode': 'off'})
+    elif overrides:
+        # Only the named terms change; every other term keeps the configured
+        # weight, so an explicit override of every term reproduces the defaults.
+        cfg = PathwayConfig(**{**asdict(cfg), **overrides})
+    if args.common_mode is not None:
+        cfg = PathwayConfig(**{**asdict(cfg), 'common_mode': args.common_mode})
     minimum = validate_config(cfg, 'feature_noise', args.patient_batch_size, args.patch_chunk_size)
     scaler = fit_rna_scaler(train['rna'], cfg.rna_scale_policy, cfg.rna_min_std)
     normalized = transform_rna(train['rna'], scaler)
     validation_normalized = transform_rna(validation['rna'], scaler)
+
+    # The modality control removes one input from both the training batches and
+    # the evaluation, so the remaining modality is the only source of signal.
+    if args.freeze_modality == 'rna':
+        normalized = torch.zeros_like(normalized)
+        validation_normalized = torch.zeros_like(validation_normalized)
+    if args.freeze_modality == 'pathology':
+        train['bags'] = _freeze_bags(train['bags'], args.num_patches)
+        validation['bags'] = _freeze_bags(validation['bags'], args.num_patches)
 
     dimension = train['bags'][0].feature_dim
     model_kwargs = dict(path_dim=dimension, rna_dim=train['rna'].shape[1],
@@ -198,7 +314,10 @@ def main():
             bag.resample(args.seed*1000+epoch)
         order = torch.randperm(len(train['ids']), generator=order_generator)
         total, patients, skipped = 0.0, 0, 0
-        for indices in order.split(args.patient_batch_size):
+        term_sums = {}
+        term_counts = {}
+        diagnostic_sums = {}
+        for indices in patient_batches(order, args.patient_batch_size, minimum):
             if len(indices) < 1:
                 continue
             optimizer.zero_grad(set_to_none=True)
@@ -217,6 +336,19 @@ def main():
             total += float(stats['train_nll'])*len(indices)
             patients += len(indices)
             skipped += int(bool(stats['common_skipped']))
+            for name, value in stats['terms'].items():
+                if value is None:
+                    continue
+                term_sums[name] = term_sums.get(name, 0.0) + float(value)
+                term_counts[name] = term_counts.get(name, 0) + 1
+            for name, diagnostic in stats.get('pathway_diagnostics', {}).items():
+                if not isinstance(diagnostic, dict):
+                    continue
+                for key, value in diagnostic.items():
+                    if not isinstance(value, (int, float)) or isinstance(value, bool):
+                        continue
+                    bucket = diagnostic_sums.setdefault(name, {})
+                    bucket[key] = bucket.get(key, 0.0) + float(value)
         scheduler.step()
         validation_metrics = _evaluate(model, validation, validation_normalized, labels['val'],
                                        censorship['val'], edges, args.patch_chunk_size,
@@ -225,6 +357,17 @@ def main():
         record = {'epoch': epoch, 'train_nll': total/max(1, patients),
                   'common_skipped_batches': skipped,
                   'seconds': time.perf_counter()-epoch_start, **validation_metrics}
+        if term_sums:
+            record['auxiliary_terms'] = {
+                name: {'mean': term_sums[name]/term_counts[name], 'batches': term_counts[name]}
+                for name in sorted(term_sums)}
+        if diagnostic_sums:
+            record['pathway_diagnostics'] = {
+                name: {key: value/max(1, term_counts.get(name, 1)) for key, value in sorted(bucket.items())}
+                for name, bucket in sorted(diagnostic_sums.items())}
+        record['matching_normalized_entropy_mean'] = _finite_or_none(
+            stats.get('matching_normalized_entropy_mean'))
+        record['interaction_abs_mean'] = _finite_or_none(stats.get('interaction_abs_mean'))
         history.append(record)
         print(json.dumps(record, ensure_ascii=False, allow_nan=False), flush=True)
         if validation_metrics['c_index'] is not None and validation_metrics['c_index'] > best_cindex:
@@ -259,6 +402,17 @@ def main():
                                                               labels['val'].numpy(), survival))
     report = {
         'status': 'research_only',
+        'controls': {
+            'shuffled_train_labels': bool(args.shuffle_train_labels),
+            'frozen_modality': args.freeze_modality,
+            'auxiliary_weight_overrides': overrides,
+            'common_mode': cfg.common_mode,
+            'note': ('a shuffled-label run is a null control: the validation score must '
+                     'collapse to chance.  A frozen-modality run removes one input '
+                     'from both the training and the evaluation.  An auxiliary-weight '
+                     'override switches the auxiliary path on; the term means and the '
+                     'pathway diagnostics are recorded per epoch.'),
+        },
         'protocol': parity_report_protocol(edges, args.num_patches, args.endpoint,
                                             args.split_name, args.n_bins),
         'architecture': 'PathwayLocalSurvival',
