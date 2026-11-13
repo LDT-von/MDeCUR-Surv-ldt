@@ -1,0 +1,40 @@
+{
+  "checkpoint_run": "/data1/decur_runs/NEW_VERSION_R_FOLD0_SEED17_20261111",
+  "patients": 60,
+  "events": 26,
+  "interaction_strength": 0.2,
+  "interval_starts": [
+    0.0
+  ],
+  "prediction_horizon": 12.0,
+  "full_model": {
+    "c_index": 0.6455026455026455,
+    "comparable_pairs": 945
+  },
+  "base_head_only": {
+    "c_index": 0.5248677248677248,
+    "comparable_pairs": 945,
+    "logit_range": 1.7450463771820068
+  },
+  "interaction_branch": {
+    "raw_extra_abs_mean": 5.340602397918701,
+    "scaled_abs_mean": 1.0681205987930298,
+    "base_abs_mean": 2.8583109378814697,
+    "scaled_to_base_abs_ratio": 0.3736894428730011,
+    "logit_range_fraction": 1.3546745777130127,
+    "base_plus_scaled": "identical by construction"
+  },
+  "risk_ranking": {
+    "base_vs_full_comparable_pairs": 945,
+    "concordant_pairs": 629,
+    "discordant_pairs": 316,
+    "ranking_agreement": 0.6656084656084656,
+    "max_abs_survival_difference_base_vs_full": 0.569877028465271,
+    "mean_abs_survival_difference": 0.2584892511367798
+  },
+  "limits": [
+    "Single fixed checkpoint on one validation cohort; no training, no epoch selection, no outer-test access.",
+    "base_head_only C is computed by removing the interaction contribution from the same frozen parameters, not by retraining without it.",
+    "This is a mechanism diagnostic, not an effect estimate for a retrained interaction-off arm."
+  ]
+}

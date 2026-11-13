@@ -98,3 +98,32 @@ query置换的患者平均注意力L1为0.692–0.729。因为各通路注意力
 服务器阶段目录据报告为 `/data1/decur_runs/POST_WINDOWS_AUDIT_20261111_b4d9537/`，新R/I为`NEW_VERSION_R_FOLD0_SEED17_20261111/`和`NEW_VERSION_I_FOLD0_SEED17_20261111/`。完整命令、provenance、3个配对JSON和queryJSON在服务器目录，未复制到本机。
 
 上一批交付命令两条candidate路径漏写`model_output/`，导致首次FileNotFoundError；服务器保留失败后按实际路径执行，没有放宽检查。本地 `SERVER_NEXT_STEPS_20261111.md` 已修正。此次本地只更新文档，没有修改训练实现、重跑检查或再次推送。
+
+## 2026-11-13 补充：交互分支机制诊断与超参搜索协议
+
+### 机制诊断（冻结检查点，读多写少）
+
+工具从本地运行目录脚本整理为仓库版本 `diagnose_interaction_contribution.py`（CLI 参数化：`--checkpoint/--manifest/--out/--horizon/--device`），本地已核验**逐位复现**原运行目录脚本的全部数字（完整C=0.6455026455026455、base-only C=0.5248677248677248、raw_extra_abs_mean=5.340602397918701、scaled_abs_mean=1.0681205987930298、base_abs_mean=2.8583109378814697、logit_range_fraction=1.3546745777130127、ranking_agreement=0.6656084656084656）。
+
+| 项 | 值 | 说明 |
+|---|---|---|
+| 完整模型 C-index | 0.645503 | fold 0 的 60 名验证患者，26 事件，945 可比较对 |
+| 仅基础头 C-index | 0.524868 | 同一组冻结参数上去掉交互贡献，**不是**重训 interaction-off |
+| 基础头 logit 跨度 | 1.7450 | |
+| 交互缩放后绝对值均值 | 1.0681 | = 0.2 × 5.3406 |
+| 基础头绝对值均值 | 2.8583 | |
+| 交互/基础 绝对值比 | 0.3737 | **两者不是同一尺度上的可加量，不可用此比值宣称主导** |
+| 交互贡献的 logit 跨度占比 | **1.3547** | 可比量；>1 说明交互项在动态范围上压过基础头 |
+| 基础 vs 完整 排序一致率 | 0.6656 | 945 对中 629 一致 / 316 不一致 |
+
+结论的边界：基础头单独接近随机（C≈0.525），风险排序主要由交互分支产生。但这是**单检查点、单队列、选轮验证**上的机制诊断，不能等同于重训 interaction-off 臂的效果估计，也不能证明该机制相对旧方案的增量。回执：`results/interaction_contribution_diagnostic_20261113.json`。
+
+### 超参搜索协议（预注册）
+
+见 `HYPERPARAM_SEARCH_PROTOCOL_20261112.md`。Stage 1 单折 31 配置家族级筛选 → Stage 2 五折 OOF 确认（SE≈0.011）→ Stage 3 seed 29/43 方差分解。`patch_chunk_size` 由 2048 改为 8192（epoch 时间 ~168s→~58s，val NLL 差异 ≤~2e-5，源于特征噪声的分块边界种子不同），Stage 1–3 统一采用。
+
+### 运行中断与恢复
+
+本机发生重启，Stage 1 队列的在跑配置被中断（已完成 C00/C02 等少数项）。已重新拉起 5 个 queue worker（GPU0/GPU1 交替）与 `warm_daemon.py`，并运行 `reconcile_queue.py` 对账，释放了未产出结果的 in-flight 条目。队列 JSON 的并发写损坏已通过 `os.replace` 原子替换 + `fcntl.flock` 修复。
+
+本轮未运行患者训练或 CUDA、未触碰 outer test、未改训练实现与 loss 系数。

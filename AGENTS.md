@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+2026-11-13服务器端交接与推送：先读`SERVER_HANDOVER_20261113.md`。本轮push `HYPERPARAM_SEARCH_PROTOCOL_20261112.md`（预注册协议）、`diagnose_interaction_contribution.py`（参数化诊断CLI，本地复现原数字：完整C=0.645503、base-only C=0.524868、交互logit跨度占比1.3547）、`results/interaction_contribution_diagnostic_20261113.json`、`results/repeat_cancer_v1..v4.json`（合成，无TCGA标识）及`SERVER_HANDOVER_20261113.md`。注意raw交互5.34×0.2=1.068与base2.86不同尺度不可直接比，可比量是logit跨度占比1.3547；这是单检查点选轮验证的机制诊断，不是重训interaction-off的效果估计。协议：Stage1单折31配置家族配额筛选→Stage2五折OOF(SE≈0.011)→Stage3 seed29/43方差分解；patch_chunk_size 2048→8192提速约3倍、数值差≤2e-5。机器曾重启致队列中断，已重启5 worker+warm_daemon并reconcile；本机未跑患者训练/CUDA，未触碰outer test，未改训练实现与loss系数。
+
 2026-11-12真实R训练批次梯度入口交付：`diagnose_fixed_r_gradients.py`，先读`FIXED_R_GRADIENT_AUDIT_20261112.md`。用户已要求本地验证后push并由服务器窗口运行；本轮代码/合成结果与此前本地API一并纳入交付。CPU计划→按计划哈希审计两步，固定seed20261112的前3训练批次、每批repeat11/22；真实R为3×20人、6记录，全patch原chunk。只加载train，val/test特征/RNA/标签不读，无optimizer/step；逐记录state/.grad和结束RNG/输入守卫，逐项梯度重构校验。旧checkpoint无独立训练内容哈希，报告明确历史合并指纹未重算，另锁定本次plan→run训练指纹。新增8项CLI检查通过；完整170项CPU检查0失败/错误/跳过，回执`results/fixed_r_gradient_release_validation_20261112.json`。未在本机运行患者或CUDA；不五折、不改loss系数。发布状态和完整提交SHA以本轮最终回报为准，下方“尚无CLI/未推送”为此前阶段。
 
 2026-11-12固定R服务器结果已收到并审阅：见`EXPERIMENT_REVIEW_20261112.md`最新补充。用户转发689e2af批次156项通过、9干预完成；新R SHA为6c21fcf5…1f4bde84b，与前批归档一致（据报告）。冻结R关闭交互C降至0.524868，但训练固定query仍0.645503；注意力L1约0.7不等于匹配表示巨变（相对L2约3.5%–3.7%），raw交互5.34需乘0.2为1.068，不能直接与base2.86比较后称主导。重训I仍0.647619，旧配对区间含0；当前只是选轮验证，未证明机制增量。真实R逐项梯度尚未计算；本地API/162项回执仍未提交/push，本次10源码SHA核对一致，未改程序或重跑测试、未SSH、不五折。以下“服务器继续跑/尚未运行”固定R表述为历史。
