@@ -1,0 +1,72 @@
+{
+  "date": "2026-11-13",
+  "scope": "Windows CPU synthetic/regression only; no patient inputs, no CUDA, no SSH",
+  "base_commit": "33a4ecde2890dd5b17b2586ec552a38125dc58a9",
+  "unittest": {
+    "command": "python -m unittest discover -v",
+    "tests_run": 216,
+    "result": "OK",
+    "skipped": 1,
+    "skip_reason": "DCT reference repository unavailable; its reference cross-check class skipped",
+    "seconds": 129.933
+  },
+  "new_focused_tests": 15,
+  "synthetic_full_training": {
+    "arms": 2,
+    "epochs_each": 30,
+    "best_epochs": [
+      1,
+      11
+    ],
+    "last_epochs": [
+      30,
+      30
+    ],
+    "same_training_sampling": true,
+    "best_last_checkpoint_predictions_reproduced": true,
+    "receipt": "results/blca_fold0_comparison_synthetic_20261113.json"
+  },
+  "available": [
+    "mdecur_aux_off",
+    "CAMR-2M-P4096-DNLL"
+  ],
+  "unavailable": {
+    "MurreNet": "No verified official source; not implemented",
+    "MoHD": "No verified official source; not implemented"
+  },
+  "versions": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "numpy": "2.2.6"
+  },
+  "source_sha256_worktree": {
+    "comparison_fold0": "ecdd28d56e254d8f6ce4823264a6c8ce14b89c854e6599f714d43b08746abc3f",
+    "comparison_camr": "454a054f21d306545555939093dacb0740ae0500f9531f6d7181ed4bef926a6e",
+    "cancer_parity": "c508c00a360ed845d102f9158580b25648fad869895852b2aeeadd4c52f9a198",
+    "cancer_parity_bag": "55726ba735284d963bbb01a5d79302b17d19d4f7d636fde1fc217eba87d1647e",
+    "cancer_pathway": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+    "cancer_model": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_rna": "a336a3973023b412fea390744d0fcfa318eaa306e3d3dfda17256ab009b25c6a",
+    "cancer_metrics": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_stream_data": "ac750fb1ef865df4252596cfa47a23465a9bb6796d4ea061d31fcb4129ccb3a2",
+    "cancer_single_view": "57a643af68316d7ad0732217ca6bdbb80a4198cfd3f86489714f9b1a0941a6f1",
+    "cancer_stream": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "model": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c"
+  },
+  "delivery_sha256": {
+    "comparison_fold0.py": "ecdd28d56e254d8f6ce4823264a6c8ce14b89c854e6599f714d43b08746abc3f",
+    "comparison_camr.py": "454a054f21d306545555939093dacb0740ae0500f9531f6d7181ed4bef926a6e",
+    "test_comparison_fold0.py": "27712d75614dbe8cae0d5085f4ae4a10808858c9f09ac170ab866b33e742cdf3",
+    "test_comparison_camr.py": "86f999f56806e4bfa70e0d637338a39c0bc6c4cd722dded0814dbcae7ec99575",
+    "scripts/check_fold0_comparison_synthetic.py": "a05c1237e8d8774b82f8d77580589aeaa72f16b724b0a845a6c54fcea5b48c14",
+    "comparison_sources.json": "19c69a9a28dc5a0c14a00b12bd1f1d62d03d4410cd283deab81751afe2d46f9f",
+    "BLCA_FOLD0_COMPARISON_20261113.md": "d32e20f0fd1bb787dfa825ab9132bb248ca288092794f2e64eb2969fc2989fb5"
+  },
+  "limits": [
+    "No new patient score; legacy one-fold validation is not an independent test.",
+    "CAMR is disclosed two-modality discrete-NLL adaptation, not original-paper replication.",
+    "Legacy short-grid evaluation conventions retained for every arm.",
+    "Plan must be generated on server after pull; source byte hashes can differ across platform line endings."
+  ]
+}

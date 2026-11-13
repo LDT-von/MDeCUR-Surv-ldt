@@ -1,0 +1,38 @@
+{
+  "scope": "generated synthetic 12 train/4 validation only; no patient or CUDA evidence",
+  "results": {
+    "mdecur_aux_off": {
+      "epochs": 30,
+      "best_epoch": 1,
+      "last_epoch": 30,
+      "best_and_last_weights_differ": true,
+      "both_checkpoint_predictions_and_metrics_reproduced": true,
+      "training_sampling_sha256": "65ba368c1516ce1e8bd075e0967bc04f4bdec31c0363413bf7933421d07b78b6"
+    },
+    "camr_2m": {
+      "epochs": 30,
+      "best_epoch": 11,
+      "last_epoch": 30,
+      "best_and_last_weights_differ": true,
+      "both_checkpoint_predictions_and_metrics_reproduced": true,
+      "training_sampling_sha256": "65ba368c1516ce1e8bd075e0967bc04f4bdec31c0363413bf7933421d07b78b6"
+    }
+  },
+  "common_plan_sha256": "489a7b5ad80171838400874ebbc186cda41be1424a808d3f307d1fbee53edf07",
+  "source_sha256": {
+    "comparison_fold0": "ecdd28d56e254d8f6ce4823264a6c8ce14b89c854e6599f714d43b08746abc3f",
+    "comparison_camr": "454a054f21d306545555939093dacb0740ae0500f9531f6d7181ed4bef926a6e",
+    "cancer_parity": "c508c00a360ed845d102f9158580b25648fad869895852b2aeeadd4c52f9a198",
+    "cancer_parity_bag": "55726ba735284d963bbb01a5d79302b17d19d4f7d636fde1fc217eba87d1647e",
+    "cancer_pathway": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+    "cancer_model": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_rna": "a336a3973023b412fea390744d0fcfa318eaa306e3d3dfda17256ab009b25c6a",
+    "cancer_metrics": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_stream_data": "ac750fb1ef865df4252596cfa47a23465a9bb6796d4ea061d31fcb4129ccb3a2",
+    "cancer_single_view": "57a643af68316d7ad0732217ca6bdbb80a4198cfd3f86489714f9b1a0941a6f1",
+    "cancer_stream": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "model": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c"
+  },
+  "four_row_summary_verified": true
+}

@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+2026-11-13 最新单折对照交付：当前用户要求拉取CAMR/MurreNet/MoHD并适配同输入同协议，先BLCA fold0，比较最高val C轮与epoch30末轮，不补4折。先读 `BLCA_FOLD0_COMPARISON_20261113.md`。统一入口 `comparison_fold0.py`，CAMR适配 `comparison_camr.py`；源码状态 `comparison_sources.json`。CAMR官方8fbae0a已拉到本地父目录papers/comparators/CAMR，仅源码，无附带pkl。MurreNet会议Code N/A，作者主页无该模型链接；MoHD未找到可验证作者code，二者无可运行入口，不能冒充已完成三篇。新计划固定PYTHONHASHSEED=0并锁输入/代码/环境，MDeCUR aux-off与CAMR-2M都重新训练；不能把旧0.7361填进新计划排名。本窗口只做本地合成验证和Git交付，不连接服务器，不启动患者作业。下面关于remote协议、旧HEAD及未推送状态均为历史，需实时git核对。
+
 2026-11-13推送完成（完整SHA a2925c3e...）：已push `main`到origin，远端新增提交c08dcac（服务器端AI的梯度审计复核与只读提取器）已先fetch并rebase整合，无冲突、无强推。origin已从HTTPS改为SSH（`git@github.com:LDT-von/MDeCUR-Surv-ldt.git`），此前HTTPS无凭据无法推送。变基后完整测试176项+28子测试通过、0失败。`search_harness/`为本次新增（Stage1–3调度器，原先只在运行目录），全部路径经`SEARCH_*`环境变量可覆盖，已在真实队列上验证`progress.py`/`reconcile_queue.py`/claim-release逻辑/命令行生成与原运行一致；仓库版`run_pathway_with_measure.py`已在真实fold0跑通1轮（5090，352s）。
 
 2026-11-13服务器端交接与推送：先读`SERVER_HANDOVER_20261113.md`。本轮push `HYPERPARAM_SEARCH_PROTOCOL_20261112.md`（预注册协议）、`diagnose_interaction_contribution.py`（参数化诊断CLI，本地复现原数字：完整C=0.645503、base-only C=0.524868、交互logit跨度占比1.3547）、`results/interaction_contribution_diagnostic_20261113.json`、`results/repeat_cancer_v1..v4.json`（合成，无TCGA标识）及`SERVER_HANDOVER_20261113.md`。注意raw交互5.34×0.2=1.068与base2.86不同尺度不可直接比，可比量是logit跨度占比1.3547；这是单检查点选轮验证的机制诊断，不是重训interaction-off的效果估计。协议：Stage1单折31配置家族配额筛选→Stage2五折OOF(SE≈0.011)→Stage3 seed29/43方差分解；patch_chunk_size 2048→8192提速约3倍、数值差≤2e-5。机器曾重启致队列中断，已重启5 worker+warm_daemon并reconcile；本机未跑患者训练/CUDA，未触碰outer test，未改训练实现与loss系数。

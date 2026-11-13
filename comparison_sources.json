@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-13",
+  "scope": "official source only, no dataset/checkpoint included",
+  "methods": {
+    "CAMR": {
+      "official_repository": "https://github.com/wxq-ustc/CAMR",
+      "commit": "8fbae0a0bc4e9da31547b5eab5d773e6b2049e93",
+      "local_source_checkout": "../papers/comparators/CAMR",
+      "source_files_sha256": {
+        "networks.py": "41c3881397500abc4e84f33a48c1a7b69a7ff8237efbaa9d9fc2d9a2a161da90",
+        "fusion.py": "13370f73670b2e75f71177d0f679da8549cc2dbc4013b2362a63273f73446cf9",
+        "utils.py": "8bb0bd341d208e3286ba8f3263d75f7eea172f4ff2960df6f761febd3461e720",
+        "train_test.py": "aef6c3a68c84701baa10652e71546a8c6b0cb2e387ed9f381507b814a04c40e2",
+        "data_loaders.py": "8dd128b15e097411bdeb298aed64b73d069a147ec0f65d00d426db596e488874",
+        "README.md": "25856e05b726bcd2141597f77d9a0319ba035bcd433c3632908962aede9cb464"
+      },
+      "native_contract": "pathology + gene expression + CNA, three patient-level 80D vectors, scalar Cox output",
+      "delivered_adapter": "comparison_camr.py:CAMR2M",
+      "adapter_label": "CAMR-2M-P4096-DNLL",
+      "official_reproduction": false
+    },
+    "MurreNet": {
+      "paper": "https://papers.miccai.org/miccai-2025/0624-Paper0057.html",
+      "arxiv": "https://arxiv.org/abs/2507.04891",
+      "official_code_status": "Conference page code N/A; no verified author repository found",
+      "delivered_adapter": null,
+      "author_homepage": "https://mingxinliu.top/",
+      "author_github": "https://github.com/lmxmercy"
+    },
+    "MoHD": {
+      "paper": "https://pubmed.ncbi.nlm.nih.gov/42176461/",
+      "doi": "10.1016/j.media.2026.104098",
+      "official_code_status": "No verified author repository found",
+      "required_input": "patch/region hierarchical features; availability not established",
+      "delivered_adapter": null,
+      "publisher": "https://www.sciencedirect.com/science/article/pii/S1361841526001672"
+    }
+  },
+  "dataset_downloaded_or_loaded": false
+}
