@@ -8,9 +8,11 @@ def fit_rna_scaler(train, policy='clamp', min_std=1e-6):
 
     mask preserves the original feature dimension and sets excluded coordinates
     to zero everywhere. clamp retains the historical scale-floor behavior.
+    none keeps the raw expression values unchanged, which is the convention of
+    the reference comparison pipeline.
     """
-    if policy not in ('clamp', 'mask') or not math.isfinite(min_std) or min_std <= 0:
-        raise ValueError('RNA policy must be clamp/mask with a finite positive min_std')
+    if policy not in ('clamp', 'mask', 'none') or not math.isfinite(min_std) or min_std <= 0:
+        raise ValueError('RNA policy must be clamp/mask/none with a finite positive min_std')
     if (not isinstance(train, torch.Tensor) or train.ndim != 2 or min(train.shape) < 1
             or not train.is_floating_point() or not torch.isfinite(train).all()):
         raise ValueError('RNA scaler requires a finite nonempty floating [patients,genes] tensor')
@@ -19,6 +21,10 @@ def fit_rna_scaler(train, policy='clamp', min_std=1e-6):
     if not torch.isfinite(mean).all() or not torch.isfinite(std).all():
         raise FloatingPointError('Training RNA mean/std is not finite')
     active = torch.ones_like(std, dtype=torch.bool)
+    if policy == 'none':
+        # No centering and no rescaling: the raw values are the model input.
+        mean = torch.zeros_like(mean)
+        std = torch.ones_like(std)
     if policy == 'mask':
         # Exact range also detects constants if reduction rounding gives a tiny std.
         active = (std >= min_std) & (train.amax(0) > train.amin(0))

@@ -114,6 +114,52 @@ class PTPatientBag:
             for start in range(0, slide.rows, chunk_size):
                 yield (slide.path, start, min(start + chunk_size, slide.rows))
 
+    def read_rows(self, rows):
+        """Read an explicit list of row indices across the whole patient bag.
+
+        This is the batched counterpart of ``read_block``: it resolves every
+        global row to its slide once and copies the rows in a single pass per
+        slide, instead of issuing one block read per row.
+        """
+        if not self._mapped:
+            raise ValueError('Single-view bag is closed')
+        if not isinstance(rows, (list, tuple, range)) or len(rows) == 0:
+            raise ValueError('read_rows needs a nonempty sequence of row indices')
+        offsets, cursor = [], 0
+        for slide in self._slides:
+            offsets.append((slide.path, cursor, cursor+slide.rows))
+            cursor += slide.rows
+        pieces = []
+        for row in rows:
+            if type(row) is not int or not 0 <= row < cursor:
+                raise ValueError('Row index is outside the patient bag')
+            for path, base, stop in offsets:
+                if base <= row < stop:
+                    slide = self._by_path[path]
+                    if _stamp(path) != slide.stamp:
+                        raise ValueError('Single-view feature file changed after verification')
+                    pieces.append((path, row-base))
+                    break
+            else:
+                raise ValueError('Row index is outside the patient bag')
+        grouped = {}
+        for path, local in pieces:
+            grouped.setdefault(path, []).append(local)
+        arrays = []
+        for path, locals_ in grouped.items():
+            slide = self._by_path[path]
+            if _stamp(path) != slide.stamp:
+                raise ValueError('Single-view feature file changed after verification')
+            tensor = self._mapped[path]
+            index = torch.as_tensor(locals_, dtype=torch.long)
+            arrays.append(tensor.index_select(0, index).to(dtype=torch.float32, copy=True))
+            if _stamp(path) != slide.stamp:
+                raise ValueError('Single-view feature file changed during block read')
+        stacked = torch.cat(arrays, dim=0)
+        if not torch.isfinite(stacked).all():
+            raise ValueError('Nonfinite or float32-overflow features in single-view block')
+        return stacked
+
     def read_block(self, token, names):
         if not self._mapped:
             raise ValueError('Single-view bag is closed')

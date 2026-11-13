@@ -104,7 +104,7 @@ def validate_config(cfg, view_source, patient_batch_size, chunk_size):
             or not math.isfinite(cfg.interaction_strength) or cfg.interaction_strength < 0
             or not math.isfinite(cfg.match_temperature) or cfg.match_temperature <= 0
             or not math.isfinite(cfg.rna_min_std) or cfg.rna_min_std <= 0
-            or cfg.rna_scale_policy not in ('mask', 'clamp')
+            or cfg.rna_scale_policy not in ('mask', 'clamp', 'none')
             or not math.isfinite(cfg.strength) or cfg.strength < 0
             or not math.isfinite(cfg.min_weight) or not 0 < cfg.min_weight <= 1):
         raise ValueError('Invalid pathway training configuration')
@@ -305,7 +305,15 @@ def pathway_stream_forward(model, bags, rna, chunk_size=2048, view_source='featu
     return output
 
 
-def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_seed, *, return_components=False):
+def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_seed, *,
+                      return_components=False, survival_loss=None):
+    """Compute the pathway objective.
+
+    ``survival_loss`` overrides only the survival likelihood term; it receives
+    the raw model output and the batch and must return a scalar.  The default
+    is the continuous-time piecewise likelihood.  The auxiliary terms, their
+    weights and their diagnostics are identical in both cases.
+    """
     weights = effective_weights(cfg)
     use_views = any(weights.values())
     rna = batch['rna']
@@ -314,7 +322,8 @@ def pathway_objective(model, batch, starts, cfg, chunk_size, view_source, view_s
                                     include_views=use_views, include_patch=bool(weights['patch_within']),
                                     rna_views=rna_views, feature_noise=cfg.feature_noise,
                                     view_seed=view_seed)
-    loss = piecewise_nll(output['log_rates'], batch['time'], batch['event'], starts)
+    loss = (piecewise_nll(output['log_rates'], batch['time'], batch['event'], starts)
+            if survival_loss is None else survival_loss(output['log_rates'], batch))
     components = {'survival': loss}
     stats = {'patients': len(rna), 'train_nll': loss.detach().item(),
              'common_skipped': False, 'common_skip_reason': None,
