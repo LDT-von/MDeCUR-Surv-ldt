@@ -1,0 +1,786 @@
+{
+  "evidence": "CPU uncensored synthetic learnability and failure-boundary study only",
+  "production_component": "cancer_dense_model.CenteredTokenInteraction",
+  "protocol": {
+    "scenarios": [
+      "xor",
+      "redundancy",
+      "path_only",
+      "null"
+    ],
+    "seeds": [
+      17,
+      29,
+      43
+    ],
+    "n_train_per_scenario_seed": 4096,
+    "n_independent_test": 8192,
+    "full_batch_training_steps": 300,
+    "optimizer": "Adam",
+    "learning_rate": 0.03,
+    "weight_decay": 0.001,
+    "input_shape": "[patients, 1 token, 2 features: signed bit and independent Gaussian nuisance]",
+    "head_hidden": 8,
+    "joint_extra_parameters": 48,
+    "event_time_bins": 2,
+    "censoring": "none; all observations have an event in bin 0 or 1",
+    "event_probability": "P(event_bin=0)=0.1+0.8*risk_bit; null case probability=0.5",
+    "loss": "categorical NLL over two exhaustive event-time bins; NOT parity hazard loss/alpha weighting",
+    "checkpoint_selection": "none; final step only, no test or validation selection",
+    "rna_intervention": "one prespecified random single-cycle patient derangement of the entire RNA token",
+    "test_used_during_optimization": false
+  },
+  "records": [
+    {
+      "scenario": "xor",
+      "seed": 17,
+      "data_seeds": {
+        "train": 20278115,
+        "test": 20278116,
+        "rna_permutation": 20278117,
+        "model": 20278118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "1cbf65e8dafbe0cf3206f675f8a0b9926f5c9e18c4f7e0fb025a1974266f79c8",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7658327221870422,
+          "last_pre_update_training_nll": 0.6911652684211731,
+          "final_training_nll": 0.6911651105981409,
+          "test_nll": 0.694282454257087,
+          "test_full_rna_deranged_nll": 0.695133477034765,
+          "test_oracle_nll": 0.3277114997909629,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "97dda684d915b43ff4832120dff721d72c15173b5afb8acf961985b49654133c"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.7865638732910156,
+          "last_pre_update_training_nll": 0.32754337787628174,
+          "final_training_nll": 0.327543784443342,
+          "test_nll": 0.3286812590846582,
+          "test_full_rna_deranged_nll": 1.2097250680956055,
+          "test_oracle_nll": 0.3277114997909629,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "581d0c71468396d56483069bbf6520e9d65a28ffe999311a760c046f01e71630"
+        }
+      },
+      "joint_minus_additive_test_nll": -0.36560119517242884,
+      "joint_deranged_minus_original_test_nll": 0.8810438090109474
+    },
+    {
+      "scenario": "xor",
+      "seed": 29,
+      "data_seeds": {
+        "train": 20290115,
+        "test": 20290116,
+        "rna_permutation": 20290117,
+        "model": 20290118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "f6f88c72d3c48c024767255cc1814b83499317aff68e5e2320f70db9f86406a8",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7120140790939331,
+          "last_pre_update_training_nll": 0.6929771900177002,
+          "final_training_nll": 0.6929771403898121,
+          "test_nll": 0.6933017936686374,
+          "test_full_rna_deranged_nll": 0.693153317661614,
+          "test_oracle_nll": 0.32663863650166963,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "b810e15360634bc0da3eb786c49d1a132f8c7ee278b05c8778db95ec11f338d2"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.7573806047439575,
+          "last_pre_update_training_nll": 0.3381292223930359,
+          "final_training_nll": 0.33812928771366824,
+          "test_nll": 0.3273120231016482,
+          "test_full_rna_deranged_nll": 1.1661772238545214,
+          "test_oracle_nll": 0.32663863650166963,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "a25e3fc0829a6a6243a48cd0cbf59432e7d14a7ea88c1bb319f731757a097dfe"
+        }
+      },
+      "joint_minus_additive_test_nll": -0.3659897705669892,
+      "joint_deranged_minus_original_test_nll": 0.8388652007528732
+    },
+    {
+      "scenario": "xor",
+      "seed": 43,
+      "data_seeds": {
+        "train": 20304115,
+        "test": 20304116,
+        "rna_permutation": 20304117,
+        "model": 20304118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "2bf3187c45e61d86c4455b8f7ea2fd80228cd8f3acdf0a2c24439531c22c34f9",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7021960020065308,
+          "last_pre_update_training_nll": 0.6920345425605774,
+          "final_training_nll": 0.6920345627376638,
+          "test_nll": 0.6939042194376327,
+          "test_full_rna_deranged_nll": 0.6934550419621114,
+          "test_oracle_nll": 0.3306618743208261,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "94890008858544897f82d1222832b75e1bf6441d1acca08b62ccc3116c4c7120"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.689250648021698,
+          "last_pre_update_training_nll": 0.3329409956932068,
+          "final_training_nll": 0.3329409838557026,
+          "test_nll": 0.3315590280289294,
+          "test_full_rna_deranged_nll": 1.1488432632634282,
+          "test_oracle_nll": 0.3306618743208261,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "235346544c5a0a8993d4442924210aed7382920ab9dfbc57607df7da8da04bbc"
+        }
+      },
+      "joint_minus_additive_test_nll": -0.3623451914087033,
+      "joint_deranged_minus_original_test_nll": 0.8172842352344989
+    },
+    {
+      "scenario": "redundancy",
+      "seed": 17,
+      "data_seeds": {
+        "train": 20378115,
+        "test": 20378116,
+        "rna_permutation": 20378117,
+        "model": 20378118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "ddd6a067cdf2a9da79d545af326c31d16a218df88b3f6d344cd28c4363862291",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7081255316734314,
+          "last_pre_update_training_nll": 0.336310476064682,
+          "final_training_nll": 0.3363103157038655,
+          "test_nll": 0.3290425863785171,
+          "test_full_rna_deranged_nll": 0.5836570500489404,
+          "test_oracle_nll": 0.3274432856736898,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "09e903a2404b1de7032b1928d37432ec04c53cd75e0dadc5b9a96eacf97a18b2"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.7281267642974854,
+          "last_pre_update_training_nll": 0.33533576130867004,
+          "final_training_nll": 0.33533576840115364,
+          "test_nll": 0.33120098174854024,
+          "test_full_rna_deranged_nll": 0.617216317037019,
+          "test_oracle_nll": 0.3274432856736898,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "33bd35b554906dc7aed230c21e01f33e18edf4f6a5a2cf3f657664f0032af9ff"
+        }
+      },
+      "joint_minus_additive_test_nll": 0.0021583953700231584,
+      "joint_deranged_minus_original_test_nll": 0.2860153352884787
+    },
+    {
+      "scenario": "redundancy",
+      "seed": 29,
+      "data_seeds": {
+        "train": 20390115,
+        "test": 20390116,
+        "rna_permutation": 20390117,
+        "model": 20390118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "128f457eeb4490cd575aeb69ba6cd844198501d99a06ee21786730168ab95b3b",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.547420859336853,
+          "last_pre_update_training_nll": 0.31262797117233276,
+          "final_training_nll": 0.31262793414150936,
+          "test_nll": 0.32536480254418226,
+          "test_full_rna_deranged_nll": 0.439884823465256,
+          "test_oracle_nll": 0.32368826264180117,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "77fe92e0653da72397d43bc7946c6c2cc8c3c8ff0e3e6bcfa67f9c273b7764a4"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.5398335456848145,
+          "last_pre_update_training_nll": 0.3126157224178314,
+          "final_training_nll": 0.312615500602211,
+          "test_nll": 0.32537182507009443,
+          "test_full_rna_deranged_nll": 0.4391853796590731,
+          "test_oracle_nll": 0.32368826264180117,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "864e9768b63b99e1fc655f30419fe8cae86025f6c857d9aa7e9242308d505cbb"
+        }
+      },
+      "joint_minus_additive_test_nll": 7.022525912170341e-06,
+      "joint_deranged_minus_original_test_nll": 0.11381355458897868
+    },
+    {
+      "scenario": "redundancy",
+      "seed": 43,
+      "data_seeds": {
+        "train": 20404115,
+        "test": 20404116,
+        "rna_permutation": 20404117,
+        "model": 20404118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "062aaefc2e751abdd53eccf236c81f130e5b335044c1ac0098f6a1259ed63fce",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.9291166663169861,
+          "last_pre_update_training_nll": 0.3227981925010681,
+          "final_training_nll": 0.32279785840812114,
+          "test_nll": 0.315154959011238,
+          "test_full_rna_deranged_nll": 0.49513850143092913,
+          "test_oracle_nll": 0.3137642733183986,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "3c4b63e0c1926e001a2425be5bbf8ea3c0d35d23f56044a39f7767714b6e28f7"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.9389225840568542,
+          "last_pre_update_training_nll": 0.32279592752456665,
+          "final_training_nll": 0.32279563053389754,
+          "test_nll": 0.3151536128469903,
+          "test_full_rna_deranged_nll": 0.4961722407203546,
+          "test_oracle_nll": 0.3137642733183986,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "1b06fc5b14d2a9993993a7d0688577b08a36f878c59300503c0f5d63cf12137a"
+        }
+      },
+      "joint_minus_additive_test_nll": -1.3461642477397007e-06,
+      "joint_deranged_minus_original_test_nll": 0.1810186278733643
+    },
+    {
+      "scenario": "path_only",
+      "seed": 17,
+      "data_seeds": {
+        "train": 20478115,
+        "test": 20478116,
+        "rna_permutation": 20478117,
+        "model": 20478118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "73fdd0129e9a7e8761d08accf6000d9953214f4170e60c3cac3cd126f70b5609",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7430775761604309,
+          "last_pre_update_training_nll": 0.3257285952568054,
+          "final_training_nll": 0.3257289141101292,
+          "test_nll": 0.3160676818355595,
+          "test_full_rna_deranged_nll": 0.3160721960551865,
+          "test_oracle_nll": 0.31564178313914576,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "23671365786dd5f9d61dcc68b55e3313e18b8c44da01e7bc6ac48c911301442e"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.745783269405365,
+          "last_pre_update_training_nll": 0.325454443693161,
+          "final_training_nll": 0.32545473938096137,
+          "test_nll": 0.3160264604280244,
+          "test_full_rna_deranged_nll": 0.31624101561168555,
+          "test_oracle_nll": 0.31564178313914576,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "eeb2a02e6d1069ef18cb234a6b9876cf24f216c3cc05ae4c985925286048e5d2"
+        }
+      },
+      "joint_minus_additive_test_nll": -4.1221407535096954e-05,
+      "joint_deranged_minus_original_test_nll": 0.000214555183661147
+    },
+    {
+      "scenario": "path_only",
+      "seed": 29,
+      "data_seeds": {
+        "train": 20490115,
+        "test": 20490116,
+        "rna_permutation": 20490117,
+        "model": 20490118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "9513594f748d8024090741e37c62fac08a272121fd599a832a39c301f6241218",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.5317754149436951,
+          "last_pre_update_training_nll": 0.34708720445632935,
+          "final_training_nll": 0.34708714362618104,
+          "test_nll": 0.3209494125691711,
+          "test_full_rna_deranged_nll": 0.3211529796765218,
+          "test_oracle_nll": 0.3193968083376532,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "1f2f74d6326fee87cd060e8a8f07881ca0a718fbac388cb17883a60070398fa4"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.5402292609214783,
+          "last_pre_update_training_nll": 0.3467477858066559,
+          "final_training_nll": 0.34674777070093793,
+          "test_nll": 0.32120135091226903,
+          "test_full_rna_deranged_nll": 0.3212173122676897,
+          "test_oracle_nll": 0.3193968083376532,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "9daeeb3cf48fb976d6c08661cf5460903eea714e8c6531cd89e8a6c5d2a84850"
+        }
+      },
+      "joint_minus_additive_test_nll": 0.00025193834309794605,
+      "joint_deranged_minus_original_test_nll": 1.596135542064614e-05
+    },
+    {
+      "scenario": "path_only",
+      "seed": 43,
+      "data_seeds": {
+        "train": 20504115,
+        "test": 20504116,
+        "rna_permutation": 20504117,
+        "model": 20504118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "832cd5637b5c304a437702462fe9c25b2d3f53044b3fb0637a01ab4ba0a097e5",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7467137575149536,
+          "last_pre_update_training_nll": 0.3377849757671356,
+          "final_training_nll": 0.33778518163189214,
+          "test_nll": 0.32381898577520296,
+          "test_full_rna_deranged_nll": 0.32364510374870936,
+          "test_oracle_nll": 0.3231518291625011,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "d256d787b3c824620986282ba47d932668fd6259616f4f6fac2eb39b9eed1a8d"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.752208948135376,
+          "last_pre_update_training_nll": 0.33755019307136536,
+          "final_training_nll": 0.33755039965110056,
+          "test_nll": 0.3239627029454294,
+          "test_full_rna_deranged_nll": 0.323697413929791,
+          "test_oracle_nll": 0.3231518291625011,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "86f8aae3ba9d1c3c6ad4fd02f2d5bae45d08c3e61eb29828d5e065480a3295f0"
+        }
+      },
+      "joint_minus_additive_test_nll": 0.0001437171702264317,
+      "joint_deranged_minus_original_test_nll": -0.00026528901563838136
+    },
+    {
+      "scenario": "null",
+      "seed": 17,
+      "data_seeds": {
+        "train": 20578115,
+        "test": 20578116,
+        "rna_permutation": 20578117,
+        "model": 20578118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "5c266f0fb9fd2fc52817768dfe69a4ec58860c693486687574fc9f6b6976ef03",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7009844183921814,
+          "last_pre_update_training_nll": 0.6910712122917175,
+          "final_training_nll": 0.6910712495265533,
+          "test_nll": 0.6941240815008032,
+          "test_full_rna_deranged_nll": 0.6947893094411665,
+          "test_oracle_nll": 0.6931471805599453,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "1f688bc906add6b3064ae27f2fb4541cb02200f2a6ce02f47ea4a9cd3a57322b"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.7055736184120178,
+          "last_pre_update_training_nll": 0.6908463835716248,
+          "final_training_nll": 0.6908463790201502,
+          "test_nll": 0.6943095267407764,
+          "test_full_rna_deranged_nll": 0.6949810341114842,
+          "test_oracle_nll": 0.6931471805599453,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "c12f1a514a37dae515a9771e1bfabb21ed87bb465dd4da42eb07ed04f2316352"
+        }
+      },
+      "joint_minus_additive_test_nll": 0.00018544523997321427,
+      "joint_deranged_minus_original_test_nll": 0.0006715073707077579
+    },
+    {
+      "scenario": "null",
+      "seed": 29,
+      "data_seeds": {
+        "train": 20590115,
+        "test": 20590116,
+        "rna_permutation": 20590117,
+        "model": 20590118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "e015e64bab47b3a29b7f2a3dca33956e389d7417e8d98ec70b03e2719c642762",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.8014715313911438,
+          "last_pre_update_training_nll": 0.6920176148414612,
+          "final_training_nll": 0.6920175777867532,
+          "test_nll": 0.6936563641960234,
+          "test_full_rna_deranged_nll": 0.6929307204413452,
+          "test_oracle_nll": 0.6931471805599453,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "d629d96da50861f3bf7098eaa7cf7aea733cfd7fb55ce14650e8bac8a2ab5934"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.8036909103393555,
+          "last_pre_update_training_nll": 0.6912896037101746,
+          "final_training_nll": 0.6912895822855358,
+          "test_nll": 0.6944775376644726,
+          "test_full_rna_deranged_nll": 0.6930051860446121,
+          "test_oracle_nll": 0.6931471805599453,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "7065797ff478952d24bcc0a5fd7ac20cd3472c43d1696985793681b01c9c28a7"
+        }
+      },
+      "joint_minus_additive_test_nll": 0.0008211734684492322,
+      "joint_deranged_minus_original_test_nll": -0.0014723516198604791
+    },
+    {
+      "scenario": "null",
+      "seed": 43,
+      "data_seeds": {
+        "train": 20604115,
+        "test": 20604116,
+        "rna_permutation": 20604117,
+        "model": 20604118
+      },
+      "paired_additive_initialization": true,
+      "full_rna_derangement_fixed_points": 0,
+      "derangement_sha256": "697a74b90064bc82b2f04563f3b3c388427570fac584e50a5b8caa8bd2d4f7d0",
+      "arms": {
+        "additive": {
+          "parameters": 84,
+          "initial_training_nll": 0.7125228643417358,
+          "last_pre_update_training_nll": 0.6917555928230286,
+          "final_training_nll": 0.6917553199590514,
+          "test_nll": 0.6942614814753366,
+          "test_full_rna_deranged_nll": 0.6939467696538817,
+          "test_oracle_nll": 0.6931471805599453,
+          "training_reference_updates": 0,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "90cec226dc763f62e3763f746ae970ab5440f5f6343ef9fa330102363adc6755"
+        },
+        "additive_plus_token_product": {
+          "parameters": 132,
+          "initial_training_nll": 0.7128729820251465,
+          "last_pre_update_training_nll": 0.690750777721405,
+          "final_training_nll": 0.6907504725862541,
+          "test_nll": 0.6955758061720156,
+          "test_full_rna_deranged_nll": 0.6946239232899143,
+          "test_oracle_nll": 0.6931471805599453,
+          "training_reference_updates": 300,
+          "evaluation_state_unchanged": true,
+          "final_state_sha256": "37a66aafdc09d5d802a70572fdd73d11462d54b7b81c4f82ed21a190ad2b7fb0"
+        }
+      },
+      "joint_minus_additive_test_nll": 0.0013143246966790256,
+      "joint_deranged_minus_original_test_nll": -0.0009518828821013514
+    }
+  ],
+  "summary": {
+    "xor": {
+      "joint_minus_additive_test_nll": {
+        "mean": -0.36464538571604044,
+        "min": -0.3659897705669892,
+        "max": -0.3623451914087033,
+        "sample_std": 0.002001478977642313
+      },
+      "arms": {
+        "additive": {
+          "test_nll": {
+            "mean": 0.6938294891211191,
+            "min": 0.6933017936686374,
+            "max": 0.694282454257087,
+            "sample_std": 0.0004945829178097911
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.6939139455528301,
+            "min": 0.693153317661614,
+            "max": 0.695133477034765,
+            "sample_std": 0.0010668655796070852
+          },
+          "test_oracle_nll": {
+            "mean": 0.3283373368711529,
+            "min": 0.32663863650166963,
+            "max": 0.3306618743208261,
+            "sample_std": 0.002083354188701064
+          }
+        },
+        "additive_plus_token_product": {
+          "test_nll": {
+            "mean": 0.3291841034050786,
+            "min": 0.3273120231016482,
+            "max": 0.3315590280289294,
+            "sample_std": 0.002167695094108484
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 1.174915185071185,
+            "min": 1.1488432632634282,
+            "max": 1.2097250680956055,
+            "sample_std": 0.03136737978495767
+          },
+          "test_oracle_nll": {
+            "mean": 0.3283373368711529,
+            "min": 0.32663863650166963,
+            "max": 0.3306618743208261,
+            "sample_std": 0.002083354188701064
+          }
+        }
+      }
+    },
+    "redundancy": {
+      "joint_minus_additive_test_nll": {
+        "mean": 0.000721357243895863,
+        "min": -1.3461642477397007e-06,
+        "max": 0.0021583953700231584,
+        "sample_std": 0.0012445185577970841
+      },
+      "arms": {
+        "additive": {
+          "test_nll": {
+            "mean": 0.32318744931131244,
+            "min": 0.315154959011238,
+            "max": 0.3290425863785171,
+            "sample_std": 0.0071952900427026565
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.5062267916483751,
+            "min": 0.439884823465256,
+            "max": 0.5836570500489404,
+            "sample_std": 0.07252465731851
+          },
+          "test_oracle_nll": {
+            "mean": 0.32163194054462985,
+            "min": 0.3137642733183986,
+            "max": 0.3274432856736898,
+            "sample_std": 0.007067544848074076
+          }
+        },
+        "additive_plus_token_product": {
+          "test_nll": {
+            "mean": 0.3239088065552083,
+            "min": 0.3151536128469903,
+            "max": 0.33120098174854024,
+            "sample_std": 0.00812310467412447
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.5175246458054822,
+            "min": 0.4391853796590731,
+            "max": 0.617216317037019,
+            "sample_std": 0.09091588182549326
+          },
+          "test_oracle_nll": {
+            "mean": 0.32163194054462985,
+            "min": 0.3137642733183986,
+            "max": 0.3274432856736898,
+            "sample_std": 0.007067544848074076
+          }
+        }
+      }
+    },
+    "path_only": {
+      "joint_minus_additive_test_nll": {
+        "mean": 0.00011814470192976027,
+        "min": -4.1221407535096954e-05,
+        "max": 0.00025193834309794605,
+        "sample_std": 0.00014824345921117462
+      },
+      "arms": {
+        "additive": {
+          "test_nll": {
+            "mean": 0.32027869339331116,
+            "min": 0.3160676818355595,
+            "max": 0.32381898577520296,
+            "sample_std": 0.003918938166242574
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.32029009316013923,
+            "min": 0.3160721960551865,
+            "max": 0.32364510374870936,
+            "sample_std": 0.003859489938938901
+          },
+          "test_oracle_nll": {
+            "mean": 0.3193968068797667,
+            "min": 0.31564178313914576,
+            "max": 0.3231518291625011,
+            "sample_std": 0.0037550230116778953
+          }
+        },
+        "additive_plus_token_product": {
+          "test_nll": {
+            "mean": 0.32039683809524094,
+            "min": 0.3160264604280244,
+            "max": 0.3239627029454294,
+            "sample_std": 0.0040288232746471435
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.32038524726972206,
+            "min": 0.31624101561168555,
+            "max": 0.323697413929791,
+            "sample_std": 0.0037971987161845512
+          },
+          "test_oracle_nll": {
+            "mean": 0.3193968068797667,
+            "min": 0.31564178313914576,
+            "max": 0.3231518291625011,
+            "sample_std": 0.0037550230116778953
+          }
+        }
+      }
+    },
+    "null": {
+      "joint_minus_additive_test_nll": {
+        "mean": 0.0007736478017004907,
+        "min": 0.00018544523997321427,
+        "max": 0.0013143246966790256,
+        "sample_std": 0.0005659383567960704
+      },
+      "arms": {
+        "additive": {
+          "test_nll": {
+            "mean": 0.6940139757240544,
+            "min": 0.6936563641960234,
+            "max": 0.6942614814753366,
+            "sample_std": 0.000317228926779937
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.6938889331787977,
+            "min": 0.6929307204413452,
+            "max": 0.6947893094411665,
+            "sample_std": 0.0009306433586244311
+          },
+          "test_oracle_nll": {
+            "mean": 0.6931471805599453,
+            "min": 0.6931471805599453,
+            "max": 0.6931471805599453,
+            "sample_std": 0.0
+          }
+        },
+        "additive_plus_token_product": {
+          "test_nll": {
+            "mean": 0.6947876235257548,
+            "min": 0.6943095267407764,
+            "max": 0.6955758061720156,
+            "sample_std": 0.0006877360180478198
+          },
+          "test_full_rna_deranged_nll": {
+            "mean": 0.6942033811486702,
+            "min": 0.6930051860446121,
+            "max": 0.6949810341114842,
+            "sample_std": 0.001052917691589467
+          },
+          "test_oracle_nll": {
+            "mean": 0.6931471805599453,
+            "min": 0.6931471805599453,
+            "max": 0.6931471805599453,
+            "sample_std": 0.0
+          }
+        }
+      }
+    }
+  },
+  "checks": {
+    "source_unchanged": true,
+    "test_evaluation_preserved_all_model_states": true,
+    "xor_expected_pattern_observed_all_seeds": true,
+    "xor_pattern_threshold_prespecified_nll": 0.1,
+    "other_scenarios_require_joint_win": false
+  },
+  "exact_latent_information_oracles": {
+    "target": "discrete latent oracle, NOT the sampled stochastic event bin",
+    "values": {
+      "xor": {
+        "I_target_path_bits": 0.0,
+        "I_target_rna_bits": 0.0,
+        "I_target_joint_bits": 1.0,
+        "joint_minus_sum_bits": 1.0
+      },
+      "redundancy": {
+        "I_target_path_bits": 1.0,
+        "I_target_rna_bits": 1.0,
+        "I_target_joint_bits": 1.0,
+        "joint_minus_sum_bits": -1.0
+      },
+      "path_only": {
+        "I_target_path_bits": 1.0,
+        "I_target_rna_bits": 0.0,
+        "I_target_joint_bits": 1.0,
+        "joint_minus_sum_bits": 0.0
+      },
+      "redundancy_plus_xor": {
+        "I_target_path_bits": 1.0,
+        "I_target_rna_bits": 1.0,
+        "I_target_joint_bits": 2.0,
+        "joint_minus_sum_bits": 0.0
+      }
+    },
+    "interpretation": "Joint minus marginal MI mixes redundancy and synergy; it is not a pure synergy estimator."
+  },
+  "source_sha256": {
+    "scripts/check_token_cooperation_synthetic.py": "103b7a3c2a520f3d555fec673889e4bfbeb66388a1cf0e28fa990fb0bae9493f",
+    "cancer_dense_model.py": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8"
+  },
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu",
+    "torch_threads": 1,
+    "elapsed_seconds": 22.055974900002184
+  },
+  "limits": [
+    "This isolates one production interaction module, not the complete pathology/RNA framework or its auxiliaries.",
+    "The additive arm has 84 parameters; the joint arm has 132. This is not a parameter-count-matched effect estimate.",
+    "Three independently generated synthetic datasets are not clinical cohorts or independent patient evidence.",
+    "Input pathology tokens here are independent of RNA by construction; the full model can use RNA-conditioned pathology tokens.",
+    "The explicit no-censoring categorical toy differs from the parity discrete-hazard parameterization and alpha weighting.",
+    "Test-time RNA permutation is a distribution intervention, not a retrained-control or a causal effect.",
+    "No strict PID synergy, spatial correspondence, disentanglement, or clinical effectiveness is established."
+  ]
+}

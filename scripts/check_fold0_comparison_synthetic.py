@@ -1,4 +1,4 @@
-"""Exercise both 30-epoch comparison arms on generated data, never patient inputs."""
+"""Exercise full/aux-off/CAMR comparisons on generated data, never patient inputs."""
 import argparse
 from contextlib import redirect_stdout
 import io
@@ -21,7 +21,8 @@ def check(out):
     try:
         plan, sha = case.plan()
         results, paths = {}, []
-        for name in compare.MODELS:
+        names = (compare.DEFAULT_MODEL, 'mdecur_dense_aux_off', 'camr_2m')
+        for name in names:
             directory = case.root/name
             paths.append(directory)
             with redirect_stdout(io.StringIO()):
@@ -32,7 +33,7 @@ def check(out):
             try:
                 bags = [compare.BudgetedPatientBag(b, 4096, 'eval', 3) for b in cohort['val']['bags']]
                 labels = torch.from_numpy(compare.discretize_labels(reference['val'][0], edges))
-                model = (compare.PathwayLocalSurvival(**original['model_kwargs']) if name == 'mdecur_aux_off'
+                model = (compare.DensePathwaySurvival(**original['model_kwargs']) if name in compare.DENSE_MODELS
                          else CAMR2M(6, 8, bins=4))
                 states = {}
                 for selection in ('best', 'last'):
@@ -54,11 +55,11 @@ def check(out):
             finally:
                 compare.close(cohort)
         summary = compare.summarize(paths, case.root/'comparison.json')
-        assert len(summary['rows']) == 4
-        assert results['mdecur_aux_off']['training_sampling_sha256'] == results['camr_2m']['training_sampling_sha256']
-        receipt = {'scope': 'generated synthetic 12 train/4 validation only; no patient or CUDA evidence',
+        assert len(summary['rows']) == 6
+        assert len({r['training_sampling_sha256'] for r in results.values()}) == 1
+        receipt = {'scope': 'generated synthetic 20 train/4 validation only; no patient or CUDA evidence',
                    'results': results, 'common_plan_sha256': sha, 'source_sha256': compare.sources(),
-                   'four_row_summary_verified': True}
+                   'six_row_summary_verified': True}
         compare.write_new(out, receipt)
         return receipt
     finally:

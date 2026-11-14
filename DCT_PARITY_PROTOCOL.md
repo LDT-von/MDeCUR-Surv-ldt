@@ -1,5 +1,7 @@
 # DCT 对齐协议（DCT Parity Protocol）
 
+> **2026-11-14 默认主方法更新**：当前 `train_pathway_parity.py` 默认完整dense模型及全部辅助。下面记录的是原始参考/历史aux-off实验；历史架构复现还须显式 `--legacy-architecture`，不把aux-off作为主方法。新的一折同协议比较、评估时间对齐审计及服务器命令见 `FULL_DENSE_TOKEN_PROTOCOL_20261114.md`。
+
 本文件说明本仓库的 `train_pathway_parity.py` 采用的**参考协议**：切分、生存终点、
 时间离散化、损失、patch 预算、RNA 预处理、计分口径与模型选择规则。
 目标是让本仓库的**数据处理与计分口径**与参考实现 `DCT-Reg` 完全一致，
@@ -148,7 +150,7 @@ python train_pathway_parity.py \
   --pathways /data1/decur_runs/PARITY_DCT_FOLD0/combine_signatures.gmt \
   --out /data1/decur_runs/PARITY_DCT_FOLD0/run_smoke \
   --num-patches 4096 --n-bins 4 --alpha-surv 0.5 --epochs 2 \
-  --patient-batch-size 8 --patch-chunk-size 4096 --disable-auxiliary \
+  --patient-batch-size 8 --patch-chunk-size 4096 --legacy-architecture --disable-auxiliary \
   --rna-scale-policy none \
   --endpoint DSS --time-unit months --split-name "5fold/blca/fold_0 (legacy_val)" \
   --device cuda

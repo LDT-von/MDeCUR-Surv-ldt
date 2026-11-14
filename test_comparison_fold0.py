@@ -38,11 +38,14 @@ class Fold0ComparisonTest(unittest.TestCase):
         self.addCleanup(self.env.stop)
         g = torch.Generator().manual_seed(18)
         rows = []
-        for i in range(16):
-            torch.save(torch.randn(4+i % 3, 6, generator=g), self.root/f'p{i}.pt')
+        for i in range(24):
+            # Patient-level offsets ensure the generated bags have real
+            # between-patient variation, not a common Gaussian bag mean.
+            patches = torch.randn(4096+i % 3, 6, generator=g)+3*torch.randn(1, 6, generator=g)
+            torch.save(patches, self.root/f'p{i}.pt')
             np.save(self.root/f'g{i}.npy', torch.randn(8, generator=g).numpy())
-            split = 'train' if i < 12 else 'val'
-            t = i+1 if i < 12 else [2.5, 4.5, 7.5, 10.5][i-12]
+            split = 'train' if i < 20 else 'val'
+            t = i+1 if i < 20 else [2.5, 7.5, 12.5, 18.5][i-20]
             rows.append([f'p{i}', split, f'p{i}.pt', f'g{i}.npy', t, 1])
         self.manifest, self.reference = self.root/'manifest.csv', self.root/'survival_reference.csv'
         with self.manifest.open('w', newline='', encoding='utf-8') as handle:
@@ -64,9 +67,10 @@ class Fold0ComparisonTest(unittest.TestCase):
                          'num_patches': 4096, 'config': {'seed': 3, 'epochs': 30, 'rna_scale_policy': 'none'},
                          'history': [{}]*30, 'effective_loss_weights': {'any': 0.},
                          'manifest_sha256': compare.digest(self.manifest), 'cohort_input_sha256': fingerprint,
-                         'patients': {'train': 12, 'val': 4}, 'events': {'train': 12, 'val': 4},
-                         'bin_edges': [_json_float(x) for x in dct_bin_edges(np.arange(1, 13), np.ones(12))],
-                         'model_kwargs': dict(path_dim=6, rna_dim=8, pathway_indices=[[0, 1, 2], [3, 4, 5]],
+                         'patients': {'train': 20, 'val': 4}, 'events': {'train': 20, 'val': 4},
+                         'bin_edges': [_json_float(x) for x in dct_bin_edges(np.arange(1, 21), np.ones(20))],
+                         'model_kwargs': dict(path_dim=6, rna_dim=8, pathway_indices=[
+                             [j, (j+1) % 8, (j+3) % 8] for j in range(8)]+[[0, 2, 4], [1, 3, 5]],
                                               hidden=16, common=8, local_dim=8, local_common=4, bins=4,
                                               interaction_strength=.2, match_temperature=.2)}
         self.save_report()
@@ -85,9 +89,11 @@ class Fold0ComparisonTest(unittest.TestCase):
         plan = json.loads(path.read_text(encoding='utf-8'))
         self.assertEqual(plan['settings']['fold'], 0)
         self.assertEqual(plan['settings']['epochs'], 30)
-        self.assertEqual(plan['inputs']['patients'], {'train': 12, 'val': 4})
+        self.assertEqual(plan['inputs']['patients'], {'train': 20, 'val': 4})
         self.assertEqual(plan['inputs']['bin_edges'], self.original['bin_edges'])
-        self.assertEqual(plan['available_models'], ['mdecur_aux_off', 'camr_2m'])
+        self.assertEqual(plan['available_models'][0], 'mdecur_full_dense')
+        self.assertTrue(all(plan['full_model_config'][name] > 0 for name in compare.DENSE_LOSS_NAMES))
+        self.assertEqual(plan['settings']['patient_batch_size'], 20)
         self.assertIn('murrenet', plan['unavailable_models'])
 
     def test_test_rows_rejected_before_opening_missing_feature(self):
@@ -111,9 +117,12 @@ class Fold0ComparisonTest(unittest.TestCase):
             self.assertTrue((out/'checkpoint_best.pt').is_file())
             self.assertTrue((out/'checkpoint_last.pt').is_file())
             self.assertEqual((out/'val_predictions_best.csv').read_bytes(), (out/'val_predictions_last.csv').read_bytes())
-        self.assertEqual(reports[0]['training_sampling_sha256'], reports[1]['training_sampling_sha256'])
-        self.assertIn('adversarial', reports[1]['history'][0]['train_terms'])
-        self.assertTrue(reports[1]['metadata']['fake_CNA_used'] is False)
+        self.assertEqual(len({r['training_sampling_sha256'] for r in reports}), 1)
+        self.assertIn('adversarial', reports[-1]['history'][0]['train_terms'])
+        self.assertTrue(reports[-1]['metadata']['fake_CNA_used'] is False)
+        self.assertEqual(len(reports[0]['history'][0]['train_terms']), 16)
+        self.assertEqual(reports[1]['history'][0]['train_terms'].keys(), {'survival'})
+        self.assertIn('finite_edge_audit', reports[0]['best_validation'])
         with self.assertRaisesRegex(ValueError, 'incomplete/smoke'):
             compare.summarize([self.root/m for m in compare.MODELS], self.root/'summary.json')
 
@@ -189,11 +198,12 @@ class Fold0ComparisonTest(unittest.TestCase):
                             '--out', str(plan_path)], capture_output=True, text=True, env=env)
         self.assertEqual(p.returncode, 0, p.stderr)
         p = subprocess.run([sys.executable, str(script), 'run', '--plan', str(plan_path),
-                            '--plan-sha256', compare.digest(plan_path), '--model', 'camr_2m',
+                            '--plan-sha256', compare.digest(plan_path),
                             '--device', 'cpu', '--smoke', '--out', str(output)],
                            capture_output=True, text=True, env=env)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertTrue((output/'report.json').exists())
+        self.assertEqual(json.loads((output/'report.json').read_text())['model_id'], 'mdecur_full_dense')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,10 @@
+{
+  "scope": "Known independent token populations, no training or patient data",
+  "seed": 17,
+  "tokens_per_modality": 512,
+  "raw_index_paired_mean_diagonal": -0.006926755420863628,
+  "nearest_neighbor_mean_diagonal": 0.9997616410255432,
+  "shared_latent_tokens_by_construction": false,
+  "conclusion": "High post-matching common correlation is not evidence of common biological information.",
+  "limits": "Within-patient token geometry demonstration, not a clinical null test or proof every match is spurious."
+}

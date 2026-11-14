@@ -22,24 +22,42 @@ from cancer_parity import (_json_float, dct_bin_edges, discretize_labels, discre
                            discrete_survival, dct_risk, parity_metrics)
 from cancer_parity_bag import BudgetedPatientBag
 from cancer_pathway import PathwayLocalSurvival
-from cancer_pathway_stream import PathwayConfig, pathway_stream_forward
+from cancer_pathway_stream import (PathwayConfig, pathway_stream_forward, patient_batches,
+                                   minimum_batch_size, validate_config, effective_weights)
+from cancer_dense_model import (DensePathwaySurvival, DensePathwayConfig, DENSE_LOSS_NAMES,
+                                dense_pathway_objective, dense_weights, disable_all_auxiliary,
+                                require_full_auxiliary)
 from cancer_rna import fit_rna_scaler, transform_rna
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 
 
-MODELS = ('mdecur_aux_off', 'camr_2m')
+DEFAULT_MODEL = 'mdecur_full_dense'
+MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'mdecur_aux_off', 'camr_2m')
+DENSE_MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off')
 UNAVAILABLE = {'murrenet': 'Verified author implementation not available; no placeholder model.',
                'mohd': 'Verified author implementation and hierarchical input contract not available.'}
-PROTOCOL = 'blca_legacy_fold0_matched_inputs_v1'
+PROTOCOL = 'blca_fold0_full_dense_v2'
 SETTINGS = dict(fold=0, endpoint='DSS', time_unit='months', seed=3, epochs=30,
-                patient_batch_size=8, num_patches=4096, patch_chunk_size=4096,
+                patient_batch_size=20, num_patches=4096, patch_chunk_size=4096,
                 n_bins=4, alpha_surv=.5, lr=5e-4, weight_decay=5e-4,
                 scheduler='CosineAnnealingLR(T_max=30)', rna_scale_policy='none',
                 selection='maximum validation Harrell C, earliest exact tie',
-                metric_convention='unmodified cancer_parity.py legacy scoring')
+                default_model=DEFAULT_MODEL,
+                metric_convention='legacy scoring plus separately labelled finite-edge audit',
+                batching='same epoch order and merged tail for all arms; minimum B=hidden+1')
 SOURCE_MODULES = ('comparison_fold0', 'comparison_camr', 'cancer_parity', 'cancer_parity_bag',
                   'cancer_pathway', 'cancer_pathway_stream', 'cancer_model', 'cancer_rna',
-                  'cancer_metrics', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream', 'model')
+                  'cancer_metrics', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream', 'model',
+                  'cancer_dense_model', 'cancer_dense_tokens', 'cancer_parity_audit')
+
+
+def full_config(kwargs):
+    dimensions = {key: kwargs[key] for key in ('hidden', 'common', 'local_dim', 'local_common',
+                                              'interaction_strength', 'match_temperature')}
+    cfg = DensePathwayConfig(**dimensions, epochs=30, patience=31, lr=5e-4, weight_decay=5e-4,
+                             seed=3, rna_scale_policy='none')
+    require_full_auxiliary(cfg)
+    return cfg
 
 
 def digest(path):
@@ -156,6 +174,7 @@ def make_plan(manifest, survival_reference, reference_run):
         if os.environ.get('PYTHONHASHSEED') != '0':
             raise ValueError('Start process with PYTHONHASHSEED=0; sampler uses Python hash')
         return {'protocol': PROTOCOL, 'settings': SETTINGS, 'available_models': list(MODELS),
+                'full_model_config': asdict(full_config(report['model_kwargs'])),
                 'unavailable_models': UNAVAILABLE, 'inputs': input_metadata(cohort, reference, edges, report, file_hashes),
                 'source_sha256': sources(), 'python_hash_seed': '0',
                 'sampler_runtime_signature': hash((3001, 'comparison_sampler_signature')),
@@ -182,7 +201,7 @@ def materialize(bags, indices, device):
 
 
 def forward(model_id, model, bags, rna, indices, device):
-    if model_id == 'mdecur_aux_off':
+    if model_id == 'mdecur_aux_off' or model_id in DENSE_MODELS:
         output = pathway_stream_forward(model, [bags[i] for i in indices], rna.to(device),
                                         chunk_size=4096, view_source='feature_noise', checkpoint_chunks=True)
         return {'logits': output['log_rates']}
@@ -199,6 +218,8 @@ def evaluate(model_id, model, data, bags, normalized, labels, reference, edges, 
     logits = torch.cat(logits)
     survival = discrete_survival(logits).numpy()
     result = parity_metrics(*reference['train'], *reference['val'], survival, edges)
+    from cancer_parity_audit import audit_parity_metrics
+    result['finite_edge_audit'] = audit_parity_metrics(*reference['train'], *reference['val'], survival, edges)
     result['validation_nll'] = float(discrete_nll(logits, labels, torch.tensor(1-reference['val'][1]), alpha=.5))
     if result['c_index'] is None:
         raise ValueError('No defined validation Harrell C; keep errors, do not select a substitute metric')
@@ -250,7 +271,23 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
         bags = {s: [BudgetedPatientBag(b, 4096, 'train' if s == 'train' else 'eval', 3)
                     for b in d['bags']] for s, d in cohort.items()}
         labels = {s: torch.from_numpy(discretize_labels(t, edges)) for s, (t, _) in reference.items()}
-        if model_id == 'mdecur_aux_off':
+        cfg = full_config(original_report['model_kwargs'])
+        minimum = validate_config(cfg, 'feature_noise', SETTINGS['patient_batch_size'], SETTINGS['patch_chunk_size'])
+        # A common schedule, including tail merging, is used even for aux-off/CAMR.
+        patient_batches(torch.arange(len(bags['train'])), SETTINGS['patient_batch_size'], minimum)
+        if model_id in DENSE_MODELS:
+            model = DensePathwaySurvival(**original_report['model_kwargs']).to(device)
+            if model_id == 'mdecur_dense_aux_off':
+                cfg = disable_all_auxiliary(cfg)
+            else:
+                require_full_auxiliary(cfg)
+            metadata = {**model.adaptation_metadata(),
+                        'auxiliary_weights': {**effective_weights(cfg), **dense_weights(cfg, 5)},
+                        'auxiliary_config': asdict(cfg),
+                        'ablation': model_id == 'mdecur_dense_aux_off'}
+            main_parameters = list(model.parameters())
+            d_optimizer = None
+        elif model_id == 'mdecur_aux_off':
             model = PathwayLocalSurvival(**original_report['model_kwargs']).to(device)
             metadata = {'label': 'MDeCUR-aux-off-common-plan', 'auxiliary_weights': {},
                         'adaptations': ['New run under fixed common PYTHONHASHSEED; historical score is not silently reused.']}
@@ -275,13 +312,32 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                 bag.resample(3000+epoch)
                 sample_hash.update(json_hash(bag._rows).encode())
             order = torch.randperm(len(bags['train']), generator=generator)
-            losses, n = {}, 0
-            for selected in order.split(8):
+            losses, n, batch_stats, gradient_records = {}, 0, [], []
+            for number, selected in enumerate(patient_batches(order, SETTINGS['patient_batch_size'], minimum)):
                 indices = selected.tolist()
-                output = forward(model_id, model, bags['train'], normalized['train'][selected], indices, device)
-                survival_loss = discrete_nll(output['logits'], labels['train'][selected].to(device),
-                                             torch.tensor(1-reference['train'][1][indices], device=device), alpha=.5)
-                components = {'survival': survival_loss}
+                if model_id in DENSE_MODELS:
+                    batch = {'bags': [bags['train'][i] for i in indices],
+                             'rna': normalized['train'][selected].to(device),
+                             'time': cohort['train']['time'][selected].to(device),
+                             'event': cohort['train']['event'][selected].to(device),
+                             'rna_mask': scaler['rna_mask'], 'label': labels['train'][selected].to(device),
+                             'censorship': torch.tensor(1-reference['train'][1][indices], device=device)}
+                    def likelihood(logits, current):
+                        return discrete_nll(logits, current['label'], current['censorship'], alpha=.5)
+                    loss, stats, components = dense_pathway_objective(
+                        model, batch, cfg, 4096, 3_000_000+epoch*1000+number, epoch,
+                        survival_loss=likelihood, return_components=True)
+                    batch_stats.append(stats)
+                    if model_id == DEFAULT_MODEL:
+                        required = set(effective_weights(cfg)) | set(DENSE_LOSS_NAMES)
+                        if stats['common_skipped'] or not required.issubset(components):
+                            raise FloatingPointError('Full-model auxiliary missing/skipped; refuse silent disabling')
+                else:
+                    output = forward(model_id, model, bags['train'], normalized['train'][selected], indices, device)
+                    survival_loss = discrete_nll(output['logits'], labels['train'][selected].to(device),
+                                                 torch.tensor(1-reference['train'][1][indices], device=device), alpha=.5)
+                    components = {'survival': survival_loss}
+                    loss = survival_loss
                 if d_optimizer:
                     d_optimizer.zero_grad(set_to_none=True)
                     d_loss = model.discriminator_loss(output)
@@ -296,14 +352,19 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                     auxiliary = model.auxiliary_losses(output)
                     components.update(auxiliary)
                     loss = survival_loss+.6*auxiliary['adversarial']+.8*auxiliary['reconstruction']+.05*auxiliary['orthogonality']
-                else:
-                    loss = survival_loss
                 if not torch.isfinite(loss):
                     raise FloatingPointError('Nonfinite training objective')
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
                 if any(p.grad is not None and not torch.isfinite(p.grad).all() for p in main_parameters):
                     raise FloatingPointError('Nonfinite parameter gradient')
+                if model_id in DENSE_MODELS:
+                    gradient_records.append({name: math.sqrt(sum(float(p.grad.detach().double().square().sum())
+                        for p in module.parameters() if p.grad is not None)) for name, module in
+                        (('local_path_projector', model.local_path_projector),
+                         ('local_rna_projector', model.local_rna_projector),
+                         ('decomposition_head', model.decomposition_head),
+                         ('token_cooperation', model.token_cooperation))})
                 optimizer.step()
                 for name, value in components.items():
                     losses[name] = losses.get(name, 0.)+len(indices)*float(value.detach())
@@ -314,6 +375,8 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
             metrics, survival = evaluate(model_id, model, cohort['val'], bags['val'], normalized['val'],
                                           labels['val'], reference, edges, device)
             history.append({'epoch': epoch, 'train_terms': {k: v/n for k, v in losses.items()},
+                            'patient_batches': [len(x) for x in patient_batches(order, SETTINGS['patient_batch_size'], minimum)],
+                            'auxiliary_batches': batch_stats, 'gradient_norms': gradient_records,
                             'learning_rate_after_step': scheduler.get_last_lr()[0], **metrics})
             print(json.dumps({'model': model_id, **history[-1]}, allow_nan=False), flush=True)
             if best_metrics is None or metrics['c_index'] > best_metrics['c_index']:
@@ -328,7 +391,7 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
         common = {'model_id': model_id, 'metadata': metadata, 'plan_sha256': plan_sha256,
                   'runtime': runtime,
                   'settings': plan['settings'], 'bin_edges': plan['inputs']['bin_edges'],
-                  'native_model_kwargs': original_report['model_kwargs'] if model_id == 'mdecur_aux_off' else None,
+                  'native_model_kwargs': original_report['model_kwargs'] if model_id != 'camr_2m' else None,
                   'rna_dim': plan['inputs']['rna_dim'], 'path_dim': plan['inputs']['path_dim']}
         for label, state, epoch in (('best', best, best_epoch), ('last', last_state, count_epochs)):
             torch.save({**common, 'model_state': state, 'epoch': epoch}, destination/f'checkpoint_{label}.pt')
@@ -370,8 +433,10 @@ def summarize(run_dirs, out):
                          'epoch': record[f'{mode}_epoch'], 'Harrell_C': m['c_index'],
                          'IPCW_C': m['c_index_ipcw'], 'NLL': m['validation_nll'],
                          'Brier': m['brier'], 'IBS_legacy_grid': m['ibs'],
-                         'AUC_legacy_times': m['iauc'], 'metric_times': m['metric_times'], 'errors': m['errors']})
+                         'AUC_legacy_times': m['iauc'], 'metric_times': m['metric_times'], 'errors': m['errors'],
+                         'finite_edge_audit': m.get('finite_edge_audit')})
     result = {'protocol': PROTOCOL, 'plan_sha256': records[0]['plan_sha256'], 'rows': rows,
+              'main_method_present': any(r['model_id'] == DEFAULT_MODEL for r in records),
               'Harrell_C_rankings': {mode: [r['model'] for r in sorted(
                   [x for x in rows if x['selection'] == mode], key=lambda x: -x['Harrell_C'])]
                   for mode in ('best', 'last')},
@@ -394,7 +459,8 @@ def main():
     p = sub.add_parser('run')
     p.add_argument('--plan', required=True)
     p.add_argument('--plan-sha256', required=True)
-    p.add_argument('--model', choices=MODELS+tuple(UNAVAILABLE), required=True)
+    p.add_argument('--model', choices=MODELS+tuple(UNAVAILABLE), default=DEFAULT_MODEL,
+                   help='Full auxiliary+dense model by default; aux-off names are explicit ablations')
     p.add_argument('--out', required=True)
     p.add_argument('--device', default='cpu')
     p.add_argument('--smoke', action='store_true', help='One-epoch engineering check; excluded from comparison')

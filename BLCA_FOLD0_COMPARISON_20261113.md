@@ -1,5 +1,7 @@
 # BLCA 单折同输入、同生存协议比较：服务器交接
 
+> **2026-11-14 已被新主协议取代**：用户要求辅助默认全部开启并加入dense token目标，先读 `FULL_DENSE_TOKEN_PROTOCOL_20261114.md`。下面是V1 aux-off/batch8历史安排，不作为当前主方法默认；不要混用V1与V2计划或分数。
+
 本批只做 **legacy BLCA fold0、seed3、30 epochs**。同时报告每个模型的 **val Harrell C 最高轮**与 **epoch30 末轮**；“最后一个”指这一折的最后一个 epoch，不是 fold4。不自动补其余4折，不使用 outer test，不调参搜索。
 
 ## 代码与源码状态
