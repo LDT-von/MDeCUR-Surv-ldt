@@ -1,5 +1,17 @@
 # 癌症代码仓库的会话接续
 
+**2026-11-16 MorphID 已接入锁定单折比较（可上服务器跑）**：新增 `comparison_morphid.py` 薄适配器，
+`comparison_fold0.py` 的臂清单扩为 5 条：`mdecur_full_dense` / `mdecur_dense_aux_off` / `camr_2m` /
+`morphid` / `morphid_no_interaction`。**已有臂的逻辑、协议常量与指标口径一律未改**。
+MorphID 是冻结式设计：形态基底与患者轴交叉拟合探针在**训练折一次性拟合**（不接受生存标签），
+只有离散生存头参与梯度，因此**每轮 patch 重采样对它无效**（头读缓存的患者级 OOF 特征）；
+此差异写入报告元数据 `per_epoch_patch_resampling_affects_this_arm: false`。
+批次划分、epoch 顺序、合并尾批、optimizer 步数与抽样哈希**与其余臂完全一致**，summary 的调度与
+步数守卫可直接横向比较。簇数 K=4、latent_dim=8、探针折数=4 是**事先固定常量**，不用验证集标签选择；
+低 R² **不作为**"独有"开关；CLR 自由度 K−1；形态基底**不是完全嵌套的交叉验证**。
+合成契约测试 `test_comparison_morphid.py` 8 项通过。**本批仍无患者数据、无 CUDA、无患者分数**——
+只证明接入正确，不证明患者效果。跑之前先读 `README.md` 的"MorphID 的单折接入"一节。
+
 **2026-11-16 目录精简＋MorphID 的发布状态（本批已提交并推送）**：目录精简、共享损失 `decur_losses.py`、新增 `cancer_morphid_model.py` / `morphid_probe.py`、以及三个诊断脚本的源码哈希清单修正（删除 `model.py` 后 `'model'` → `'decur_losses'`，修复 10 项失败）已作为一个提交推送到 origin/main；本地 HEAD／origin/main／`git ls-remote` 三方一致时以实时 Git 为准。**本批只有本地 CPU 生成数据证据，没有患者数据、服务器、CUDA 或临床效果结论**。下一批工作前先读 `MORPHID_SURVIVAL_PROTOCOL_20261116.md` 与父目录 `WORKSPACE_LAYOUT.md`；在服务器上真正跑起来之前，必须先重新生成 plan（清理改变了源码路径与哈希），不得复用清理前的源码哈希。
 
 **MorphID 当前授权路线（2026-11-16）**：用户明确选择非线性核岭＋预测残差，以及先冻结无标签形态/探针表示。新增独立 `cancer_morphid_model.py` 和 `morphid_probe.py`，仅head用生存标签；不继承旧相关辅助，不改原Dense。读取 `MORPHID_SURVIVAL_PROTOCOL_20261116.md`，不要恢复原稿的硬投影/线性S1/低R²即独立等错误判据。只有CPU生成数据机制证据，无患者或服务器执行授权。

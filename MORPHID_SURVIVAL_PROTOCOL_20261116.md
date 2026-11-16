@@ -128,6 +128,20 @@ checkpoint保存冻结bank、探针折模型、预处理、head和版本，不�
 
 本轮没有患者CLI、数据清单生成器或服务器任务；该API先服务本地机制验证。
 
+### 6.1 已接入锁定单折比较（2026-11-16 补充）
+
+`comparison_morphid.py` 是把上述冻结模型接入 `comparison_fold0.py` 的**薄适配器**。
+它不定义新方法、不改已有臂、不改协议常量与指标口径。
+
+- 臂名：`morphid`（含残差×RNA 交互）与 `morphid_no_interaction`（同一模型关交互，用于归因）。
+- 冻结阶段在**训练折**完成：形态原型 → 患者轴交叉拟合探针 → 缓存 OOF 特征。
+  验证/测试患者从不进入原型、标准化、探针折或头；推理时若 ID 与拟合患者重叠则拒绝。
+- 固定常量：K=4、latent_dim=8、探针折=4、交互秩=8。**不用验证集标签选择**。
+- 与其它臂的**唯一结构差异**：MorphID 的头读取缓存 OOF 特征，所以**每轮 patch 重采样对它无效**
+  （元数据 `per_epoch_patch_resampling_affects_this_arm: false`）。
+  批次、epoch 顺序、合并尾批、optimizer 步数、抽样哈希与其它臂**一致**。
+- 合成契约测试 `test_comparison_morphid.py` 8 项；本机**无患者数据、无 CUDA、无患者分数**。
+
 ## 7. 已执行证据
 
 ### 固定探针反例：四项全部通过

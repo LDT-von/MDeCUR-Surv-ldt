@@ -32,8 +32,9 @@ from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 
 
 DEFAULT_MODEL = 'mdecur_full_dense'
-MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'camr_2m')
+MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'camr_2m', 'morphid', 'morphid_no_interaction')
 DENSE_MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off')
+MORPHID_MODELS = ('morphid', 'morphid_no_interaction')
 UNAVAILABLE = {'murrenet': 'Verified author implementation not available; no placeholder model.',
                'mohd': 'Verified author implementation and hierarchical input contract not available.'}
 PROTOCOL = 'blca_fold0_full_dense_patientwise_v3'
@@ -45,11 +46,14 @@ SETTINGS = dict(fold=0, endpoint='DSS', time_unit='months', seed=3, epochs=30,
                 default_model=DEFAULT_MODEL,
                 loss_version=DISCRETE_NLL_VERSION,
                 metric_convention='legacy scoring plus separately labelled finite-edge audit',
-                batching='same epoch order and merged tail for all arms; minimum B=hidden+1')
+                batching='same epoch order and merged tail for all arms; minimum B=hidden+1',
+                morphid_fit_scope='training fold only; morphology bank, probes and head never see validation or test patients',
+                morphid_trainable_scope='survival head only; frozen morphology and probes receive no outcome gradient')
 SOURCE_MODULES = ('comparison_fold0', 'comparison_camr', 'cancer_parity', 'cancer_parity_bag',
                   'cancer_pathway', 'cancer_pathway_stream', 'cancer_model', 'cancer_rna',
                   'cancer_metrics', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream', 'decur_losses',
-                  'cancer_dense_model', 'cancer_dense_tokens', 'cancer_parity_audit')
+                  'cancer_dense_model', 'cancer_dense_tokens', 'cancer_parity_audit',
+                  'comparison_morphid', 'cancer_morphid_model', 'morphid_probe')
 
 
 def full_config(kwargs):
@@ -215,12 +219,34 @@ def materialize(bags, indices, device):
     return result
 
 
+def clone_state(model):
+    """Clone a state dict, keeping only tensor entries.
+
+    Some models carry non-tensor extras in their state dict, so the generic
+    tensor-only clone used by the other arms would fail on them.
+    """
+    result = {}
+    for name, value in model.state_dict().items():
+        result[name] = value.detach().cpu().clone() if isinstance(value, torch.Tensor) else value
+    return result
+
+
 def forward(model_id, model, bags, rna, indices, device):
     if model_id in DENSE_MODELS:
         output = pathway_stream_forward(model, [bags[i] for i in indices], rna.to(device),
                                         chunk_size=4096, view_source='feature_noise', checkpoint_chunks=True)
         return {'logits': output['log_rates']}
+    if model_id in MORPHID_MODELS:
+        # MorphID reads the streaming bag directly and keeps its frozen
+        # components on CPU, so the RNA is passed without a device move.
+        output = model.predict([bags[i] for i in indices], rna, _patient_ids(bags, indices))
+        return {'logits': output['logits'].detach().cpu()}
     return model(materialize(bags, indices, device), rna.to(device))
+
+
+def _patient_ids(bags, indices):
+    """Identity of the selected bags, used to refuse reused fitting patients."""
+    return [str(getattr(bags[i], 'patient_id', i)) for i in indices]
 
 
 def evaluate(model_id, model, data, bags, normalized, labels, reference, edges, device):
@@ -302,6 +328,20 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                         'ablation': model_id == 'mdecur_dense_aux_off'}
             main_parameters = list(model.parameters())
             d_optimizer = None
+        elif model_id in MORPHID_MODELS:
+            from comparison_morphid import MorphIDArm
+            model = MorphIDArm(plan['inputs']['path_dim'], plan['inputs']['rna_dim'], bins=4,
+                               interaction=(model_id == 'morphid'))
+            # The frozen fit sees the training fold only.  It is done before
+            # any outcome is used, so no validation or test patient can enter
+            # the morphology bank, the probe folds or the head.
+            model.fit_frozen(bags['train'], normalized['train'], cohort['train']['ids'])
+            metadata = {**model.adaptation_metadata(),
+                        'arm': model_id,
+                        'frozen_fit_scope': 'training fold only',
+                        'cluster_count_selected_with_outcomes': False}
+            main_parameters = model.head_parameters()
+            d_optimizer = None
         else:
             from comparison_camr import CAMR2M
             model = CAMR2M(plan['inputs']['path_dim'], plan['inputs']['rna_dim'], bins=4).to(device)
@@ -346,6 +386,18 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                         required = set(effective_weights(cfg)) | set(DENSE_LOSS_NAMES)
                         if stats['common_skipped'] or not required.issubset(components):
                             raise FloatingPointError('Full-model auxiliary missing/skipped; refuse silent disabling')
+                elif model_id in MORPHID_MODELS:
+                    # The head consumes cached patient-level out-of-fold
+                    # features.  The batch composition and the optimizer step
+                    # count stay identical to the other arms so that the
+                    # summary's schedule and step guards compare like with like.
+                    # The frozen components are float64 CPU buffers by design,
+                    # so the labels stay on the CPU with them.
+                    logits, _ = model.head_logits(indices)
+                    survival_loss = discrete_nll(logits, labels['train'][selected],
+                                                 torch.tensor(1-reference['train'][1][indices]), alpha=.5)
+                    components = {'survival': survival_loss}
+                    loss = survival_loss
                 else:
                     output = forward(model_id, model, bags['train'], normalized['train'][selected], indices, device)
                     survival_loss = discrete_nll(output['logits'], labels['train'][selected].to(device),
@@ -401,9 +453,15 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                             'learning_rate_after_step': scheduler.get_last_lr()[0], **metrics})
             print(json.dumps({'model': model_id, **history[-1]}, allow_nan=False), flush=True)
             if best_metrics is None or metrics['c_index'] > best_metrics['c_index']:
-                best = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+                best = clone_state(model)
                 best_metrics, best_survival, best_epoch = metrics, survival.copy(), epoch
-        last_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+        last_state = clone_state(model)
+        if model_id in MORPHID_MODELS:
+            # The frozen morphology and probes must be byte-identical to the
+            # state that was fitted before any outcome was used.
+            model.check_frozen_unchanged()
+            metadata = {**metadata, 'probe_diagnostics': model.probe_diagnostics(),
+                        'frozen_state_unchanged_after_training': True}
         for data in cohort.values():
             for bag in data['bags']:
                 bag.assert_unchanged()
@@ -413,7 +471,8 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                   'loss_version': DISCRETE_NLL_VERSION,
                   'runtime': runtime,
                   'settings': plan['settings'], 'bin_edges': plan['inputs']['bin_edges'],
-                  'native_model_kwargs': original_report['model_kwargs'] if model_id != 'camr_2m' else None,
+                  'native_model_kwargs': original_report['model_kwargs']
+                  if model_id not in ('camr_2m',) + MORPHID_MODELS else None,
                   'rna_dim': plan['inputs']['rna_dim'], 'path_dim': plan['inputs']['path_dim']}
         for label, state, epoch in (('best', best, best_epoch), ('last', last_state, count_epochs)):
             torch.save({**common, 'model_state': state, 'epoch': epoch}, destination/f'checkpoint_{label}.pt')

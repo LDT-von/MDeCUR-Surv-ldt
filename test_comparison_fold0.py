@@ -120,15 +120,23 @@ class Fold0ComparisonTest(unittest.TestCase):
             self.assertTrue((out/'checkpoint_best.pt').is_file())
             self.assertTrue((out/'checkpoint_last.pt').is_file())
             self.assertEqual((out/'val_predictions_best.csv').read_bytes(), (out/'val_predictions_last.csv').read_bytes())
+        # Index by model identity rather than by position, so adding an arm
+        # cannot silently repoint an assertion at a different model.
+        by_model = {r['model_id']: r for r in reports}
+        self.assertEqual(set(by_model), set(compare.MODELS))
         self.assertEqual(len({r['training_sampling_sha256'] for r in reports}), 1)
         self.assertEqual(len({r['training_schedule_sha256'] for r in reports}), 1)
         self.assertEqual({r['optimizer_steps'] for r in reports}, {1})
-        self.assertEqual([r['discriminator_optimizer_steps'] for r in reports], [0, 0, 1])
-        self.assertIn('adversarial', reports[-1]['history'][0]['train_terms'])
-        self.assertTrue(reports[-1]['metadata']['fake_CNA_used'] is False)
-        self.assertEqual(len(reports[0]['history'][0]['train_terms']), 16)
-        self.assertEqual(reports[1]['history'][0]['train_terms'].keys(), {'survival'})
-        self.assertIn('finite_edge_audit', reports[0]['best_validation'])
+        # Only the adversarial CAMR arm updates a discriminator.
+        self.assertEqual(by_model['mdecur_full_dense']['discriminator_optimizer_steps'], 0)
+        self.assertEqual(by_model['mdecur_dense_aux_off']['discriminator_optimizer_steps'], 0)
+        self.assertEqual(by_model['camr_2m']['discriminator_optimizer_steps'], 1)
+        camr = by_model['camr_2m']
+        self.assertIn('adversarial', camr['history'][0]['train_terms'])
+        self.assertTrue(camr['metadata']['fake_CNA_used'] is False)
+        self.assertEqual(len(by_model['mdecur_full_dense']['history'][0]['train_terms']), 16)
+        self.assertEqual(by_model['mdecur_dense_aux_off']['history'][0]['train_terms'].keys(), {'survival'})
+        self.assertIn('finite_edge_audit', by_model['mdecur_full_dense']['best_validation'])
         with self.assertRaisesRegex(ValueError, 'incomplete/smoke'):
             compare.summarize([self.root/m for m in compare.MODELS], self.root/'summary.json')
 

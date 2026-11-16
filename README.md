@@ -13,6 +13,7 @@
 | 文件 | 作用 |
 |---|---|
 | [cancer_morphid_model.py](cancer_morphid_model.py) | 新增 MorphIDSurvival：冻结形态、交叉拟合预测残差与独立生存头 |
+| [comparison_morphid.py](comparison_morphid.py) | MorphID 的单折比较适配器（薄封装，非独立模型定义） |
 | [cancer_dense_model.py](cancer_dense_model.py) | 当前完整主模型 DensePathwaySurvival，包含 token 预测分支和 dense 目标 |
 | [cancer_pathway.py](cancer_pathway.py) | 主模型使用的通路编码、局部匹配和融合基础层 |
 | [cancer_model.py](cancer_model.py) | 上层实际复用的病理 MIL、RNA 编码和生存头基础层 |
@@ -40,10 +41,32 @@ MurreNet/MoHD 没有可验证的本地实现，不列为已下载模型。
 ## 当前可用入口
 
 - `train_pathway_parity.py`：完整主模型默认入口。
-- `comparison_fold0.py`：full dense、同架构 aux-off、CAMR 的共同单折计划；aux-off 是同一架构消融。
+- `comparison_fold0.py`：full dense、同架构 aux-off、CAMR、**MorphID（含无交互消融）** 的共同单折计划；aux-off 是同一架构消融，MorphID 两臂是同一模型的交互项消融。
 - `comparison_5fold.py`：四个多模态对照适配器的共享驱动；可按指定 fold 单独计划/执行。RNA-only、WSI-only 已移除。
 - `uni_views/`：冻结 UNI 特征提取和缓存接口。
 - `diagnose_parity_*.py`：已有检查点的输入控制和交互诊断；不训练独立的 RNA/WSI 基线。
+
+## MorphID 的单折接入（2026-11-16）
+
+`comparison_morphid.py` 是 MorphID 接入锁定单折协议的薄适配器，**不改动**已有臂的逻辑、
+协议常量与指标口径。它存在的原因是 MorphID 属于冻结式设计：形态基底与患者轴交叉拟合探针
+在**训练折上一次性拟合**（不接受任何生存标签），只有离散生存头参与梯度。
+
+因此它与其它臂有两点必须如实记录的差异：
+
+1. **每轮 patch 重采样对它无效**。其它臂每轮 `resample()` 会改变所见 patch，而 MorphID 的头
+   训练读取的是**缓存的患者级 OOF 特征**，训练期间固定不变。这是设计使然，已写进报告元数据
+   （`per_epoch_patch_resampling_affects_this_arm: false`）。
+2. **形态基底不是完全嵌套的交叉验证**。原型在训练折拟合一次；探针在训练折内部再做患者级
+   交叉拟合。验证/测试患者从不进入原型、标准化、探针折或头。
+
+其它臂用逐 epoch 前向反传，MorphID 用缓存特征前向反传，但**批次划分、epoch 顺序、
+合并尾批、optimizer 步数与抽样哈希完全一致**，summary 的调度与步数守卫可以直接横向比较。
+簇数 K=4、latent_dim=8、探针折数=4 是**事先固定的常量**，不用验证集标签选择；
+低 R² **不作为**"独有"开关；CLR 组成自由度为 K−1。
+
+合成数据契约测试见 `test_comparison_morphid.py`（8 项）。本机**没有**患者数据、
+**没有** CUDA 运行、**没有**患者分数；这些只证明接入正确，不证明患者效果。
 
 旧的 `model.py` 共享损失已迁入 `decur_losses.py`；旧 `pipeline.py`、`synthetic_study.py` 和原型专用测试已删除，仍在使用的损失数学回归保留在 `test_decur_losses.py`。
 
