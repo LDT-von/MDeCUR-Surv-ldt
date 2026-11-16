@@ -21,6 +21,7 @@ import torch
 
 from cancer_parity import (_json_float, dct_bin_edges, discretize_labels, discrete_nll,
                            discrete_survival, dct_risk, parity_metrics, DISCRETE_NLL_VERSION)
+from comparison_camr_official import COX_PARTIAL_LIKELIHOOD_VERSION
 from cancer_parity_bag import BudgetedPatientBag
 from cancer_pathway_stream import (PathwayConfig, pathway_stream_forward, patient_batches,
                                    minimum_batch_size, validate_config, effective_weights)
@@ -32,9 +33,12 @@ from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 
 
 DEFAULT_MODEL = 'mdecur_full_dense'
-MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'camr_2m', 'morphid', 'morphid_no_interaction')
+MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'camr_2m', 'camr_2m_official',
+          'morphid', 'morphid_no_interaction')
 DENSE_MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off')
 MORPHID_MODELS = ('morphid', 'morphid_no_interaction')
+CAMR_MODELS = ('camr_2m', 'camr_2m_official')
+CAMR_OFFICIAL_MODELS = ('camr_2m_official',)
 UNAVAILABLE = {'murrenet': 'Verified author implementation not available; no placeholder model.',
                'mohd': 'Verified author implementation and hierarchical input contract not available.'}
 PROTOCOL = 'blca_fold0_full_dense_patientwise_v3'
@@ -48,8 +52,12 @@ SETTINGS = dict(fold=0, endpoint='DSS', time_unit='months', seed=3, epochs=30,
                 metric_convention='legacy scoring plus separately labelled finite-edge audit',
                 batching='same epoch order and merged tail for all arms; minimum B=hidden+1',
                 morphid_fit_scope='training fold only; morphology bank, probes and head never see validation or test patients',
-                morphid_trainable_scope='survival head only; frozen morphology and probes receive no outcome gradient')
-SOURCE_MODULES = ('comparison_fold0', 'comparison_camr', 'cancer_parity', 'cancer_parity_bag',
+                morphid_trainable_scope='survival head only; frozen morphology and probes receive no outcome gradient',
+                camr_official_arm='sigmoid bounded scalar Cox head with a continuous partial likelihood and a time-based risk set',
+                camr_official_evaluation='Breslow baseline cumulative hazard fitted on the training fold, then a proportional-hazards projection onto the protocol bins',
+                camr_official_risk_set='batch risk set; the partial likelihood uses only the patients inside the batch')
+SOURCE_MODULES = ('comparison_fold0', 'comparison_camr', 'comparison_camr_official',
+                  'cancer_parity', 'cancer_parity_bag',
                   'cancer_pathway', 'cancer_pathway_stream', 'cancer_model', 'cancer_rna',
                   'cancer_metrics', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream', 'decur_losses',
                   'cancer_dense_model', 'cancer_dense_tokens', 'cancer_parity_audit',
@@ -249,13 +257,73 @@ def _patient_ids(bags, indices):
     return [str(getattr(bags[i], 'patient_id', i)) for i in indices]
 
 
-def evaluate(model_id, model, data, bags, normalized, labels, reference, edges, device):
+def camr_official_logits(model, bags, normalized, indices, device, edges,
+                         baseline_holder):
+    """Discrete hazard logits for the CAMR official arm.
+
+    The arm emits one bounded Cox risk per patient.  The shared metric code
+    needs a ``[patients, bins]`` survival matrix, so the risk is projected
+    through a proportional-hazards construction whose baseline is fitted on
+    the **training fold** only.
+
+    The baseline needs training-fold risks, which are computed once per epoch
+    from the training bags and cached in ``baseline_holder``.  The cache is
+    rebuilt whenever the model changes, so it can never serve a stale risk.
+    """
+    from comparison_camr_official import cox_discrete_logits
+    with torch.no_grad():
+        output = model(materialize(bags, indices, device), normalized[indices].to(device))
+        risk = output['risk'].detach().cpu()
+    baseline = baseline_holder.get('levels')
+    if baseline is None:
+        raise RuntimeError('The CAMR official baseline has not been fitted for this epoch')
+    return cox_discrete_logits(risk, baseline)
+
+
+def camr_official_baseline(model, train_bags, train_normalized, reference, edges, device,
+                           chunk_size=SETTINGS['patient_batch_size']):
+    """Fit the Breslow baseline cumulative hazard on the training fold.
+
+    The training-fold risks are recomputed from the current model, so the
+    baseline always matches the weights that produced it.  Only training-fold
+    outcomes enter the estimator.
+
+    The risks are collected in patient chunks of the protocol batch size, so
+    the full training fold is never materialised on the device at once.
+    """
+    from comparison_camr_official import fit_brewslow_baseline
+    model.eval()
+    risks = []
+    with torch.no_grad():
+        for start in range(0, len(train_bags), chunk_size):
+            indices = list(range(start, min(start+chunk_size, len(train_bags))))
+            output = model(materialize(train_bags, indices, device),
+                           train_normalized[indices].to(device))
+            risks.append(output['risk'].detach().cpu().numpy().astype(np.float64))
+    risk = np.concatenate(risks) if risks else np.zeros(0, dtype=np.float64)
+    time, event = reference['train']
+    # The four protocol columns are the three finite internal bin edges plus
+    # the largest observed training time, which anchors the open-ended last
+    # bin.  Every time is strictly increasing by construction.
+    column_times = np.array([float(edges[1]), float(edges[2]), float(edges[3]),
+                              float(np.max(time))], dtype=np.float64)
+    if not np.all(np.diff(column_times) > 0):
+        raise ValueError('The CAMR official column times must be strictly increasing')
+    return fit_brewslow_baseline(time, event, risk, column_times)
+
+
+def evaluate(model_id, model, data, bags, normalized, labels, reference, edges, device,
+             baseline_holder=None):
     model.eval()
     logits = []
     with torch.no_grad():
         for i in range(len(bags)):
-            output = forward(model_id, model, bags, normalized[i:i+1], [i], device)
-            logits.append(output['logits'].detach().cpu())
+            if model_id in CAMR_OFFICIAL_MODELS:
+                logits.append(camr_official_logits(model, bags, normalized, [i], device,
+                                                   edges, baseline_holder))
+            else:
+                output = forward(model_id, model, bags, normalized[i:i+1], [i], device)
+                logits.append(output['logits'].detach().cpu())
     logits = torch.cat(logits)
     survival = discrete_survival(logits).numpy()
     result = parity_metrics(*reference['train'], *reference['val'], survival, edges)
@@ -343,8 +411,13 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
             main_parameters = model.head_parameters()
             d_optimizer = None
         else:
-            from comparison_camr import CAMR2M
-            model = CAMR2M(plan['inputs']['path_dim'], plan['inputs']['rna_dim'], bins=4).to(device)
+            if model_id in CAMR_OFFICIAL_MODELS:
+                from comparison_camr_official import CAMR2MOfficial
+                model = CAMR2MOfficial(plan['inputs']['path_dim'], plan['inputs']['rna_dim'],
+                                       bins=4).to(device)
+            else:
+                from comparison_camr import CAMR2M
+                model = CAMR2M(plan['inputs']['path_dim'], plan['inputs']['rna_dim'], bins=4).to(device)
             metadata = model.adaptation_metadata()
             main_parameters = list(model.main_parameters())
             d_optimizer = torch.optim.AdamW(model.discriminator_parameters(), lr=5e-4, weight_decay=5e-4)
@@ -400,8 +473,20 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                     loss = survival_loss
                 else:
                     output = forward(model_id, model, bags['train'], normalized['train'][selected], indices, device)
-                    survival_loss = discrete_nll(output['logits'], labels['train'][selected].to(device),
-                                                 torch.tensor(1-reference['train'][1][indices], device=device), alpha=.5)
+                    if model_id in CAMR_OFFICIAL_MODELS:
+                        # The official arm is trained with the upstream survival
+                        # contract: a continuous Cox partial likelihood with a
+                        # time-based risk set.  The batch risk set is a stated
+                        # limitation, not a silent choice.
+                        from comparison_camr_official import cox_partial_likelihood
+                        batch_time = torch.as_tensor(reference['train'][0][indices],
+                                                     dtype=torch.float32, device=device)
+                        batch_event = torch.as_tensor(reference['train'][1][indices],
+                                                      dtype=torch.float32, device=device)
+                        survival_loss = cox_partial_likelihood(output['risk'], batch_time, batch_event)
+                    else:
+                        survival_loss = discrete_nll(output['logits'], labels['train'][selected].to(device),
+                                                     torch.tensor(1-reference['train'][1][indices], device=device), alpha=.5)
                     components = {'survival': survival_loss}
                     loss = survival_loss
                 if d_optimizer:
@@ -442,8 +527,17 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
             scheduler.step()
             if d_scheduler:
                 d_scheduler.step()
+            baseline_holder = None
+            if model_id in CAMR_OFFICIAL_MODELS:
+                # The Breslow baseline is refitted from the current weights on
+                # the training fold, so the evaluation projection can never
+                # serve a stale risk.
+                model.eval()
+                levels = camr_official_baseline(model, bags['train'], normalized['train'],
+                                                reference, edges, device)
+                baseline_holder = {'levels': levels}
             metrics, survival = evaluate(model_id, model, cohort['val'], bags['val'], normalized['val'],
-                                          labels['val'], reference, edges, device)
+                                          labels['val'], reference, edges, device, baseline_holder)
             history.append({'epoch': epoch, 'train_terms': {k: v/n for k, v in losses.items()},
                             'patient_batches': [len(x) for x in batches],
                             'patient_order_sha256': json_hash(order.tolist()),
@@ -469,10 +563,13 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
             raise RuntimeError('Input, code or plan changed during run; refuse to publish comparison output')
         common = {'model_id': model_id, 'metadata': metadata, 'plan_sha256': plan_sha256,
                   'loss_version': DISCRETE_NLL_VERSION,
+                  'training_loss_version': (COX_PARTIAL_LIKELIHOOD_VERSION
+                                            if model_id in CAMR_OFFICIAL_MODELS
+                                            else DISCRETE_NLL_VERSION),
                   'runtime': runtime,
                   'settings': plan['settings'], 'bin_edges': plan['inputs']['bin_edges'],
                   'native_model_kwargs': original_report['model_kwargs']
-                  if model_id not in ('camr_2m',) + MORPHID_MODELS else None,
+                  if model_id not in CAMR_MODELS + MORPHID_MODELS else None,
                   'rna_dim': plan['inputs']['rna_dim'], 'path_dim': plan['inputs']['path_dim']}
         for label, state, epoch in (('best', best, best_epoch), ('last', last_state, count_epochs)):
             torch.save({**common, 'model_state': state, 'epoch': epoch}, destination/f'checkpoint_{label}.pt')
@@ -527,6 +624,7 @@ def summarize(run_dirs, out):
                          'IPCW_C': m['c_index_ipcw'], 'NLL': m['validation_nll'],
                          'Brier': m['brier'], 'IBS_legacy_grid': m['ibs'],
                          'AUC_legacy_times': m['iauc'], 'metric_times': m['metric_times'], 'errors': m['errors'],
+                         'training_loss_version': record.get('training_loss_version'),
                          'finite_edge_audit': m.get('finite_edge_audit')})
     result = {'protocol': PROTOCOL, 'plan_sha256': records[0]['plan_sha256'], 'rows': rows,
               'main_method_present': any(r['model_id'] == DEFAULT_MODEL for r in records),
@@ -536,6 +634,16 @@ def summarize(run_dirs, out):
               'unavailable_models': UNAVAILABLE,
               'metric_directions': {'Harrell_C': 'higher', 'IPCW_C': 'higher', 'AUC_legacy_times': 'higher',
                                     'NLL': 'lower', 'Brier': 'lower', 'IBS_legacy_grid': 'lower'},
+              'training_loss_versions': {r['model_id']: r.get('training_loss_version') for r in records},
+              'arm_comparability_note': (
+                  'Every arm shares the plan, the patch sampling, the batch schedule, the '
+                  'optimizer step count and the evaluation code. The arms do NOT share a '
+                  'training objective: camr_2m_official is trained with a continuous Cox '
+                  'partial likelihood, every other arm with the patientwise discrete NLL. '
+                  'Its reported NLL/Brier/IBS come from a Breslow proportional-hazards '
+                  'projection of the Cox risk onto the protocol bins, so those columns are '
+                  'comparable as calibration of each model under the shared metric, not as '
+                  'the value of each training objective.'),
               'limits': 'Point estimates on one validation-selected fold, no significance or overall superiority claim.'}
     write_new(out, result)
     return result

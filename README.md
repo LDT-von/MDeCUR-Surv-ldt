@@ -14,6 +14,7 @@
 |---|---|
 | [cancer_morphid_model.py](cancer_morphid_model.py) | 新增 MorphIDSurvival：冻结形态、交叉拟合预测残差与独立生存头 |
 | [comparison_morphid.py](comparison_morphid.py) | MorphID 的单折比较适配器（薄封装，非独立模型定义） |
+| [comparison_camr_official.py](comparison_camr_official.py) | CAMR 上游生存契约臂：有界标量 Cox 头＋连续偏似然（薄封装，非独立模型定义） |
 | [cancer_dense_model.py](cancer_dense_model.py) | 当前完整主模型 DensePathwaySurvival，包含 token 预测分支和 dense 目标 |
 | [cancer_pathway.py](cancer_pathway.py) | 主模型使用的通路编码、局部匹配和融合基础层 |
 | [cancer_model.py](cancer_model.py) | 上层实际复用的病理 MIL、RNA 编码和生存头基础层 |
@@ -41,7 +42,7 @@ MurreNet/MoHD 没有可验证的本地实现，不列为已下载模型。
 ## 当前可用入口
 
 - `train_pathway_parity.py`：完整主模型默认入口。
-- `comparison_fold0.py`：full dense、同架构 aux-off、CAMR、**MorphID（含无交互消融）** 的共同单折计划；aux-off 是同一架构消融，MorphID 两臂是同一模型的交互项消融。
+- `comparison_fold0.py`：full dense、同架构 aux-off、CAMR、**CAMR 官方生存契约**、**MorphID（含无交互消融）** 的共同单折计划；aux-off 是同一架构消融，MorphID 两臂是同一模型的交互项消融。
 - `comparison_5fold.py`：四个多模态对照适配器的共享驱动；可按指定 fold 单独计划/执行。RNA-only、WSI-only 已移除。
 - `uni_views/`：冻结 UNI 特征提取和缓存接口。
 - `diagnose_parity_*.py`：已有检查点的输入控制和交互诊断；不训练独立的 RNA/WSI 基线。
@@ -69,6 +70,45 @@ MurreNet/MoHD 没有可验证的本地实现，不列为已下载模型。
 **没有** CUDA 运行、**没有**患者分数；这些只证明接入正确，不证明患者效果。
 
 旧的 `model.py` 共享损失已迁入 `decur_losses.py`；旧 `pipeline.py`、`synthetic_study.py` 和原型专用测试已删除，仍在使用的损失数学回归保留在 `test_decur_losses.py`。
+
+## CAMR 的两条臂：协议适配 vs 上游生存契约（2026-11-16）
+
+`comparison_fold0.py` 现在有两条 CAMR 臂，**除了生存头和生存损失之外完全相同**
+（编码器、双线性跨模态门控、低秩融合、重建头、判别器、attention MIL 池化都一样）：
+
+| 臂 | 生存头 | 训练损失 | 定位 |
+|---|---|---|---|
+| `camr_2m` | 4 箱离散 hazard logits | 逐患者离散 NLL `patientwise_clamped_discrete_v1` | **协议适配**：和其它臂同一似然、同一指标口径 |
+| `camr_2m_official` | 上游 `Sequential(Linear(15,1), Sigmoid())`，缩放到 `[-4, 4]` | **连续 Cox 偏似然**，风险集按**时间**定义 | **上游生存契约**：还原 CAMR 官方的输出与损失形式 |
+
+`camr_2m_official` 实现于 `comparison_camr_official.py`，做了三件必须记录的事：
+
+1. **不复用上游的 `utils.R_set`**。上游 `CoxLoss2` 调用 `R_set`，它构造的是
+   `torch.tril(torch.ones(n, n))`——按**行号**的下三角矩阵，不是按生存时间的风险集。
+   本臂改用上游 `CoxLoss1` 的按时间风险集 `R[i,j] = t_j >= t_i`。这一条是正确性问题，
+   不是风格选择：按行号的风险集会让风险集取决于 batch 内患者的任意排列。
+   `test_comparison_camr_official.py` 用"打乱 batch 后损失不变"来锁定这一点。
+2. **评估时把标量风险投影回协议分箱**。共享评估代码需要 `[患者, 箱]` 的生存矩阵，
+   所以用**训练折**上的 Breslow 基线累积风险做比例风险投影：
+   `S_x(t) = exp(-H0(t) * exp(risk_x))`。该投影对风险单调，所以排序指标不变，
+   只是补上了标定后的概率。两处偏差写在元数据里：协议最后一箱在离散臂里是开区间，
+   这里用**训练折最大观测时间**锚定；基线只用训练折结局。
+3. **batch 风险集**。Cox 偏似然在每个 batch 内计算，所以风险集只含 batch 内患者。
+   这是分批 Cox 的固有性质，已写进 `settings.camr_official_risk_set`。
+
+**必须记住的可比性边界**：两条 CAMR 臂**不共享训练目标**。`summary` 会在
+`arm_comparability_note` 和 `training_loss_versions` 里显式写出每条臂的训练似然。
+`camr_2m_official` 的 NLL/Brier/IBS 来自 Cox 风险的 Breslow 投影，因此那些列衡量的是
+"每个模型在共享指标下的标定"，**不是**各自训练目标的值。
+
+仍然存在的、无法靠这条臂消除的偏差：BLCA 没有 CNA 输入（第三槽用常量占位）、
+4096 patch 预算要用 attention MIL 汇总成上游的 80 维患者向量（上游不做这一步）、
+优化器与调度用协议统一版本（上游是 Adam 4e-4 + 线性衰减）、
+判别器在本工程有独立优化器（上游建了但从不 step）。因此
+**任何 CAMR 臂的绝对分数都不能与 CAMR 论文的 0.650 直接对比**。
+
+合成数据契约测试见 `test_comparison_camr_official.py`（15 项）。本机**没有**患者数据、
+**没有** CUDA 运行、**没有**患者分数。
 
 ## 运行与证据边界
 

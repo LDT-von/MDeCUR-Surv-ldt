@@ -134,6 +134,21 @@ class Fold0ComparisonTest(unittest.TestCase):
         camr = by_model['camr_2m']
         self.assertIn('adversarial', camr['history'][0]['train_terms'])
         self.assertTrue(camr['metadata']['fake_CNA_used'] is False)
+        # The official CAMR arm uses the upstream survival contract.
+        official = by_model['camr_2m_official']
+        self.assertEqual(official['training_loss_version'], 'cox_partial_likelihood_brewslow_v1')
+        self.assertEqual(official['discriminator_optimizer_steps'], 1)
+        self.assertIn('adversarial', official['history'][0]['train_terms'])
+        self.assertFalse(official['metadata']['upstream_risk_set_helper_reused'])
+        # Every arm still shares the sampling, the schedule and the step count.
+        self.assertEqual(official['training_sampling_sha256'],
+                         by_model['mdecur_full_dense']['training_sampling_sha256'])
+        self.assertEqual(official['training_schedule_sha256'],
+                         by_model['mdecur_full_dense']['training_schedule_sha256'])
+        # The projection must produce a finite, monotone survival matrix.
+        best = official['best_validation']
+        self.assertIsNotNone(best['c_index'])
+        self.assertEqual(best['errors'], [])
         self.assertEqual(len(by_model['mdecur_full_dense']['history'][0]['train_terms']), 16)
         self.assertEqual(by_model['mdecur_dense_aux_off']['history'][0]['train_terms'].keys(), {'survival'})
         self.assertIn('finite_edge_audit', by_model['mdecur_full_dense']['best_validation'])
