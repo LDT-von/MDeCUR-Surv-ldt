@@ -200,7 +200,9 @@ class Fold0ComparisonTest(unittest.TestCase):
     def test_cli_plan_and_separate_process_run_share_hash_seed(self):
         script = Path(compare.__file__)
         plan_path, output = self.root/'cli_plan.json', self.root/'cli_camr'
-        env = dict(os.environ, PYTHONHASHSEED='0', OMP_NUM_THREADS='1', MKL_NUM_THREADS='1')
+        # The sampler no longer depends on the Python hash state, so the plan
+        # and the run must agree in *any* process, hash randomization on or off.
+        env = dict(os.environ, OMP_NUM_THREADS='1', MKL_NUM_THREADS='1')
         p = subprocess.run([sys.executable, str(script), 'plan', '--manifest', str(self.manifest),
                             '--survival-reference', str(self.reference), '--reference-run', str(self.ref_run),
                             '--out', str(plan_path)], capture_output=True, text=True, env=env)

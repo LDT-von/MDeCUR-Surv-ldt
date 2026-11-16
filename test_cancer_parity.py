@@ -4,7 +4,9 @@ The expectations come from the reference implementation, not from this
 repository's previous behaviour: the patch-budget rule, the quantile bin edges,
 the discrete likelihood, the risk convention and the metric grid.
 """
+import json
 import unittest
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -40,6 +42,36 @@ class PatchBudgetTest(unittest.TestCase):
         first, _ = select_patch_rows(500, 64, 'train', seed=11, patient_id='P1')
         second, _ = select_patch_rows(500, 64, 'train', seed=11, patient_id='P2')
         self.assertNotEqual(first.tolist(), second.tolist())
+
+    def test_train_draw_is_stable_across_processes_with_hash_randomization(self):
+        """The draw must not depend on the interpreter's hash randomization.
+
+        ``hash()`` of a string is randomized per process unless
+        ``PYTHONHASHSEED`` was set *before* the interpreter started, so a
+        sampler built on ``hash()`` changes its draw from process to process
+        even when the environment appears pinned.  The subprocesses below run
+        with hash randomization explicitly ON and must still agree.
+        """
+        import os
+        import subprocess
+        import sys
+
+        program = ('import json,sys;'
+                   'sys.path.insert(0, %r);'
+                   'from cancer_parity import select_patch_rows;'
+                   'print(json.dumps(select_patch_rows(500, 64, "train", seed=11,'
+                   ' patient_id="P1")[0].tolist()))' % str(Path(__file__).resolve().parent))
+        outputs = []
+        for _ in range(3):
+            environment = dict(os.environ)
+            environment.pop('PYTHONHASHSEED', None)
+            process = subprocess.run([sys.executable, '-c', program],
+                                     capture_output=True, text=True, env=environment)
+            self.assertEqual(process.returncode, 0, process.stderr)
+            outputs.append(json.loads(process.stdout))
+        self.assertEqual(len(set(map(tuple, outputs))), 1, outputs)
+        self.assertEqual(outputs[0], select_patch_rows(500, 64, 'train', seed=11,
+                                                        patient_id='P1')[0].tolist())
 
     def test_invalid_arguments_are_rejected(self):
         with self.assertRaises(ValueError):

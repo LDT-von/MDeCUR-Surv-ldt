@@ -13,6 +13,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import sys
 import time
 
 import numpy as np
@@ -170,16 +171,29 @@ def input_metadata(cohort, reference, edges, report, file_hashes):
             'prior_sealed_patient_overlap': 'Not established by manifest without historical ID intersection; do not infer sealed status.'}
 
 
+def hash_seed_state():
+    """The **actual** hash-randomization state of this interpreter.
+
+    ``PYTHONHASHSEED`` is only read when the interpreter starts, so checking
+    ``os.environ`` at runtime only says what the value was *intended* to be;
+    ``sys.flags.hash_randomization`` says whether it actually took effect.
+    The patch sampler is now seeded through a SHA-256 digest and therefore
+    does not depend on the hash state at all, but the state is still recorded
+    so that a report never claims a determinism it did not have.
+    """
+    return {'python_hash_seed_env': os.environ.get('PYTHONHASHSEED'),
+            'hash_randomization_active': bool(sys.flags.hash_randomization),
+            'sampler_depends_on_python_hash': False}
+
+
 def make_plan(manifest, survival_reference, reference_run):
     cohort, reference, edges, report, file_hashes = load_inputs(manifest, survival_reference, reference_run)
     try:
-        if os.environ.get('PYTHONHASHSEED') != '0':
-            raise ValueError('Start process with PYTHONHASHSEED=0; sampler uses Python hash')
         return {'protocol': PROTOCOL, 'settings': SETTINGS, 'available_models': list(MODELS),
                 'full_model_config': asdict(full_config(report['model_kwargs'])),
                 'unavailable_models': UNAVAILABLE, 'inputs': input_metadata(cohort, reference, edges, report, file_hashes),
-                'source_sha256': sources(), 'python_hash_seed': '0',
-                'sampler_runtime_signature': hash((3001, 'comparison_sampler_signature')),
+                'source_sha256': sources(),
+                'hash_seed_state': hash_seed_state(),
                 'versions': {'python': platform.python_version(), 'torch': str(torch.__version__),
                              'numpy': np.__version__, 'sksurv': importlib.import_module('sksurv').__version__},
                 'scope': 'one supplied legacy fold0 only; best/last EPOCH, not an independent test',

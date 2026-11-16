@@ -9,6 +9,7 @@ Every convention implemented here was read from the reference source, not
 guessed: the quantile binning, the discrete negative log likelihood, the risk
 definition, the metric time grid and the censoring reference.
 """
+import hashlib
 import math
 
 import numpy as np
@@ -34,12 +35,29 @@ def _json_float(value):
 
 # ---------------------------------------------------------------- patch budget
 
+def _stable_seed(seed, patient_id):
+    """A seed that does not depend on Python's per-process hash randomization.
+
+    ``hash()`` of a tuple containing a string is randomized per interpreter
+    process unless ``PYTHONHASHSEED`` was set *before* the interpreter
+    started.  A runtime environment variable cannot change that, so a sampler
+    built on ``hash()`` silently changes its draw from process to process even
+    though the environment looks pinned.  A SHA-256 digest of the same inputs
+    is stable across processes, machines and Python versions.
+    """
+    material = f'{int(seed)}\x00{str(patient_id)}'.encode('utf-8')
+    return int.from_bytes(hashlib.sha256(material).digest()[:8], 'big')
+
+
 def select_patch_rows(total, num_patches, mode, seed=0, patient_id=''):
     """Reproduce the reference patch-budget convention.
 
     ``train`` draws ``num_patches`` rows without replacement and keeps them
     sorted; ``eval`` takes evenly spaced rows.  Both are capped by the number
     of available rows and the shortfall becomes explicit zero padding.
+
+    The training draw is seeded through ``_stable_seed`` so that it is
+    reproducible across processes without requiring ``PYTHONHASHSEED``.
     """
     if type(total) is not int or total < 1:
         raise ValueError('A patient bag needs at least one patch row')
@@ -49,7 +67,7 @@ def select_patch_rows(total, num_patches, mode, seed=0, patient_id=''):
         raise ValueError('Patch budget mode must be train or eval')
     count = min(num_patches, total)
     if mode == 'train':
-        rng = np.random.default_rng(abs(hash((int(seed), str(patient_id)))) % (2**63))
+        rng = np.random.default_rng(_stable_seed(seed, patient_id))
         rows = np.sort(rng.choice(total, count, replace=False))
     else:
         rows = np.floor(np.arange(count)*total/count).astype(np.int64)

@@ -35,6 +35,7 @@ import math
 import os
 from pathlib import Path
 import platform
+import sys
 import time
 
 import numpy as np
@@ -208,7 +209,10 @@ def make_plan(fold, manifest, survival_reference, genes_path, gmt_path,
                 'gmt': str(Path(gmt_path).resolve()),
                 'deref_signatures': str(Path(deref_signatures).resolve()),
             },
-            'python_hash_seed': os.environ.get('PYTHONHASHSEED'),
+            'hash_seed_state': {
+                'python_hash_seed_env': os.environ.get('PYTHONHASHSEED'),
+                'hash_randomization_active': bool(sys.flags.hash_randomization),
+                'sampler_depends_on_python_hash': False},
             'fit_boundary': {
                 'bin_edges': 'train uncensored times only',
                 'rna_scaler': 'train rows only',

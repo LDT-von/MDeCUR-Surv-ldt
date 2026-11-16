@@ -21,7 +21,8 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 | MurreNet | **未找到** | — | 无 | — | — | — |
 | MoHD | **未找到** | — | 无 | — | — | — |
 
-**已验证**：`python -m pytest test_comparison_5fold.py test_comparison_camr.py test_comparison_fold0.py test_cancer_parity.py test_cancer_parity_bag.py` → **56 passed**（纯 CPU 合成数据）。
+**已验证**：`python -m pytest test_comparison_5fold.py test_comparison_camr.py test_comparison_fold0.py test_cancer_parity.py test_cancer_parity_bag.py` → **61 passed**（纯 CPU 合成数据）。
+全仓库套件 `python -m pytest -q` → **315 passed, 3 skipped**（哈希随机化开启状态下验证）。
 
 **未验证**：本会话**没有任何真实患者 WSI+UNI 提取、没有 CUDA 运行、没有临床效果证据**。合成检查通过不等于患者效果。
 
@@ -63,6 +64,19 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 运行时版本，写成不可变 JSON。`run` 会**重新构建**该计划并逐字段比对，任何输入、代码、
 协议或运行时变化都会让训练**拒绝启动**。这保证"分数差异只能来自模型本身"。
 
+### 2.3 采样确定性（2026-11-16 修正）
+
+补丁抽样种子过去由 `hash((seed, patient_id))` 导出。`PYTHONHASHSEED` **只在解释器启动前**
+才生效，运行时设置环境变量不会关闭哈希随机化，因此该抽样**在不同进程间会变化**，
+而旧守卫读的是运行时环境变量，给出的是**假保证**。这曾表现为测试套件的偶发失败。
+
+修正：抽样种子改由 SHA-256 摘要导出（`cancer_parity._stable_seed`），**不再依赖 Python 哈希
+状态**，跨进程、跨机器、跨 Python 版本稳定。计划中记录 `hash_seed_state`
+（环境变量值 + `sys.flags.hash_randomization` 实际状态 + `sampler_depends_on_python_hash: false`），
+报告不再声称它未真正拥有的确定性。
+
+`PYTHONHASHSEED=0` 仍建议保留（shell 脚本已导出），但它现在只是额外保险，**不再是正确性的前提**。
+
 ---
 
 ## 3. 各方法的适配说明（重要：请勿当作原文复现）
@@ -70,10 +84,25 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 四个适配器的标签都带 `2M-P4096-DNLL` 后缀，表示：**这是适配，不是原文复现**。
 
 ### 3.1 CAMR
-上游 CAMR 是"病理 + 基因表达 + CNA → 三个 80 维患者向量 → 标量 Cox 输出"，且上游没有可直接
-作为训练入口的类导出。因此 `CAMR2M` 在适配器中**重新实现了融合与生存头**，并显式声明
-`official_model_reproduction: false`。CNA 分支在 BLCA 协议中不可用（无 CNA 输入），已剔除。
-这是四个方法中上游模块执行程度最低的一个，结论中必须注明。
+上游 CAMR 是"病理 + 基因表达 + CNA → 三个 80 维患者向量 → 标量 Cox 输出"。
+`CAMR2M` **直接调用上游未修改的类**：`networks.MisaLMFGatedRec`（共享编码器、三私有编码器、
+双线性跨模态门、低秩融合、生存编码器、三个重建头）、`fusion.Discriminator`、
+`utils.DiffLoss`、`utils.MSE`。
+
+但**融合前的输入适配与生存头仍为本项目重实现**，因此是适配而非原文复现
+（`official_model_reproduction: false`）：
+
+1. 三模态降为两模态。BLCA 协议无 CNA 输入，第三个槽位填入**不含任何患者信息的常量**
+   （上游低秩融合要乘三个因子，不能简单置零），**不伪造**表达、CNA 或生存值。
+2. 病理经注意力 MIL 汇聚到 80 维、RNA 投影到 80 维，这两步在**上游模块之外**。
+3. 上游有界 Cox 输出换成无界离散风险 logits，以统一离散 NLL 打分；
+   上游编码器、门控、低秩融合与重建头不变。
+4. 上游把判别器排除在 optimizer 之外（其对抗项实际从不更新任何权重）；
+   本项目给判别器独立 optimizer 并显式更新。
+5. 上游第三个"fake"判别项因常量槽位无患者信息而剔除。
+
+**这是四个方法中上游执行程度相对最低的一个**（生存头与输入适配为重实现），
+结论中必须单列说明。
 
 ### 3.2 PIBD
 上游 `PIB.forward` 与高斯采样器硬编码 `.cuda()`。为保持 `papers/comparators/` 原样，
