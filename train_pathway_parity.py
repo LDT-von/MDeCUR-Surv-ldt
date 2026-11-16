@@ -32,7 +32,7 @@ import torch
 
 from cancer_parity import (_json_float, discrete_nll, discrete_survival, dct_bin_edges,
                            discretize_labels, dct_risk, parity_metrics,
-                           parity_report_protocol)
+                           parity_report_protocol, DISCRETE_NLL_VERSION)
 from cancer_parity_bag import BudgetedPatientBag
 from cancer_pathway import PathwayLocalSurvival, read_pathway_mapping
 from cancer_pathway_stream import (PathwayConfig, effective_weights, minimum_batch_size,
@@ -42,6 +42,8 @@ from cancer_dense_model import (DensePathwayConfig, DensePathwaySurvival, DENSE_
                                 require_full_auxiliary)
 from cancer_rna import fit_rna_scaler, transform_rna
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
+from parity_checkpoint_controls import (INPUT_CONTROL_VERSION, ZeroPatientBag,
+                                         apply_checkpoint_controls)
 
 
 def sha256_file(path):
@@ -68,6 +70,8 @@ def make_parser():
                         help='Censored likelihood weight is 1-alpha; event likelihood retains unit weight')
     parser.add_argument('--epochs', type=int, default=30)
     parser.add_argument('--patient-batch-size', type=int, default=20)
+    parser.add_argument('--batch-tail-minimum', type=int, default=None,
+                        help='Shared tail-merge minimum for matched arms; at least the active rank bound')
     parser.add_argument('--patch-chunk-size', type=int, default=4096)
     parser.add_argument('--lr', type=float, default=5e-4)
     parser.add_argument('--weight-decay', type=float, default=5e-4)
@@ -78,9 +82,9 @@ def make_parser():
     parser.add_argument('--disable-auxiliary', action='store_true',
                         help='Explicit ablation only: turn every legacy+dense auxiliary term off')
     parser.add_argument('--shuffle-train-labels', action='store_true',
-                        help='Permute the training survival labels; the score must collapse to chance')
+                        help='Null control: jointly permute training time/event labels; validation remains unchanged')
     parser.add_argument('--freeze-modality', choices=['none', 'pathology', 'rna'], default='none',
-                        help='Zero one modality at training time; the remaining one must carry the score')
+                        help='Input-zero control in train and validation; requires --disable-auxiliary')
     parser.add_argument('--legacy-architecture', action='store_true',
                         help='Explicit historical architecture; default is full dense-token model')
     parser.add_argument('--endpoint', required=True)
@@ -105,7 +109,7 @@ def _finite_or_none(value):
     return value if math.isfinite(value) else None
 
 
-def _parse_auxiliary_overrides(values):
+def _parse_auxiliary_overrides(values, *, allow_dense=True):
     """Turn ``NAME=VALUE`` strings into a validated weight mapping."""
     from cancer_pathway_stream import LOSS_NAMES
     overrides = {}
@@ -114,8 +118,9 @@ def _parse_auxiliary_overrides(values):
             raise ValueError(f'Expected NAME=VALUE for --auxiliary-weight, got {item!r}')
         name, _, raw = item.partition('=')
         name = name.strip()
-        if name not in LOSS_NAMES:
-            raise ValueError(f'Unknown auxiliary loss term {name!r}; expected one of {LOSS_NAMES}')
+        allowed = (*LOSS_NAMES, *DENSE_LOSS_NAMES) if allow_dense else LOSS_NAMES
+        if name not in allowed:
+            raise ValueError(f'Unknown auxiliary loss term {name!r}; expected one of {allowed}')
         try:
             weight = float(raw)
         except ValueError as error:
@@ -132,57 +137,68 @@ def _budget(data, num_patches, mode, seed):
                             for bag in data['bags']])
 
 
-class _ZeroBag:
-    """A patient bag whose patch rows are all zeros.
-
-    The row count is preserved so that the pooling still sees the same number
-    of rows; only the feature content is removed.  This isolates how much of
-    the score the pathology branch carries.
-    """
-
-    def __init__(self, source, num_patches):
-        self.patient_id = source.patient_id
-        self.feature_dim = source.feature_dim
-        self.view_source = getattr(source, 'view_source', 'single_view')
-        self.n_patches = num_patches
-        # The underlying bag is kept so that the report can still state how
-        # many patches the patient actually has; only the features are frozen.
-        self._source = getattr(source, '_source', source)
-        self._budget = source
-
-    @property
-    def padding(self):
-        """The zero padding of the wrapped budget bag, not the whole budget."""
-        return getattr(self._budget, 'padding', 0)
-
-    def resample(self, seed=0):
-        """A frozen bag has no rows to redraw."""
-        return self
-
-    def blocks(self, chunk_size):
-        for start in range(0, self.n_patches, chunk_size):
-            yield ('<parity-budget>', start, min(start+chunk_size, self.n_patches))
-
-    def read_block(self, token, names):
-        path, start, stop = token
-        if not 0 <= start < stop <= self.n_patches:
-            raise ValueError('Invalid block row range')
-        return (torch.zeros((stop-start, self.feature_dim), dtype=torch.float32),)
-
-    def assert_unchanged(self):
-        return None
-
-    def close(self):
-        return None
-
-    @property
-    def provenance(self):
-        return []
+_ZeroBag = ZeroPatientBag  # Backward-compatible import; replay uses the same implementation.
 
 
 def _freeze_bags(bags, num_patches):
     """Replace every patch row with zeros."""
     return [_ZeroBag(bag, num_patches) for bag in bags]
+
+
+def _configure(args):
+    """Resolve every explicit change before deciding whether this is full."""
+    if args.freeze_modality != 'none' and not args.disable_auxiliary:
+        raise ValueError('Input-zero modality controls require --disable-auxiliary')
+    config_class = PathwayConfig if args.legacy_architecture else DensePathwayConfig
+    cfg = config_class(epochs=args.epochs, patience=args.epochs+1, lr=args.lr,
+                       weight_decay=args.weight_decay, seed=args.seed,
+                       rna_scale_policy=args.rna_scale_policy)
+    overrides = _parse_auxiliary_overrides(args.auxiliary_weight,
+                                           allow_dense=not args.legacy_architecture)
+    if args.disable_auxiliary and overrides:
+        raise ValueError('--disable-auxiliary and --auxiliary-weight contradict each other')
+    if args.disable_auxiliary:
+        from cancer_pathway_stream import LOSS_NAMES
+        cfg = config_class(**{**asdict(cfg), **{name: 0. for name in LOSS_NAMES},
+                              **({name: 0. for name in DENSE_LOSS_NAMES} if not args.legacy_architecture else {}),
+                              'common_mode': 'off'})
+        if args.common_mode not in (None, 'off'):
+            raise ValueError('Auxiliary-disabled control cannot enable --common-mode')
+    else:
+        cfg = config_class(**{**asdict(cfg), **overrides})
+    if args.common_mode is not None:
+        cfg = config_class(**{**asdict(cfg), 'common_mode': args.common_mode})
+    explicit_change = bool(overrides) or args.common_mode is not None
+    is_full = (not args.legacy_architecture and not args.disable_auxiliary
+               and not explicit_change and not args.shuffle_train_labels and args.freeze_modality == 'none')
+    if is_full:
+        require_full_auxiliary(cfg)
+    elif not args.disable_auxiliary:
+        weights = {**effective_weights(cfg),
+                   **(dense_weights(cfg) if not args.legacy_architecture else {})}
+        explicitly_disabled = {name for name, value in overrides.items() if value == 0}
+        if args.common_mode == 'off':
+            explicitly_disabled.add('global_common')
+        implicit = [name for name, value in weights.items() if value <= 0 and name not in explicitly_disabled]
+        if implicit:
+            raise ValueError(f'Auxiliary terms disabled without an explicit request: {implicit}')
+    minimum = validate_config(cfg, 'feature_noise', args.patient_batch_size, args.patch_chunk_size)
+    tail_minimum = minimum if args.batch_tail_minimum is None else args.batch_tail_minimum
+    if type(tail_minimum) is not int or not minimum <= tail_minimum <= args.patient_batch_size:
+        raise ValueError('batch-tail-minimum must lie between the active rank bound and patient-batch-size')
+    role = ('input_zero_control' if args.freeze_modality != 'none' else
+            'shuffled_target_null' if args.shuffle_train_labels else
+            'auxiliary_disabled_ablation' if args.disable_auxiliary else
+            'full_reference' if is_full else 'explicit_auxiliary_ablation_or_tuning' if explicit_change else
+            'legacy_reference')
+    controls = {'input_control_version': INPUT_CONTROL_VERSION,
+                'frozen_modality': args.freeze_modality, 'shuffled_train_labels': bool(args.shuffle_train_labels),
+                'auxiliary_weight_overrides': overrides, 'common_mode': cfg.common_mode,
+                'is_full_reference': is_full, 'role': role,
+                'disabled_by_common_mode': ['global_common'] if cfg.common_mode == 'off' else [],
+                'note': ('Input-zero controls retain the multimodal architecture. Shuffled targets are a null diagnostic; '
+                         'validation selection and finite-sample variability can yield non-chance scores without proving leakage.')}
+    return cfg, controls, minimum, tail_minimum
 
 
 def load_survival_reference(path):

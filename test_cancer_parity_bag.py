@@ -50,6 +50,20 @@ class _FakeBag:
 
 
 class BudgetedBagTest(unittest.TestCase):
+    def test_padding_only_chunks_have_exact_block_lengths(self):
+        bag = BudgetedPatientBag(_FakeBag('P1', {'a.pt': 4}), 12, 'eval', 0)
+        values = [bag.read_block(block, ('features_reference',))[0] for block in bag.blocks(4)]
+        self.assertEqual([len(value) for value in values], [4, 4, 4])
+        self.assertEqual(torch.cat(values).shape, (12, 4))
+        self.assertTrue(torch.equal(torch.cat(values)[4:], torch.zeros(8, 4)))
+
+    def test_fully_zero_control_is_chunk_invariant(self):
+        bag = BudgetedPatientBag(_FakeBag('P1', {'a.pt': 3}), 8, 'eval', 0)
+        bag._rows, bag.padding = [], 8
+        values = [bag.read_block(block, ('features_reference',))[0] for block in bag.blocks(3)]
+        self.assertEqual([len(value) for value in values], [3, 3, 2])
+        self.assertTrue(torch.equal(torch.cat(values), torch.zeros(8, 4)))
+
     def test_eval_rows_are_evenly_spaced_over_the_concatenated_bag(self):
         bag = _FakeBag('P1', {'a.pt': 30, 'b.pt': 20})
         budgeted = BudgetedPatientBag(bag, 10, 'eval', 0)

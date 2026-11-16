@@ -46,7 +46,8 @@ class Fold0ComparisonTest(unittest.TestCase):
             np.save(self.root/f'g{i}.npy', torch.randn(8, generator=g).numpy())
             split = 'train' if i < 20 else 'val'
             t = i+1 if i < 20 else [2.5, 7.5, 12.5, 18.5][i-20]
-            rows.append([f'p{i}', split, f'p{i}.pt', f'g{i}.npy', t, 1])
+            event = int(i % 3 != 0) if split == 'train' else [1, 0, 1, 1][i-20]
+            rows.append([f'p{i}', split, f'p{i}.pt', f'g{i}.npy', t, event])
         self.manifest, self.reference = self.root/'manifest.csv', self.root/'survival_reference.csv'
         with self.manifest.open('w', newline='', encoding='utf-8') as handle:
             w = csv.writer(handle)
@@ -67,8 +68,9 @@ class Fold0ComparisonTest(unittest.TestCase):
                          'num_patches': 4096, 'config': {'seed': 3, 'epochs': 30, 'rna_scale_policy': 'none'},
                          'history': [{}]*30, 'effective_loss_weights': {'any': 0.},
                          'manifest_sha256': compare.digest(self.manifest), 'cohort_input_sha256': fingerprint,
-                         'patients': {'train': 20, 'val': 4}, 'events': {'train': 20, 'val': 4},
-                         'bin_edges': [_json_float(x) for x in dct_bin_edges(np.arange(1, 21), np.ones(20))],
+                         'patients': {'train': 20, 'val': 4}, 'events': {'train': 13, 'val': 3},
+                         'bin_edges': [_json_float(x) for x in dct_bin_edges(
+                             np.arange(1, 21), np.array([int(i % 3 != 0) for i in range(20)]))],
                          'model_kwargs': dict(path_dim=6, rna_dim=8, pathway_indices=[
                              [j, (j+1) % 8, (j+3) % 8] for j in range(8)]+[[0, 2, 4], [1, 3, 5]],
                                               hidden=16, common=8, local_dim=8, local_common=4, bins=4,
@@ -94,6 +96,7 @@ class Fold0ComparisonTest(unittest.TestCase):
         self.assertEqual(plan['available_models'][0], 'mdecur_full_dense')
         self.assertTrue(all(plan['full_model_config'][name] > 0 for name in compare.DENSE_LOSS_NAMES))
         self.assertEqual(plan['settings']['patient_batch_size'], 20)
+        self.assertEqual(plan['settings']['loss_version'], 'patientwise_clamped_discrete_v1')
         self.assertIn('murrenet', plan['unavailable_models'])
 
     def test_test_rows_rejected_before_opening_missing_feature(self):
@@ -142,8 +145,13 @@ class Fold0ComparisonTest(unittest.TestCase):
             compare.make_plan(self.manifest, self.reference, self.ref_run)
         self.original['config']['seed'] = 3
         self.save_report()
-        text = self.reference.read_text(encoding='utf-8').replace('p0,train,1,1', 'p0,train,100,1')
-        self.reference.write_text(text, encoding='utf-8')
+        # Rewrite the first train row's follow-up time without relying on the
+        # exact event value, which is irrelevant to the label mismatch check.
+        lines = self.reference.read_text(encoding='utf-8').splitlines()
+        fields = lines[1].split(',')
+        fields[2] = '100'
+        lines[1] = ','.join(fields)
+        self.reference.write_text('\n'.join(lines)+'\n', encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'labels differ'):
             compare.make_plan(self.manifest, self.reference, self.ref_run)
 

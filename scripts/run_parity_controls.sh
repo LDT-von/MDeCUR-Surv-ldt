@@ -1,39 +1,99 @@
-#!/bin/bash
-# Three decisive controls for the BLCA fold0 parity run.
-#
-# 1. null       : the training labels are permuted.  The validation score must
-#                 collapse to chance.  If it does not, the pipeline reads
-#                 something other than the training outcome.
-# 2. rna_only   : the pathology is removed from both training and evaluation.
-# 3. path_only  : the RNA is removed from both training and evaluation.
-#
-# Everything else matches the reference run exactly.
-set -u
-BASE=/data1/decur_runs/PARITY_DCT_FOLD0
-PY=/home/ubuntu/.conda/envs/trisurv/bin/python
-cd /data1/MDeCUR-Surv-ldt
+#!/usr/bin/env bash
+# New legacy-architecture controls under the corrected per-patient NLL.
+# null permutes training labels. One selected validation score neither has to
+# equal chance nor proves presence/absence of leakage. rna_only and path_only
+# are retrained controls, distinct from zeroing inputs at a frozen checkpoint.
+# Historical run directories are retained. This script is not auto-started.
+set -euo pipefail
+set -o noclobber
+export PYTHONHASHSEED=0
 
-run () {
-  local tag=$1; shift
-  rm -rf "$BASE/ctrl_$tag"
-  $PY train_pathway_parity.py \
-    --manifest $BASE/manifest.csv \
-    --survival-reference $BASE/survival_reference.csv \
-    --genes $BASE/genes.txt \
-    --pathways $BASE/combine_signatures.gmt \
-    --out $BASE/ctrl_$tag \
-    --num-patches 4096 --n-bins 4 --alpha-surv 0.5 --epochs 30 \
-    --patient-batch-size 8 --patch-chunk-size 4096 --disable-auxiliary \
-    --legacy-architecture \
-    --rna-scale-policy none --lr 0.0005 --weight-decay 0.0005 --seed 3 \
-    --endpoint DSS --time-unit months \
-    --split-name "5fold/blca/fold_0 (legacy_val)" --device cuda "$@" \
-    > $BASE/ctrl_$tag.log 2>&1
+INPUTS="${PARITY_INPUTS_ROOT:-/data1/decur_runs/PARITY_DCT_FOLD0}"
+PROJECT="${PARITY_PROJECT_ROOT:-/data1/MDeCUR-Surv-ldt}"
+PY="${PARITY_PYTHON:-/home/ubuntu/.conda/envs/trisurv/bin/python}"
+RUN_PARENT="${PARITY_RUN_ROOT:-/data1/decur_runs}"
+BATCH_OUT="${PARITY_BATCH_OUT:-$RUN_PARENT/parity_controls_corrected_nll_$(date -u +%Y%m%dT%H%M%SZ)}"
+DEVICE_0="${PARITY_DEVICE_0:-cuda:0}"
+DEVICE_1="${PARITY_DEVICE_1:-cuda:1}"
+
+for input in manifest.csv survival_reference.csv genes.txt combine_signatures.gmt; do
+  if [[ ! -f "$INPUTS/$input" ]]; then
+    printf 'Missing required input: %s\n' "$input" >&2
+    exit 2
+  fi
+done
+cd -- "$PROJECT"
+if [[ -e "$BATCH_OUT" || -L "$BATCH_OUT" ]]; then
+  printf 'Refusing an existing batch output: %s\n' "$BATCH_OUT" >&2
+  exit 2
+fi
+mkdir -p -- "$(dirname -- "$BATCH_OUT")"
+mkdir -- "$BATCH_OUT"
+printf 'protocol=corrected_per_patient_nll_legacy_controls\nPYTHONHASHSEED=0\n' > "$BATCH_OUT/protocol.txt"
+if revision=$(git rev-parse HEAD 2>/dev/null); then
+  printf 'git_commit=%s\n' "$revision" >> "$BATCH_OUT/protocol.txt"
+else
+  printf 'git_commit=unavailable\n' >> "$BATCH_OUT/protocol.txt"
+fi
+
+run() {
+  local tag=$1 device=$2
+  shift 2
+  local output="$BATCH_OUT/ctrl_$tag" log="$BATCH_OUT/ctrl_$tag.log" command_file="$BATCH_OUT/ctrl_$tag.command.txt"
+  if [[ -e "$output" || -L "$output" || -e "$log" || -L "$log" || -e "$command_file" || -L "$command_file" ]]; then
+    printf 'Refusing an existing run output/log/command: %s\n' "$tag" >&2
+    return 2
+  fi
+  local -a command=(
+    "$PY" train_pathway_parity.py
+    --manifest "$INPUTS/manifest.csv"
+    --survival-reference "$INPUTS/survival_reference.csv"
+    --genes "$INPUTS/genes.txt"
+    --pathways "$INPUTS/combine_signatures.gmt"
+    --out "$output"
+    --num-patches 4096 --n-bins 4 --alpha-surv 0.5 --epochs 30
+    --patient-batch-size 8 --patch-chunk-size 4096 --disable-auxiliary
+    --legacy-architecture
+    --rna-scale-policy none --lr 0.0005 --weight-decay 0.0005 --seed 3
+    --endpoint DSS --time-unit months
+    --split-name "5fold/blca/fold_0 (legacy_val)"
+    --device "$device" "$@"
+  )
+  printf '%q ' "${command[@]}" > "$command_file"
+  printf '\n' >> "$command_file"
+  "${command[@]}" > "$log" 2>&1
 }
 
-run null       --shuffle-train-labels &
-run rna_only   --freeze-modality pathology &
-wait
-run path_only  --freeze-modality rna &
-wait
-echo "ALL CONTROLS DONE"
+PIDS=()
+TAGS=()
+wait_for_jobs() {
+  local failed=0 index
+  for index in "${!PIDS[@]}"; do
+    if wait "${PIDS[$index]}"; then
+      printf 'Completed: %s\n' "${TAGS[$index]}"
+    else
+      printf 'Failed: %s (see its new log)\n' "${TAGS[$index]}" >&2
+      failed=1
+    fi
+  done
+  PIDS=()
+  TAGS=()
+  return "$failed"
+}
+
+run null "$DEVICE_0" --shuffle-train-labels &
+PIDS+=("$!")
+TAGS+=(null)
+run rna_only "$DEVICE_1" --freeze-modality pathology &
+PIDS+=("$!")
+TAGS+=(rna_only)
+if ! wait_for_jobs; then
+  exit 1
+fi
+run path_only "$DEVICE_0" --freeze-modality rna &
+PIDS+=("$!")
+TAGS+=(path_only)
+if ! wait_for_jobs; then
+  exit 1
+fi
+printf 'Parity controls completed in new batch: %s\n' "$BATCH_OUT"

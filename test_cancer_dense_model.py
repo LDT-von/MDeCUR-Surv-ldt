@@ -148,7 +148,7 @@ class DenseFullModelTest(unittest.TestCase):
                 self.assertTrue(torch.equal(rows, torch.ones(12, 6)))
                 batch = {'bags': bags, 'rna': cohort['train']['rna'], 'time': cohort['train']['time'],
                          'event': cohort['train']['event'], 'rna_mask': None,
-                         'label': torch.arange(20) % 4, 'censorship': torch.zeros(20)}
+                         'label': torch.arange(20) % 4, 'censorship': 1-cohort['train']['event']}
                 def likelihood(logits, current):
                     return discrete_nll(logits, current['label'], current['censorship'], alpha=.5)
                 total, stats, components = dense_pathway_objective(model, batch, cfg, 4096, 71, 1,

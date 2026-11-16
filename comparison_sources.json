@@ -1,6 +1,7 @@
 {
-  "date": "2026-11-13",
-  "scope": "official source only, no dataset/checkpoint included",
+  "date": "2026-11-16",
+  "scope": "official source only, no dataset/checkpoint included; upstream checkouts are read-only artifacts",
+  "protocol": "BLCA DSS months, UNI v1 pathology patches + RNA, 5 folds, 4 train-fitted quantile bins, patientwise discrete NLL alpha=0.5, risk=-sum(S), parity_metrics",
   "methods": {
     "CAMR": {
       "official_repository": "https://github.com/wxq-ustc/CAMR",
@@ -17,6 +18,61 @@
       "native_contract": "pathology + gene expression + CNA, three patient-level 80D vectors, scalar Cox output",
       "delivered_adapter": "comparison_camr.py:CAMR2M",
       "adapter_label": "CAMR-2M-P4096-DNLL",
+      "upstream_module_execution": "reimplemented in the adapter; upstream classes are not importable as a training entry point",
+      "official_reproduction": false
+    },
+    "PIBD": {
+      "official_repository": "https://github.com/zylbuaa/PIBD",
+      "commit": "bd5bd94e6f8d48e7679c6e68209a3a65c9e56a78",
+      "local_source_checkout": "../papers/comparators/PIBD",
+      "source_files_sha256": {
+        "models/model_PIBD.py": "b81b9b1598497d4dd23f5006aa024d50e60be32d71f48baa758afe2ad35d2fc7",
+        "models/disentangle_transformer.py": "3bd1036ea6d9751b975e3dfdeacda3e20b172b51cf395b214b9eb32544d44811",
+        "models/omics_encoder.py": "cc241066041d1472e206a76f2dd42f31e089394d4942b92f0541f630f3cfe61e",
+        "models/club.py": "995af2154276dcb973a0cc6e977bc3655d2361bf968a9db14f4915d270b6e12b",
+        "utils/loss_func.py": "44f15b2c052f658b10366c6bb9c4ebd091d2bf1ce7751c3dff67e1a295c30ed3"
+      },
+      "native_contract": "WSI bag + per-pathway RNA, PIB prototypes, PoE, PID attention, CLUB MI estimator",
+      "delivered_adapter": "comparison_pibd.py:PIBD2M",
+      "adapter_label": "PIBD-2M-P4096-DNLL",
+      "upstream_module_execution": "upstream PIB/PoE/MITransformerLayer/MIEstimator/SNN_Block are imported and executed unchanged; only the CUDA-only Gaussian sampler is replaced at runtime",
+      "official_reproduction": false
+    },
+    "DeReF": {
+      "official_repository": "https://github.com/ZJUMAI/DeReF",
+      "commit": "6bdbf81e76d1c7fa1d49b05f1a8fec2fbfc7b6d3",
+      "local_source_checkout": "../papers/comparators/DeReF",
+      "source_files_sha256": {
+        "models/deref/network.py": "497f267d0c6a958282a5c643923862e2893e6c421b8c77474bf384e52c022063",
+        "models/deref/util.py": "71a4233ff44f019b0a985b77224259b7807c9879180abb9f49b9ed0c04fe1610",
+        "models/deref/engine.py": "b1e4eed3527098ae87ccc380213f46df1bdbb7d0eef566462fee91c9a35d3146",
+        "utils/loss.py": "4245d81db867e6a34719e0b581a446a40cccf65554c33d16cf01d665200839ab",
+        "csv/signatures.csv": "0c9175b56331656998c63f8e21e55523a406a73dca31bb4c66b9357b8b5dbf58"
+      },
+      "native_contract": "WSI patches + 6 omic groups, 4-way private/shared feature split, random feature reorganisation, dynamic MoE",
+      "delivered_adapter": "comparison_deref.py:DeReF2M",
+      "adapter_label": "DeReF-2M-P4096-DNLL",
+      "upstream_module_execution": "upstream Transformer_P/Transformer_G/Private_encoder/Share_encoder/Gate/expert are imported and executed; the upstream hard-coded .cuda() token expansions are replaced at runtime",
+      "official_reproduction": false
+    },
+    "DIMAF": {
+      "official_repository": "https://github.com/Trustworthy-AI-UU-NKI/DIMAF",
+      "commit": "3fe81236aafac88977b730745314b8c9906cb4d3",
+      "local_source_checkout": "../papers/comparators/DIMAF",
+      "source_files_sha256": {
+        "src/models/DIMAF/main_model.py": "70c6cc2ff5f9dc279982e9197876583d633bbf31d610a18c35f1e538ac875025",
+        "src/models/DIMAF/layers.py": "7721aaf58068fb1c937ab020ecc669a2af4e9e45a0d87371f5f3c53eb62f652a",
+        "src/models/PANTHER/main_model.py": "9d8006961929fd2b304ceccdc77c0bba672a1a3f04d61f21270442f7f5fb8366",
+        "src/models/PANTHER/layers.py": "9100ee11b565d576781a95e60c6df9c5956b321fc2d54030c25b094b1d50dd1e",
+        "src/models/PANTHER/network.py": "5b7da673391f122f563cf3bef4ae6347de62f4ab860e1317d7c9c7dddb2bac89",
+        "src/survival/losses.py": "497d991442b45f73ddd0c654a7340be162602574fa7db7222bdb3f3fa5ae8001",
+        "src/survival/metrics.py": "77f8eb9093778ab47400b73aad5d25839f8849b688ae0605f77a608bbdeef5e6",
+        "src/data/data_files/hallmarks_signatures.csv": "851c61997590be3dd001e54d75cc1d40ccc09dc8be03f58fa3392be6bf9e5db9"
+      },
+      "native_contract": "PANTHER prototype slide embedding + hallmark RNA pathways, 4-way disentangled cross-attention, distcor/HSIC/orthogonal losses",
+      "delivered_adapter": "comparison_dimaf.py:DIMAF2M",
+      "adapter_label": "DIMAF-2M-P4096-DNLL",
+      "upstream_module_execution": "upstream MultiSNN/CrossAttentionLayer/DIMAF/PANTHERBase/DirNIWNet/DisentangledSurvLoss are imported and executed unchanged",
       "official_reproduction": false
     },
     "MurreNet": {

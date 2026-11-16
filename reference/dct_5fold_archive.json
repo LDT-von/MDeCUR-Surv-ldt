@@ -1,0 +1,29 @@
+{
+  "archive_id": "dct_5fold_legacy_val_peak",
+  "description": "Archived reference-implementation DCT five-fold numbers for BLCA, taken from the legacy validation folds (per-fold validation C-index peak). These are NOT re-run by this comparison; they are loaded read-only and aggregated with the same mean+/-std rule as every other arm.",
+  "source": "Conditional_DeCUR_Surv/DCT_PARITY_PROTOCOL.md section 11 (reference implementation five-fold legacy_val table)",
+  "protocol": {
+    "endpoint": "DSS",
+    "time_unit": "months",
+    "n_bins": 4,
+    "num_patches": 4096,
+    "patch_views": "UNI v1",
+    "selection": "maximum validation Harrell C per fold",
+    "split_family": "5fold (dataset_splits_summary/uni), i.e. the UNI v1 split set",
+    "train_val_only": true,
+    "outer_test_evaluated": false
+  },
+  "folds": [
+    {"fold": 0, "c_index": 0.7266, "c_index_ipcw": 0.5235, "ibs": 0.2086, "iauc": 0.7937},
+    {"fold": 1, "c_index": 0.7259, "c_index_ipcw": 0.6631, "ibs": 0.1540, "iauc": 0.7018},
+    {"fold": 2, "c_index": 0.6573, "c_index_ipcw": 0.6649, "ibs": 0.7891, "iauc": 0.6852},
+    {"fold": 3, "c_index": 0.6623, "c_index_ipcw": 0.6342, "ibs": 0.2300, "iauc": 0.3518},
+    {"fold": 4, "c_index": 0.7304, "c_index_ipcw": 0.6864, "ibs": 0.2369, "iauc": 0.5545}
+  ],
+  "limits": [
+    "These are the reference implementation's own archived numbers, not a re-run under this repository's code.",
+    "Each fold value is a validation-selected peak, so it is optimistically biased in the same way as the arms compared against it.",
+    "The archived IBS/IAUC were produced under the historical metric time grid; the arms compared here are also reported under that grid, but the grid itself was audited as time-misaligned and must not be read as a calibrated error score.",
+    "The reference implementation's own outer-test five-fold numbers are a different evaluation protocol and are not comparable to this table."
+  ]
+}

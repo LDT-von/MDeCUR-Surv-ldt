@@ -99,7 +99,8 @@ class BudgetedPatientBag:
             if reader is None:
                 raise ValueError('The source bag does not support batched row reads')
             pieces.append(reader(self._rows[start:real_stop]))
-        if real_stop < stop:
+        padding_start = max(start, real_stop)
+        if padding_start < stop:
             # The reference pads a short patient bag with zero feature rows.
-            pieces.append(torch.zeros((stop-real_stop, self.feature_dim), dtype=torch.float32))
+            pieces.append(torch.zeros((stop-padding_start, self.feature_dim), dtype=torch.float32))
         return (torch.cat(pieces, dim=0),)

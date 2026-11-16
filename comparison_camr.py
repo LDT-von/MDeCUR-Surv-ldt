@@ -1,14 +1,48 @@
-"""Explicit two-modality CAMR adaptation for the fixed-input comparison.
+"""Two-modality CAMR adaptation built on the **unmodified upstream modules**.
 
 Source: https://github.com/wxq-ustc/CAMR at
-8fbae0a0bc4e9da31547b5eab5d773e6b2049e93, networks.py/fusion.py/utils.py.
+8fbae0a0bc4e9da31547b5eab5d773e6b2049e93.
 
-This is CAMR-2M-P4096-DNLL, not an execution of the original three-modality
-CAMR. It retains shared/private encoders, cross-modal gates, low-rank fusion,
-reconstruction and orthogonality constraints. It adds attention MIL and RNA
-input projections, removes the unavailable CNA branch, replaces the Cox head
-with discrete-hazard logits, and supplies an explicit alternating adversarial
-objective. No fake CNA input is constructed.
+Unlike the earlier reimplementation, this adapter *executes the upstream
+classes*:
+
+* ``networks.MisaLMFGatedRec`` - shared encoder, three private encoders,
+  bilinear cross-modal gates, low-rank fusion (``fusion.LMF``), the survival
+  encoder and the three reconstruction heads.
+* ``fusion.Discriminator`` - the modality discriminator.
+* ``utils.DiffLoss`` - the shared/private orthogonality energy.
+* ``utils.MSE`` and ``utils.regularize_weights`` - reconstruction and the
+  upstream L1 weight regularization.
+
+Nothing in the upstream checkout is edited: the classes are imported from the
+read-only tree by ``comparison_sources.load_camr_modules`` and only *called*.
+
+Adaptations (all of them protocol level, none of them structural)
+-----------------------------------------------------------------
+1. **Three modalities -> two.**  BLCA provides UNI pathology features and bulk
+   RNA only; there is no CNA input in this protocol.  The third upstream slot
+   is therefore filled with a **constant vector that carries no patient
+   information** (the upstream low-rank fusion multiplies three factors, so the
+   slot cannot simply be zeroed).  No expression, CNA or survival value is
+   fabricated for that slot.
+2. **Input contract.**  Upstream consumes one 80-dimensional vector per
+   modality per patient.  Pathology is pooled from the fixed 4096-row patch
+   budget with attention MIL, and RNA is projected to the same 80 dimensions;
+   both projections live *outside* the upstream module.
+3. **Survival head.**  The upstream bounded Cox output (sigmoid, scaled to
+   [-4, 4]) is replaced by unbounded discrete-hazard logits, because the
+   shared protocol scores every arm with the same discrete NLL.  The upstream
+   encoder stack, the fusion and the reconstruction heads are untouched.
+4. **Discriminator update.**  Upstream builds the discriminator but omits it
+   from the optimizer, so its adversarial term never updates a single weight.
+   Here the discriminator has its own optimizer and is updated explicitly.
+   The adversarial objective itself is upstream's own formulation: the shared
+   RNA representation is the "real" class and the shared pathology
+   representation is the "fake" class.
+
+Everything else - the gate structure, the low-rank fusion, the reconstruction
+targets, the orthogonality energy and the auxiliary weights (0.6 / 0.8 / 0.05)
+- is upstream's.
 """
 import math
 
@@ -16,126 +50,81 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+import comparison_sources as sources
+
 
 METHOD_NAME = 'CAMR-2M-P4096-DNLL'
 UPSTREAM_URL = 'https://github.com/wxq-ustc/CAMR'
 UPSTREAM_COMMIT = '8fbae0a0bc4e9da31547b5eab5d773e6b2049e93'
-DEFAULT_AUXILIARY_WEIGHTS = {'adversarial': .6, 'reconstruction': .8, 'orthogonality': .05}
-
-
-def difference_loss(shared, private):
-    """Upstream DiffLoss: centered, row-normalized cross-correlation energy.
-
-    Norms are detached exactly as in the published utility. No rank or
-    independence guarantee is implied by a small value.
-    """
-    if shared.ndim != 2 or private.shape != shared.shape or not len(shared):
-        raise ValueError('Shared/private representations must be matching [B,D] matrices')
-    a, b = shared-shared.mean(0, keepdim=True), private-private.mean(0, keepdim=True)
-    a = a/(a.norm(dim=1, keepdim=True).detach()+1e-6)
-    b = b/(b.norm(dim=1, keepdim=True).detach()+1e-6)
-    return (a.T @ b).square().mean()
-
-
-class TwoWayLowRankFusion(nn.Module):
-    """Two-input counterpart of the original three-factor LMF, no dummy input."""
-    def __init__(self, dimension, rank=16):
-        super().__init__()
-        if type(dimension) is not int or dimension < 1 or type(rank) is not int or rank < 1:
-            raise ValueError('Positive integer fusion dimension and rank required')
-        self.dimension = dimension
-        self.rna_factor = nn.Parameter(torch.empty(rank, dimension+1, dimension))
-        self.path_factor = nn.Parameter(torch.empty(rank, dimension+1, dimension))
-        self.fusion_weights = nn.Parameter(torch.empty(1, rank))
-        self.fusion_bias = nn.Parameter(torch.zeros(1, dimension))
-        for parameter in (self.rna_factor, self.path_factor, self.fusion_weights):
-            nn.init.xavier_normal_(parameter)
-
-    def forward(self, rna, path):
-        if rna.ndim != 2 or path.shape != rna.shape or rna.shape[1] != self.dimension:
-            raise ValueError('Fusion expects two matching [B,D] inputs')
-        one = rna.new_ones((len(rna), 1))
-        rna = torch.einsum('bi,rio->bro', torch.cat((one, rna), 1), self.rna_factor)
-        path = torch.einsum('bi,rio->bro', torch.cat((one, path), 1), self.path_factor)
-        return torch.einsum('r,bro->bo', self.fusion_weights[0], rna*path)+self.fusion_bias
-
-
-class CrossModalGate(nn.Module):
-    def __init__(self, dimension, dropout):
-        super().__init__()
-        self.hidden = nn.Linear(dimension, dimension)
-        self.gate = nn.Bilinear(dimension, dimension, dimension)
-        self.output = nn.Sequential(nn.Linear(dimension, dimension), nn.ReLU(), nn.Dropout(dropout))
-
-    def forward(self, own, other):
-        return self.output(torch.sigmoid(self.gate(own, other))*F.relu(self.hidden(own)))
-
-
-class ModalityDiscriminator(nn.Module):
-    """Logit version of upstream discriminator; stable BCEWithLogits loss."""
-    def __init__(self, dimension):
-        super().__init__()
-        self.first = nn.Linear(dimension, 128)
-        self.second = nn.Linear(128, 32)
-        self.final = nn.Linear(32, 1)
-
-    def forward(self, features, *, frozen_parameters=False):
-        def linear(layer, x):
-            weight = layer.weight.detach() if frozen_parameters else layer.weight
-            bias = layer.bias.detach() if frozen_parameters else layer.bias
-            return F.linear(x, weight, bias)
-        x = F.leaky_relu(linear(self.first, features), negative_slope=.2)
-        x = torch.tanh(linear(self.second, x))
-        return linear(self.final, x)
+DEFAULT_AUXILIARY_WEIGHTS = {'adversarial': .6, 'reconstruction': .8, 'orthogonality': .05,
+                              'weight_regularization': 2e-6}
+LATENT_DIM = 60          # upstream hard-codes 60 shared/private dimensions
+INPUT_DIM = 80           # upstream hard-codes the 80-dimensional patient vectors
 
 
 class CAMR2M(nn.Module):
-    """Attention-MIL WSI plus RNA CAMR adaptation, with explicit D/G losses.
+    """Attention-MIL pathology plus RNA, on top of the upstream CAMR model.
 
-    Padded zero feature rows deliberately remain visible to MIL, matching the
-    fixed-budget legacy protocol. There is no padding mask or CNA argument.
-    Model-specific adversarial/reconstruction/difference losses stay enabled.
-    The caller owns two disjoint optimizers and the shared survival objective.
+    The public interface is unchanged with respect to the other arms: a
+    ``forward(patches, rna)`` that returns at least ``logits``, an
+    ``auxiliary_losses(output)`` mapping, an ``auxiliary_weights`` mapping and
+    the disjoint ``main_parameters`` / ``discriminator_parameters`` sets.
     """
+
     method_name = METHOD_NAME
     auxiliary_weights = DEFAULT_AUXILIARY_WEIGHTS
 
-    def __init__(self, path_dim, rna_dim, bins=4, input_dim=80, latent_dim=60,
-                 rank=16, dropout=.1):
+    def __init__(self, path_dim, rna_dim, bins=4, input_dim=INPUT_DIM,
+                 dropout=.1):
         super().__init__()
-        if any(type(x) is not int or x < 1 for x in (path_dim, rna_dim, bins, input_dim, latent_dim, rank)):
+        if any(type(x) is not int or x < 1 for x in (path_dim, rna_dim, bins, input_dim)):
             raise ValueError('Positive integer model dimensions required')
         if not math.isfinite(dropout) or not 0 <= dropout < 1:
             raise ValueError('dropout must be finite and lie in [0,1)')
         self.path_dim, self.rna_dim = path_dim, rna_dim
-        self.bins, self.input_dim, self.latent_dim = bins, input_dim, latent_dim
-        self.rank, self.dropout = rank, float(dropout)
+        self.bins, self.input_dim = bins, input_dim
+
+        upstream = sources.load_camr_modules()
+        self._upstream_names = {'networks': 'networks', 'fusion': 'fusion', 'utils': 'utils'}
+        networks, fusion, utils = (upstream['networks'], upstream['fusion'], upstream['utils'])
+        self._upstream_classes = {
+            'MisaLMFGatedRec': networks.MisaLMFGatedRec,
+            'LMF': fusion.LMF,
+            'Discriminator': fusion.Discriminator,
+            'DiffLoss': utils.DiffLoss,
+            'MSE': utils.MSE,
+        }
+
+        # The upstream model itself: shared encoder, private encoders, bilinear
+        # cross-modal gates, low-rank fusion, survival encoder, reconstructions.
+        self.upstream_model = networks.MisaLMFGatedRec(
+            input_dim, bins, hidden_size=20, hidden_size1=input_dim, dropout=dropout)
+        # Protocol alignment: discrete-hazard logits instead of the bounded Cox
+        # output.  The upstream forward applies ``classifier`` then rescales it
+        # with ``output_range`` / ``output_shift``; neutralising the rescaling
+        # leaves the upstream computation untouched.
+        self.upstream_model.classifier = nn.Linear(15, bins)
+        with torch.no_grad():
+            self.upstream_model.output_range.fill_(1.)
+            self.upstream_model.output_shift.fill_(0.)
+
+        # Upstream losses and discriminator, used exactly as upstream uses them.
+        self.diff_loss = utils.DiffLoss()
+        self.mse = utils.MSE()
+        self.discriminator = fusion.Discriminator(LATENT_DIM)
+        self.regularize_weights = utils.regularize_weights
+
+        # Input adapters (outside the upstream module).
         self.patch_encoder = nn.Sequential(nn.Linear(path_dim, input_dim), nn.ReLU())
         self.attention = nn.Sequential(nn.Linear(input_dim, max(1, input_dim//2)), nn.Tanh(),
                                        nn.Linear(max(1, input_dim//2), 1))
         self.rna_adapter = nn.Linear(rna_dim, input_dim)
-        self.common = nn.Sequential(nn.Linear(input_dim, 320), nn.ReLU(),
-                                    nn.Linear(320, 128), nn.ReLU(), nn.Linear(128, latent_dim), nn.ReLU())
-        self.private_rna = nn.Sequential(nn.Linear(input_dim, 320), nn.ReLU(),
-                                         nn.Linear(320, latent_dim), nn.ReLU())
-        self.private_path = nn.Sequential(nn.Linear(input_dim, 256), nn.ReLU(),
-                                          nn.Linear(256, 128), nn.ReLU(), nn.Linear(128, latent_dim), nn.ReLU())
-        # The upstream executable reuses one gate for all modality orderings.
-        self.common_gate = CrossModalGate(latent_dim, dropout)
-        self.low_rank_fusion = TwoWayLowRankFusion(latent_dim, rank)
-        self.survival_encoder = nn.Sequential(
-            nn.Linear(3*latent_dim, 900), nn.ReLU(), nn.Dropout(dropout),
-            nn.Linear(900, 512), nn.ReLU(), nn.Dropout(dropout),
-            nn.Linear(512, 64), nn.ReLU(), nn.Dropout(dropout),
-            nn.Linear(64, 15), nn.ReLU(), nn.Dropout(dropout))
-        self.head = nn.Linear(15, bins)
-        self.reconstruct_rna = nn.Sequential(nn.Linear(2*latent_dim, 256), nn.ReLU(),
-                                             nn.Linear(256, input_dim), nn.ReLU())
-        self.reconstruct_path = nn.Sequential(nn.Linear(2*latent_dim, 256), nn.ReLU(),
-                                              nn.Linear(256, input_dim), nn.ReLU())
-        self.discriminator = ModalityDiscriminator(latent_dim)
+        # Constant third slot: no patient information whatsoever.
+        self.register_buffer('placeholder', torch.ones(1, input_dim), persistent=False)
 
+    # ------------------------------------------------------------------ input
     def _pool(self, patches, batch_size):
+        """Attention MIL over the fixed patch budget; padded rows stay visible."""
         if isinstance(patches, torch.Tensor):
             if patches.ndim != 3 or patches.shape[0] != batch_size:
                 raise ValueError('Patch tensor must have shape [B,N,D]')
@@ -143,7 +132,7 @@ class CAMR2M(nn.Module):
         elif isinstance(patches, (list, tuple)) and len(patches) == batch_size:
             bags = patches
         else:
-            raise ValueError('Provide one patch tensor per RNA row')
+            raise ValueError('Provide one patch bag per RNA row')
         pooled = []
         parameter = next(self.parameters())
         for bag in bags:
@@ -156,7 +145,9 @@ class CAMR2M(nn.Module):
             pooled.append((weights*features).sum(0))
         return torch.stack(pooled)
 
+    # ---------------------------------------------------------------- forward
     def forward(self, patches, rna):
+        """Run the upstream CAMR model on RNA (gene slot) and pathology."""
         if (not isinstance(rna, torch.Tensor) or rna.ndim != 2 or not len(rna)
                 or rna.shape[1] != self.rna_dim or not rna.is_floating_point()
                 or not torch.isfinite(rna).all()):
@@ -164,45 +155,73 @@ class CAMR2M(nn.Module):
         parameter = next(self.parameters())
         path_input = self._pool(patches, len(rna))
         rna_input = self.rna_adapter(rna.to(device=parameter.device, dtype=parameter.dtype))
-        path_common, rna_common = self.common(path_input), self.common(rna_input)
-        path_private, rna_private = self.private_path(path_input), self.private_rna(rna_input)
-        common = self.low_rank_fusion(self.common_gate(rna_common, path_common),
-                                      self.common_gate(path_common, rna_common))
-        logits = self.head(self.survival_encoder(torch.cat((common, rna_private, path_private), 1)))
-        return {'logits': logits, 'path_input': path_input, 'rna_input': rna_input,
-                'path_common': path_common, 'rna_common': rna_common,
-                'path_private': path_private, 'rna_private': rna_private, 'fused_common': common,
-                'path_reconstruction': self.reconstruct_path(torch.cat((common, path_private), 1)),
-                'rna_reconstruction': self.reconstruct_rna(torch.cat((common, rna_private), 1))}
+        placeholder = self.placeholder.expand(len(rna), -1).to(rna_input.dtype)
+        outputs = self.upstream_model(rna_input, path_input, placeholder)
+        (logits, rna_target, rna_reconstruction, path_target, path_reconstruction,
+         placeholder_target, placeholder_reconstruction, rna_common, path_common,
+         placeholder_common, rna_private, path_private,
+         placeholder_private) = outputs
+        return {'logits': logits,
+                'rna_input': rna_target, 'path_input': path_target,
+                'placeholder_input': placeholder_target,
+                'rna_common': rna_common, 'path_common': path_common,
+                'placeholder_common': placeholder_common,
+                'rna_private': rna_private, 'path_private': path_private,
+                'placeholder_private': placeholder_private,
+                'rna_reconstruction': rna_reconstruction,
+                'path_reconstruction': path_reconstruction,
+                'placeholder_reconstruction': placeholder_reconstruction}
+
+    # ----------------------------------------------------------------- losses
+    def _adversarial_terms(self, output, detach_features, freeze_discriminator):
+        """Upstream's discriminator formulation, reduced to the two real modalities.
+
+        Upstream labels the shared *genomic* representation as "real" and the
+        shared *pathology* and *CNA* representations as "fake".  Without a CNA
+        input the third fake term is dropped; the placebo slot carries no
+        patient information and would only teach the discriminator a constant.
+        """
+        layers = self.discriminator.model
+        if freeze_discriminator:
+            def linear(index, x):
+                layer = layers[index]
+                return F.linear(x, layer.weight.detach(), layer.bias.detach())
+
+            def evaluate(features):
+                x = F.leaky_relu(linear(0, features), negative_slope=.2)
+                x = torch.tanh(linear(2, x))
+                return torch.sigmoid(linear(4, x))
+        else:
+            evaluate = self.discriminator
+
+        rna = output['rna_common'].detach() if detach_features else output['rna_common']
+        path = output['path_common'].detach() if detach_features else output['path_common']
+        real = evaluate(rna)
+        fake = evaluate(path)
+        bce = nn.BCELoss()
+        return .5*(bce(real, torch.ones_like(real))+bce(fake, torch.zeros_like(fake)))
 
     def discriminator_loss(self, output):
-        """D-only loss: feature detach prevents all encoder gradients."""
-        rna = self.discriminator(output['rna_common'].detach())
-        path = self.discriminator(output['path_common'].detach())
-        return .5*(F.binary_cross_entropy_with_logits(rna, torch.ones_like(rna))
-                   +F.binary_cross_entropy_with_logits(path, torch.zeros_like(path)))
+        """D-only loss: the features are detached, so no encoder gets a gradient."""
+        return self._adversarial_terms(output, detach_features=True, freeze_discriminator=False)
 
     def auxiliary_losses(self, output):
-        """Encoder-side confusion, reconstruction and original DiffLoss.
+        """Encoder-side terms: upstream adversarial, reconstruction and DiffLoss."""
+        adversarial = self._adversarial_terms(output, detach_features=False,
+                                              freeze_discriminator=True)
+        reconstruction = (self.mse(output['rna_input'], output['rna_reconstruction'])
+                          + self.mse(output['path_input'], output['path_reconstruction'])
+                          + self.mse(output['placeholder_input'],
+                                     output['placeholder_reconstruction']))
+        orthogonality = (self.diff_loss(output['rna_common'], output['rna_private'])
+                         + self.diff_loss(output['path_common'], output['path_private'])
+                         + self.diff_loss(output['placeholder_common'],
+                                          output['placeholder_private']))/3
+        regularization = self.regularize_weights(self.upstream_model)
+        return {'adversarial': adversarial, 'reconstruction': reconstruction,
+                'orthogonality': orthogonality, 'weight_regularization': regularization}
 
-        D weights are detached for confusion, while feature gradients remain.
-        This enforces independent optimizer ownership even if the caller does
-        not temporarily toggle requires_grad on the discriminator.
-        """
-        rna = self.discriminator(output['rna_common'], frozen_parameters=True)
-        path = self.discriminator(output['path_common'], frozen_parameters=True)
-        adversarial = .5*(F.binary_cross_entropy_with_logits(rna, torch.full_like(rna, .5))
-                          +F.binary_cross_entropy_with_logits(path, torch.full_like(path, .5)))
-        reconstruction = F.mse_loss(output['rna_reconstruction'], output['rna_input']) \
-                         +F.mse_loss(output['path_reconstruction'], output['path_input'])
-        orthogonality = .5*(difference_loss(output['rna_common'], output['rna_private'])
-                             +difference_loss(output['path_common'], output['path_private']))
-        return {'adversarial': adversarial, 'reconstruction': reconstruction, 'orthogonality': orthogonality}
-
-    def main_objective_components(self, output):
-        """Alias for runners; raw auxiliary terms, survival supplied by caller."""
-        return self.auxiliary_losses(output)
-
+    # ------------------------------------------------------------- parameters
     def main_parameters(self):
         return (parameter for name, parameter in self.named_parameters()
                 if not name.startswith('discriminator.'))
@@ -213,15 +232,24 @@ class CAMR2M(nn.Module):
     def adaptation_metadata(self):
         return {'method': METHOD_NAME, 'official_model_reproduction': False,
                 'upstream_url': UPSTREAM_URL, 'upstream_commit': UPSTREAM_COMMIT,
-                'modalities': ['pathology', 'RNA'], 'fake_CNA_used': False,
-                'input_dim': self.input_dim, 'latent_dim': self.latent_dim, 'rank': self.rank,
+                'upstream_modules_executed': sorted(self._upstream_classes),
+                'upstream_model_class': 'networks.MisaLMFGatedRec',
+                'modalities': ['pathology', 'RNA'],
+                'fake_CNA_used': False,
+                'placeholder_slot': 'constant vector without patient information',
+                'input_dim': self.input_dim, 'latent_dim': LATENT_DIM,
                 'auxiliary_weights': dict(self.auxiliary_weights),
                 'adaptations': [
-                    'Three modalities reduced to pathology/RNA; no CNA input fabricated.',
-                    'Added attention MIL over fixed-budget patch features and a learned RNA input projection.',
-                    'Reconstruction targets are the learned 80D input embeddings, not the original full patch/RNA arrays.',
-                    'Removed CNA private/reconstruction branch and changed three-way low-rank fusion to two-way.',
-                    'Replaced scalar bounded Cox output with unbounded discrete-hazard logits.',
-                    'Uses an explicit D-only classification step and encoder confusion-to-0.5 step.',
-                    'Padded zero feature rows remain visible to MIL to match legacy fixed-budget inputs.',
+                    'Three upstream slots reduced to pathology/RNA; the third slot is a '
+                    'constant placeholder, no CNA-like data is fabricated.',
+                    'Attention MIL pooling of the 4096-row patch budget and an RNA input '
+                    'projection are applied outside the upstream module.',
+                    'The bounded Cox output is replaced by discrete-hazard logits; the '
+                    'upstream encoder, gates, low-rank fusion and reconstructions are used as is.',
+                    'The discriminator receives its own optimizer; upstream omits it from '
+                    'the optimizer and therefore never updates it.',
+                    'The upstream third "fake" discriminator term is dropped because the '
+                    'placeholder carries no patient information.',
+                    'Padded zero feature rows remain visible to MIL to match the legacy '
+                    'fixed-budget inputs.',
                 ]}

@@ -103,12 +103,13 @@ class DiscreteLikelihoodTest(unittest.TestCase):
         self.assertNotAlmostEqual(float(censored), float(uncensored), places=4)
 
     def test_alpha_zero_equals_the_plain_negative_log_likelihood(self):
-        logits = torch.randn(6, 4)
-        labels = torch.randint(0, 4, (6,))
-        censorship = torch.randint(0, 2, (6,)).float()
+        logits = torch.tensor([[2., -1.], [-2., 1.]])
+        labels = torch.tensor([0, 1])
+        censorship = torch.tensor([0., 1.])
         first = discrete_nll(logits, labels, censorship, alpha=0.0)
-        second = discrete_nll(logits, labels, censorship, alpha=0.0)
-        self.assertTrue(torch.allclose(first, second))
+        h = logits.sigmoid()
+        independently_calculated = (-torch.log(h[0, 0])-torch.log((1-h[1]).prod()))/2
+        self.assertTrue(torch.allclose(first, independently_calculated))
 
     def test_shapes_are_validated(self):
         with self.assertRaises(ValueError):

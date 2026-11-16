@@ -94,6 +94,8 @@ def discretize_labels(time, bin_edges):
 
 # -------------------------------------------------------------- discrete model
 
+DISCRETE_NLL_VERSION = 'patientwise_clamped_discrete_v1'
+
 def discrete_survival(logits):
     """Cumulative survival of the reference discrete hazard parameterization."""
     hazards = torch.sigmoid(logits)
@@ -101,26 +103,39 @@ def discrete_survival(logits):
 
 
 def discrete_nll(logits, labels, censorship, alpha=.5, eps=1e-7, reduction='mean'):
-    """Reproduce the reference discrete-time negative log likelihood.
+    """Patientwise weighted discrete hazard NLL; no cross-patient broadcast.
 
-    ``censorship`` is 1 for a censored patient and 0 for an observed event,
-    matching the reference convention where the uncensored term is weighted
-    by ``alpha``.
+    Event loss is -log(S_previous * hazard); censor loss is
+    (1-alpha)*-log(S_current). ``censorship`` is 1 for censoring.
+    Labels/censoring accept [B] or [B,1]; reduction='none' returns [B].
+    The historical eps clipping is retained. Pre-fix mixed-censor batches
+    accidentally produced [B,B] and are not this objective's results.
     """
-    if logits.ndim != 2 or logits.shape[0] != len(labels) or logits.shape[1] < 1:
+    if (logits.ndim != 2 or logits.shape[0] < 1 or logits.shape[1] < 1
+            or not logits.is_floating_point()):
         raise ValueError('Incompatible shapes for the discrete survival likelihood')
     if not torch.isfinite(logits).all():
         raise ValueError('Nonfinite hazard logits')
-    y = torch.as_tensor(labels, dtype=torch.long)
-    c = torch.as_tensor(censorship, dtype=torch.float32)
-    if y.shape != c.shape or y.numel() != logits.shape[0]:
-        raise ValueError('Labels and censorship must match the batch')
+    if not np.isfinite(alpha) or not 0 <= alpha <= 1 or not np.isfinite(eps) or not 0 < eps < 1:
+        raise ValueError('alpha must be in [0,1] and eps in (0,1)')
+    y = torch.as_tensor(labels, device=logits.device)
+    c = torch.as_tensor(censorship, device=logits.device)
+    for value in (y, c):
+        if (value.ndim not in (1, 2) or (value.ndim == 2 and value.shape[1] != 1)
+                or value.numel() != logits.shape[0] or value.is_complex()
+                or not torch.isfinite(value).all()):
+            raise ValueError('Labels and censorship must contain one finite scalar per patient')
+    y, c = y.reshape(-1), c.reshape(-1)
+    if ((y != y.long()).any() or (y < 0).any() or (y >= logits.shape[1]).any()
+            or ((c != 0) & (c != 1)).any()):
+        raise ValueError('Labels must be valid integer bins and censorship must be binary')
+    y, c = y.long(), c.to(dtype=logits.dtype)
     hazards = torch.sigmoid(logits)
     survival = torch.cumprod(1-hazards, dim=1)
     padded = torch.cat([torch.ones_like(c.unsqueeze(1)), survival], dim=1)
-    previous = torch.gather(padded, 1, y.unsqueeze(1)).clamp_min(eps)
-    this_hazard = torch.gather(hazards, 1, y.unsqueeze(1)).clamp_min(eps)
-    this_survival = torch.gather(padded, 1, (y+1).unsqueeze(1)).clamp_min(eps)
+    previous = torch.gather(padded, 1, y.unsqueeze(1)).squeeze(1).clamp_min(eps)
+    this_hazard = torch.gather(hazards, 1, y.unsqueeze(1)).squeeze(1).clamp_min(eps)
+    this_survival = torch.gather(padded, 1, (y+1).unsqueeze(1)).squeeze(1).clamp_min(eps)
     uncensored = -(1-c)*(torch.log(previous)+torch.log(this_hazard))
     censored = -c*torch.log(this_survival)
     negative = censored+uncensored

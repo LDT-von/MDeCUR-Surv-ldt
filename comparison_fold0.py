@@ -19,7 +19,7 @@ import numpy as np
 import torch
 
 from cancer_parity import (_json_float, dct_bin_edges, discretize_labels, discrete_nll,
-                           discrete_survival, dct_risk, parity_metrics)
+                           discrete_survival, dct_risk, parity_metrics, DISCRETE_NLL_VERSION)
 from cancer_parity_bag import BudgetedPatientBag
 from cancer_pathway import PathwayLocalSurvival
 from cancer_pathway_stream import (PathwayConfig, pathway_stream_forward, patient_batches,
@@ -36,13 +36,14 @@ MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'mdecur_aux_off', 'camr_2m')
 DENSE_MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off')
 UNAVAILABLE = {'murrenet': 'Verified author implementation not available; no placeholder model.',
                'mohd': 'Verified author implementation and hierarchical input contract not available.'}
-PROTOCOL = 'blca_fold0_full_dense_v2'
+PROTOCOL = 'blca_fold0_full_dense_patientwise_v3'
 SETTINGS = dict(fold=0, endpoint='DSS', time_unit='months', seed=3, epochs=30,
                 patient_batch_size=20, num_patches=4096, patch_chunk_size=4096,
                 n_bins=4, alpha_surv=.5, lr=5e-4, weight_decay=5e-4,
                 scheduler='CosineAnnealingLR(T_max=30)', rna_scale_policy='none',
                 selection='maximum validation Harrell C, earliest exact tie',
                 default_model=DEFAULT_MODEL,
+                loss_version=DISCRETE_NLL_VERSION,
                 metric_convention='legacy scoring plus separately labelled finite-edge audit',
                 batching='same epoch order and merged tail for all arms; minimum B=hidden+1')
 SOURCE_MODULES = ('comparison_fold0', 'comparison_camr', 'cancer_parity', 'cancer_parity_bag',
@@ -165,6 +166,7 @@ def input_metadata(cohort, reference, edges, report, file_hashes):
             'double_labels_sha256': {s: json_hash([t.tolist(), e.tolist()]) for s, (t, e) in reference.items()},
             'path_dim': cohort['train']['bags'][0].feature_dim, 'rna_dim': cohort['train']['rna'].shape[1],
             'native_model_kwargs': report['model_kwargs'],
+            'reference_role': 'Legacy run supplies input identity only; weights and scores are not reused.',
             'prior_sealed_patient_overlap': 'Not established by manifest without historical ID intersection; do not infer sealed status.'}
 
 
@@ -389,6 +391,7 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
         if any(digest(p) != h for p, h in plan['inputs']['file_sha256'].items()) or sources() != plan['source_sha256'] or digest(plan_path) != plan_sha256:
             raise RuntimeError('Input, code or plan changed during run; refuse to publish comparison output')
         common = {'model_id': model_id, 'metadata': metadata, 'plan_sha256': plan_sha256,
+                  'loss_version': DISCRETE_NLL_VERSION,
                   'runtime': runtime,
                   'settings': plan['settings'], 'bin_edges': plan['inputs']['bin_edges'],
                   'native_model_kwargs': original_report['model_kwargs'] if model_id != 'camr_2m' else None,
