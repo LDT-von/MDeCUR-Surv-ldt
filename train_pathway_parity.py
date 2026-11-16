@@ -145,7 +145,15 @@ class _ZeroBag:
         self.feature_dim = source.feature_dim
         self.view_source = getattr(source, 'view_source', 'single_view')
         self.n_patches = num_patches
-        self.padding = num_patches
+        # The underlying bag is kept so that the report can still state how
+        # many patches the patient actually has; only the features are frozen.
+        self._source = getattr(source, '_source', source)
+        self._budget = source
+
+    @property
+    def padding(self):
+        """The zero padding of the wrapped budget bag, not the whole budget."""
+        return getattr(self._budget, 'padding', 0)
 
     def resample(self, seed=0):
         """A frozen bag has no rows to redraw."""
