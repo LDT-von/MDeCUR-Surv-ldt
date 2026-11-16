@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+2026-11-16 收到V1完成回报：旧auxoff best C.735341/last.698891，CAMR适配best.786846/last.759113；CAMR IPCW与NLL更差，不能宣布整体更好。仅用户转发，未本机核实患者产物。先读 `V1_RESULTS_REVIEW_20261116.md`，新只读 `scripts/audit_v1_comparison_predictions.py` 专门核对V1两条臂best/last四份CSV、原plan及history，另列finite-edge/KM审计；原旧单检查点审计入口不能直接套V1五文件格式。服务器HEAD据报111a241，其额外两提交当前GitHub不可见，先保留并回传log/diff，不reset/覆盖，不重复启动已完成V1，不动warm_daemon。主模型仍是已发布full dense，V2 batch20与V1 batch8分表；模型/损失/采样/训练器本批未改，未SSH/患者任务，26项纯合成审计检查通过。
+
 2026-11-14 最新用户要求：全部辅助必须默认开启、加入DenseTwins式token目标与跨模态协同候选。先读 `FULL_DENSE_TOKEN_PROTOCOL_20261114.md`。comparison默认 `mdecur_full_dense`，11旧＋4dense辅助均正系数，DensePathwaySurvival的local common/private直接进NLL并加训练参考中心化token交互；不叫严格PID。aux-off只是显式消融。V2共同batch20＋末批merge以满足16维identity必要rank；旧batch8/V1/0.7361不能混入新排名。已核实legacy时间列映射影响Brier/IBS/AUC，但不能据此说Harrell 0.7361虚假；先用 `scripts/audit_parity_saved_predictions.py` 只读核对旧CSV/标签/报告，再新的一折。最近邻能对独立token云制造约.99976相关，必须保留负控，不以高相关当真实共性。所有本地证据仅CPU合成，无新患者结果/SSH。下方V1 aux-off默认安排已过时。
 
 2026-11-13 最新单折对照交付：当前用户要求拉取CAMR/MurreNet/MoHD并适配同输入同协议，先BLCA fold0，比较最高val C轮与epoch30末轮，不补4折。先读 `BLCA_FOLD0_COMPARISON_20261113.md`。统一入口 `comparison_fold0.py`，CAMR适配 `comparison_camr.py`；源码状态 `comparison_sources.json`。CAMR官方8fbae0a已拉到本地父目录papers/comparators/CAMR，仅源码，无附带pkl。MurreNet会议Code N/A，作者主页无该模型链接；MoHD未找到可验证作者code，二者无可运行入口，不能冒充已完成三篇。新计划固定PYTHONHASHSEED=0并锁输入/代码/环境，MDeCUR aux-off与CAMR-2M都重新训练；不能把旧0.7361填进新计划排名。本窗口只做本地合成验证和Git交付，不连接服务器，不启动患者作业。下面关于remote协议、旧HEAD及未推送状态均为历史，需实时git核对。

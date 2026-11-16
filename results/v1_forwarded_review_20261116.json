@@ -1,0 +1,94 @@
+{
+  "reported_date": "2026-11-16",
+  "source": "user-forwarded server report; no local patient-artifact verification",
+  "locally_verified_patient_metrics": false,
+  "reported_artifact_root": "/data1/decur_runs/BLCA_FOLD0_COMPARATORS_20261113_V1/",
+  "reported_training_source_commit": "8455875",
+  "reported_server_head": "111a241",
+  "server_extra_commits_reviewed": false,
+  "verified_github_main": "ae17edc76a9c5173a9945bcf299f80b1a9738f3b",
+  "protocol": "V1 aux-off/CAMR, not full dense V2",
+  "rows": [
+    {
+      "model": "mdecur_aux_off",
+      "selection": "best",
+      "epoch": 8,
+      "c": 0.735341,
+      "ipcw": 0.521562,
+      "nll": 0.796395,
+      "brier": [
+        0.109663,
+        0.166142
+      ],
+      "ibs_legacy": 0.137902,
+      "auc_legacy": 0.852127
+    },
+    {
+      "model": "mdecur_aux_off",
+      "selection": "last",
+      "epoch": 30,
+      "c": 0.698891,
+      "ipcw": 0.508145,
+      "nll": 0.879383,
+      "brier": [
+        0.104583,
+        0.156933
+      ],
+      "ibs_legacy": 0.130758,
+      "auc_legacy": 0.801435
+    },
+    {
+      "model": "camr_2m",
+      "selection": "best",
+      "epoch": 20,
+      "c": 0.786846,
+      "ipcw": 0.375193,
+      "nll": 0.90827,
+      "brier": [
+        0.096239,
+        0.149177
+      ],
+      "ibs_legacy": 0.122708,
+      "auc_legacy": 0.894954
+    },
+    {
+      "model": "camr_2m",
+      "selection": "last",
+      "epoch": 30,
+      "c": 0.759113,
+      "ipcw": 0.35979,
+      "nll": 1.021068,
+      "brier": [
+        0.102867,
+        0.141168
+      ],
+      "ibs_legacy": 0.122018,
+      "auc_legacy": 0.888317
+    }
+  ],
+  "directions": {
+    "c": "higher",
+    "ipcw": "higher",
+    "nll": "lower",
+    "brier": "lower",
+    "ibs_legacy": "lower",
+    "auc_legacy": "higher"
+  },
+  "synthetic_validation": {
+    "command": "python -m unittest test_v1_comparison_audit test_saved_parity_audit test_cancer_parity_audit -v",
+    "tests": 26,
+    "result": "OK",
+    "patient_or_model_inference": false
+  },
+  "new_file_sha256": {
+    "scripts/audit_v1_comparison_predictions.py": "3884f658c41afd1a61d9c7cc31bec45512953ec4dbe025cfc5c8140d90003c28",
+    "test_v1_comparison_audit.py": "3069c607442a0a3f82ab3e88b6ff1d977cf91a1e57023b2cde45b6fe02819a0f",
+    "V1_RESULTS_REVIEW_20261116.md": "a20338c12a01ce39a120caa8d9cd1166f0152b68697630a8c703a79542830c2c"
+  },
+  "limits": [
+    "Reported values are rounded point estimates, not independent tests or significance claims.",
+    "Legacy Brier/IBS/AUC time semantics require the separate finite-edge audit.",
+    "High Harrell does not invalidate the opposing IPCW result.",
+    "No new full-model patient score was supplied."
+  ]
+}
