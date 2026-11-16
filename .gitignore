@@ -29,3 +29,8 @@ venv/
 .mypy_cache/
 .idea/
 .vscode/
+
+# Retain generated patientwise validation inputs/checkpoints locally.
+results/patientwise_generated_pre_summary_guard_20261116/
+results/patientwise_three_arm_validation_20261116_generated/
+results/patientwise*_junit_20261116.xml

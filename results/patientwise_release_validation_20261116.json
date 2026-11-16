@@ -1,0 +1,128 @@
+{
+  "status": "passed",
+  "scope": "Local CPU generated-data engineering and mathematical validation; no patient/CUDA/independent-test evidence",
+  "completed_at": "2026-11-16T16:15:03.279792+08:00",
+  "git_base_at_source_freeze": "8bb60fad60a5cef7fc170b2c979873418e34f537",
+  "git_head_before_release_commit": "5b28be12d25a4fec91b848a8d214c038446295b1",
+  "concurrent_history_preserved": [
+    "87892a4c513a878e1090d41f31b42080e5a73259: comparison tests, including concurrent plan-lock regressions",
+    "1563cfc1c789d9c62ef3c37308f1bbf5858e0b58: fivefold protocol documentation only; no fivefold run",
+    "5b28be1: concurrent commit of frozen source and generated artifacts; final follow-up removes generated directories/XML from tracking only, retains local files and history"
+  ],
+  "protocol": "blca_fold0_full_dense_patientwise_v3",
+  "loss_version": "patientwise_clamped_discrete_v1",
+  "cpu_suite": {
+    "tests": 337,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 3,
+    "passed": 334,
+    "exit_code": 0,
+    "wall_seconds": 498.051,
+    "warning_count": 464,
+    "command": "python -m pytest -q -rs --disable-warnings --junitxml=results/patientwise_final_release_junit_20261116.xml",
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "skips": "3 DCT reference cross-checks: reference repository unavailable locally",
+    "log": "results\\patientwise_final_release_pytest_20261116.log",
+    "log_sha256": "11dc8cc02c5592617bca57221a2a3c15dfa3767c0ceb5bc87d62939ad2498c63"
+  },
+  "source_freeze": {
+    "receipt": "results\\patientwise_final_source_freeze_20261116.json",
+    "sha256": "6bb8b8be8a0ba23f0d849d0cbf14df13eb2c5d6afd859d12898df12bdd4b4967",
+    "files_checked": 19,
+    "all_current_bytes_match": true,
+    "source_sha256": {
+      "train_pathway_parity.py": "cff6b3bcad9441c621b6b156df2525ca32e59b2b3ade0d71a31e9b8f4563a132",
+      "parity_checkpoint_controls.py": "560d5ad56ad30e87182f9c5d0d6aca525d22c169c8ea29323ff5d23d3c285649",
+      "diagnose_parity_interaction.py": "ef72be3224bff206ac487e4fedb7a2f0f6c73061bb1a51c40f4fa37b0e696e4b",
+      "diagnose_parity_modalities.py": "ad9d24318fa4b7be1b0ba5139e82c71634c41b4c87ab9690ff70c248d0aba566",
+      "diagnose_rna_only_baseline.py": "38805d2ad46d7f0022e5a5172142ba3ca10191612c0d737a0e2eb1f636d3af34",
+      "cancer_parity.py": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3",
+      "cancer_parity_bag.py": "3fdf0f13813c606ea6a433306c5c849918fd040b11ac6a912aa7c678582b9ccb",
+      "comparison_fold0.py": "1cbf08e2a12fd96e1bc534cadf192f91b125e7428c61d31a1d09068af32585cb",
+      "cancer_dense_model.py": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+      "cancer_pathway_stream.py": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+      "test_cancer_parity.py": "8951333b90b6dab9d791d3fbf1c3f83902340b10e15dff73e0522b9938d6e24a",
+      "test_comparison_fold0.py": "384265b1f69d2c99a136ff6b8d848ee9705403446b4aa9385ca58411e50bf7b0",
+      "test_parity_diagnostics.py": "4892b2baaf2473a22eaaa7a75d9d75e67512b417fc04ef638104a150f096ccf8",
+      "test_parity_checkpoint_controls.py": "6e95c0430bde7405e5b5b4f12904025975a97b06a38df80e412180f8099ca082",
+      "test_parity_entrypoint_controls.py": "0868bb6b606be07d3683cdbfb9965c120d5cc0c57f836bbfcb347120fdcc85aa",
+      "test_discrete_nll_patientwise.py": "1a7ce15322808b2666964ce348e16af44c0243834957196e02631c5a45d27e8a",
+      "scripts/run_aux_comparison.sh": "37384d340e3e4181a8a343da0948b5632460ac70f41c66976edffcf8efb29c7e",
+      "scripts/run_parity_controls.sh": "ec91f6ef1a48fa82b45ebfe75e942d37360f305684a60aa329b23f64d128717d",
+      "scripts/validate_patientwise_comparison_synthetic.py": "733d78f89de91cba510e2fa64378f3cbb8c816d591ae46a72e2b59c4aaf0ecce"
+    }
+  },
+  "comparison": {
+    "receipt": "results\\patientwise_three_arm_validation_20261116.json",
+    "receipt_sha256": "0db89225527a9c7e93b8a55fa58d7273710963f8e10fe5d5d30341758de2f3f9",
+    "source_modules_checked": 16,
+    "all_current_bytes_match": true,
+    "plan_sha256": "cc48e0800dbd01127a15e5febef63dcf11265d30141d568148455e8968e172fc",
+    "all_arms_same_plan": true,
+    "epochs_per_arm": 30,
+    "main_optimizer_steps": {
+      "mdecur_full_dense": 30,
+      "mdecur_dense_aux_off": 30,
+      "camr_2m": 30
+    },
+    "discriminator_steps": {
+      "mdecur_full_dense": 0,
+      "mdecur_dense_aux_off": 0,
+      "camr_2m": 30
+    },
+    "training_sampling_sha256": "855fedba24f81a4ae69052313bd55ed393a487ee8ee32d11751088245af9d00b",
+    "training_schedule_sha256": "c15397e258e813d10c5df7baf4524294095b83e33fa232803ce03c57a3f41259",
+    "exact_best_last_replays": 6,
+    "maximum_prediction_error": 0,
+    "complete_metric_dicts_match": true,
+    "full_terms": [
+      "survival",
+      "global_path_within",
+      "global_rna_within",
+      "global_unique",
+      "global_common",
+      "patch_within",
+      "pathway_path_within",
+      "pathway_rna_within",
+      "pathway_common",
+      "pathway_unique",
+      "matched_common",
+      "matched_unique",
+      "dense_path_within",
+      "dense_rna_within",
+      "dense_common",
+      "dense_unique"
+    ]
+  },
+  "covered_contracts": [
+    "patientwise hand calculations, independent gradients, batch split/permutation, no other-patient censor interference",
+    "actual parity CLI final overrides/default15 auxiliaries/shared-tail schedule",
+    "saved scaler, controls, budgets, loss version and frozen-input checkpoint replay",
+    "padding-only chunk lengths and original available patch counts",
+    "diagnostic actual-strength subtraction/scaling/finally restore, None and exclusive outputs",
+    "observed-follow-up-bin ridge labelled non-censor-aware and dual solve",
+    "stable sampler under distinct interpreter hash seeds",
+    "V3 summary refuses stale/missing protocol/loss, different schedules or main step totals"
+  ],
+  "preservation": {
+    "original_log": "local_patientwise_focused_20261116.log",
+    "restored_text_backup": "C:/Users/栋栋/.codex/visualizations/2026/11/16/01a1e348-33ec-7c70-8043-48ebfdef8347/preserved_untracked_hash_diagnostics_20261116.zip",
+    "note": "3 original untracked diagnostic files repeatedly disappeared during concurrent cleanup; complete startup text copies preserved externally. Original byte hashes were not recorded. Do not execute the old hash monkeypatch wrapper as current validation."
+  },
+  "pre_guard_interruption": "results/patientwise_pre_guard_interruption_20261116.json; exit1, no traceback, unknown cause, retained separately and not counted as final3-arm completion",
+  "software": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "numpy": "2.2.6",
+    "pytest": "8.4.2"
+  },
+  "limits": [
+    "Validation selects epochs, so patient validation peaks are not independent tests.",
+    "Old broadcast-affected weights are not repaired by rescoring.",
+    "No SSH, patient training, CUDA, fivefold, outer_test or warm_daemon changes in this task."
+  ]
+}

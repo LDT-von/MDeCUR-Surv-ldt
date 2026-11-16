@@ -94,6 +94,10 @@ python "$COMPARE_REPO/comparison_fold0.py" summary \
 
 ## 本地回执与保留文件
 
+最终完整 CPU 套件为 **334 passed、3 skipped**，跳过原因是本机缺少 DCT 参考仓库。19 个冻结源码/测试/脚本与当前字节一致；三臂各30轮使用同一个 plan，抽样与分批哈希一致、主更新各30步（CAMR判别器另30步）。六份 best/last 重载预测最大误差0，完整指标字典相同，且各臂 best/last 状态确有区别。均为生成数据工程证据。
+
 最终测试数量/源码 SHA 见 `results/patientwise_release_validation_20261116.json`；三臂各30轮合成 best/last 重载见 `results/patientwise_three_arm_validation_20261116.json`。仅 CPU 生成数据。本机未 SSH、未读患者输入、未启动患者训练/CUDA/五折/outer_test。
 
-四个既有未跟踪文件保留原位：`local_patientwise_focused_20261116.log`、`results/_hash_seed_wrapper.py`、`scripts/capture_hash_draw_failure.py`、`scripts/check_draw_sensitivity.py`。其中后三个在运行期间消失，当前任务及子任务未删除它们；已按开场读取的完整文本恢复，未声称原始字节级校验。脚本为旧 hash sampler 故障复现/敏感性诊断，wrapper 显式 monkeypatch 回旧 sampler；未用于当前生产验证，不纳入本次发布。
+预守卫合成进程曾 exit1 且无回溯，原因未确定；其已完成full产物单独留存，未混入最终三臂回执，详见 `results/patientwise_pre_guard_interruption_20261116.json`。期间HEAD由8bb60fa经87892a4到1563cfc（测试和文档提交）；已核对冻结字节未变并保留提交，不reset/force。
+
+四个既有未跟踪文件为 `local_patientwise_focused_20261116.log`、`results/_hash_seed_wrapper.py`、`scripts/capture_hash_draw_failure.py`、`scripts/check_draw_sensitivity.py`。后三个在并发清理期间反复消失，当前任务及子任务未删除；已按开场完整文本恢复，并在工作区外保存ZIP与SHA清单，具体路径见最终回执的preservation字段。原始字节哈希未预存，不能声称原字节级校验。脚本为旧 hash sampler 故障复现/敏感性诊断，wrapper 显式 monkeypatch 回旧 sampler；未用于当前生产验证，不纳入本次发布。
