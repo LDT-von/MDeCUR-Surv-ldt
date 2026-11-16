@@ -119,7 +119,7 @@ NLL 和另一个 runner 的 NLL 放在一起。详见 §0.6。
 3. **交叉验证**：重算值与 runner 自己存的值一旦不一致（容差 1e-6），**拒绝出表**。
 4. **桥接臂偏移**：`camr_2m` 两行（两个 runner）的 Harrell C 与 NLL 差值写进
    `bridge_arm`，这就是所有跨组对比继承的偏移量。
-5. **NLL 统一**：5-fold runner 自己的 NLL 是拿 `log(1-S)` 当 logits 算的，
+5. **NLL 统一**：上游对照 runner 自己的 NLL 是拿 `log(1-S)` 当 logits 算的，
    语义与项目臂不同。合并表里的 `NLL` 列**一律**是统一重算值；
    runner 原生 NLL 另存为 `runner_reported_NLL` 供审计，**不与统一值混用**。
 
@@ -128,7 +128,7 @@ NLL 和另一个 runner 的 NLL 放在一起。详见 §0.6。
 各臂 epoch 数不一致或不足 30 轮。
 
 **必须如实说明的两处 runner 差异**：
-- 5-fold runner **不做尾批 rank bound 合并**，因此上游臂每轮比项目臂多一个 optimizer 步；
+- 上游对照 runner **不做尾批 rank bound 合并**，因此上游臂每轮比项目臂多一个 optimizer 步；
 - 两个 runner 的 **runner 原生 NLL 定义不同**（已由合并器统一）。
 
 ---
@@ -335,9 +335,14 @@ for MODEL in pibd_2m camr_2m deref_2m dimaf_2m; do
 done
 ```
 
-**注意**：这份 plan 用的是**另一个协议字符串**（`blca_5fold_dss_uni_v1_p4096_dnll_v1`），
+**注意**：这份 plan 用的是**另一个协议字符串**（`blca_1fold_dss_uni_v1_p4096_dnll_v1`），
 它与项目臂的 plan **不同**——这是预期的，不是错误。合并器会核对两份 plan
 描述的是同一批患者（患者数/事件数/顺序哈希/标签哈希/分箱边界）。
+
+**折数说明（2026-11-16）**：调度已由五折削减为**只跑 fold 0**，项目臂与上游臂
+**都在同一个 fold 0** 上。`comparison_5fold.py` 这个文件名与"five-fold"字样是
+历史命名，实际的折范围由 `comparison_protocol.FOLDS` 决定，现在是 `(0,)`；
+`--fold 1..4` 会被代码拒绝（argparse choices 只有 `0`）。
 
 **若 `plan` 报基因名维度不匹配**：说明 `genes.txt` 与本批 RNA 维度/顺序不一致，
 **停下来汇报**，不要改 RNA 维度去迁就。
@@ -417,6 +422,10 @@ optimizer_steps 不同、设备配置不同。**这些拒绝是保护机制，�
 ### 6.3 必须写明的局限
 
 - 单折、验证集选轮，**不是独立测试**，**不是显著性结论**，**不能宣称总体优越或临床有效**。
+- **本批是 1 折（fold 0）**：调度由五折削减为单折以适配时间预算。
+  因此**没有任何折间方差估计**，无法排除折间波动，排名**只能是单折上的点估计顺序**。
+  表里出现的 `mean` 就是该折的值、`std` 恒为 0，行内 `fold_count=1`；
+  **不得**把这些数字说成"五折平均"或"稳定优于"。
 - 旧封存 76 人与本 303/77 的 ID 交集仍未核实。
 - 归档的 DCT 数字（0.7266/0.6371）与旧 MDeCUR（0.7361/0.7076）来自**广播版似然**，
   **不能与本批并列**；若要并列必须在同一 plan 下重跑。
@@ -435,7 +444,7 @@ optimizer_steps 不同、设备配置不同。**这些拒绝是保护机制，�
   - 簇数 K=4、latent_dim=8 是事先固定常量，**未用验证集标签选择**；
   - **每轮 patch 重采样对该臂无效**（设计使然）。
 - **两组臂来自两个 runner，合并表由 `comparison_merge.py` 统一重算指标**：
-  - 5-fold runner **不做尾批 rank bound 合并**，上游臂每轮比项目臂多一个 optimizer 步；
+  - 上游对照 runner **不做尾批 rank bound 合并**，上游臂每轮比项目臂多一个 optimizer 步；
   - 两个 runner 的**原生 NLL 定义不同**，合并表 NLL 是统一重算值，
     `runner_reported_NLL` 仅供审计；
   - `bridge_arm` 给出的偏移量**必须随结论一起报告**，不能只报排名。

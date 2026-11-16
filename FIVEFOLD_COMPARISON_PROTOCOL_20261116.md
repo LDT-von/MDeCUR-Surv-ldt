@@ -1,6 +1,24 @@
 # 五折统一对比协议与运行手册（2026-11-16）
 
-> 2026-11-16 文件精简：当前仅保留 PIBD/CAMR/DeReF/DIMAF 四个多模态对照，RNA-only 与 WSI-only 已删除。驱动版本为 `fivefold_comparison_v2_multimodal_only`，须重新生成plan；下方历史单模态说明不再是运行入口。DCT仍只作独立标注的历史归档。当前模型目录以 [README.md](README.md) 为准。
+> **2026-11-16 折数收敛为 1 折（用户决定：时间有限）**：五折全量运行被削减为
+> **只跑 fold 0**。代码侧已经落实：
+> - `comparison_protocol.FOLDS = (0,)`，`PROTOCOL` 改为
+>   `blca_1fold_dss_uni_v1_p4096_dnll_v1`，`comparison_5fold.PROTOCOL_VERSION`
+>   改为 `onefold_comparison_v1_single_fold`；
+> - `scripts/run_5fold_comparison.sh` 的默认 `COMPARISON_FOLDS` 改为 `0`，
+>   批次目录前缀改为 `onefold_comparison_`，并写入 `fold_count`；
+> - `summary` 现在只接受协议声明的折，多出来的折会被拒绝而不是静默丢弃；
+>   DCT 归档仍是五折文件，`load_dct_reference()` 只取协议声明的折，并写明
+>   该行是**单折值而非五折均值**；
+> - 单折下 `mean` 就是该折的值、`std` 恒为 0，行内新增 `fold_count` 字段，
+>   避免被误读成五折统计量。
+>
+> **单折的代价必须写清楚**：没有任何方差估计，没有显著性检验，
+> 折间不可比性无法排除，**不能据此宣称"优于/劣于"任何方法**。
+> 需要恢复多折时，把 `FOLDS` 改回 `(0, 1, 2, 3, 4)` 并把
+> `PROTOCOL`/`PROTOCOL_VERSION` 改回对应标识即可（归档与脚本默认不受影响）。
+>
+> 2026-11-16 文件精简：当前仅保留 PIBD/CAMR/DeReF/DIMAF 四个多模态对照，RNA-only 与 WSI-only 已删除。驱动版本为 `onefold_comparison_v1_single_fold`，须重新生成plan；下方历史单模态说明不再是运行入口。DCT仍只作独立标注的历史归档。当前模型目录以 [README.md](README.md) 为准。
 
 本文件记录 **PIBD / CAMR / DeReF / DIMAF** 四个有官方源码的方法，与 **RNA-only 岭回归**、
 **WSI-only** 两个单模态基线，在**同一 BLCA DSS 生存预测协议**下的适配、训练复现与分数比较方案。
@@ -226,7 +244,28 @@ python comparison_5fold.py run \
 冒烟检查用 `--smoke`（只跑 1 epoch）。**summary 明确拒绝 smoke 运行**，所以冒烟结果不会
 污染最终表格。
 
-### 4.3 五折全量
+### 4.3 单折全量（当前唯一入口）
+
+折数已收敛为 1 折（见文首说明），下面只跑 fold 0：
+
+```bash
+python comparison_5fold.py plan --fold 0 ... --out runs/plan_fold0.json
+SHA=$(python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" runs/plan_fold0.json)
+for M in pibd_2m camr_2m deref_2m dimaf_2m; do
+  python comparison_5fold.py run --plan runs/plan_fold0.json --plan-sha256 "$SHA" \
+    --model $M --device cuda --out runs/fold0/$M
+done
+
+python comparison_5fold.py summary --runs runs/fold0/* --out runs/summary.json
+```
+
+或者用脚本一次跑完（默认就是 1 折）：
+
+```bash
+bash scripts/run_5fold_comparison.sh
+```
+
+**恢复五折时**才用下面的循环（当前协议层会拒绝 fold 1–4，需先改回 `FOLDS`）：
 
 ```bash
 for F in 0 1 2 3 4; do

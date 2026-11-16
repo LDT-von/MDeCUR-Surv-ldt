@@ -70,7 +70,26 @@ class FiveFoldShellSafetyTest(unittest.TestCase):
             r'COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m}')
         self.assertNotIn('rna_ridge', self.source)
         self.assertNotIn('wsi_only', self.source)
-        self.assertIn('COMPARISON_FOLDS:-0 1 2 3 4', self.source)
+        # The schedule was reduced from five folds to one (2026-11-16).
+        self.assertIn('COMPARISON_FOLDS:-0}', self.source)
+        self.assertNotIn('COMPARISON_FOLDS:-0 1 2 3 4', self.source)
+        self.assertIn("printf 'protocol=blca_1fold_dss_uni_v1_p4096_dnll_v1", self.source)
+
+    def test_the_fold_list_stays_inside_the_protocol_scope(self):
+        """The script must not be able to run a fold the code would refuse.
+
+        The scope is read from the protocol module itself, so the script and
+        the code cannot drift apart, and the check runs before any batch
+        directory is created.
+        """
+        self.assertIn('from comparison_protocol import FOLDS', self.source)
+        self.assertIn('is outside the protocol scope', self.source)
+        guard = self.source.index('is outside the protocol scope')
+        batch = self.source.index('mkdir -- "$BATCH_OUT"')
+        # The scope check must run before the batch directory is created.
+        self.assertLess(guard, batch)
+        # The scope is read from the protocol module, not hard-coded here.
+        self.assertLess(self.source.index('PROTOCOL_FOLDS='), guard)
 
     def test_the_script_never_starts_itself_or_loops_in_the_background(self):
         # A background launch without a recorded PID would be unmonitorable.

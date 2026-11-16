@@ -8,7 +8,10 @@ import torch
 
 import cancer_pathway_stream as stream
 from pathway_gradient_audit import audit_batch, relation
-from research_gradient_study import setup
+# The helper is imported under an alias: pytest treats a module-level
+# function named ``setup`` as the nose-style module setup and would call it
+# with this module, which is not what the synthetic builder expects.
+from research_gradient_study import setup as build_synthetic_batch
 
 
 class PathwayGradientAuditTest(unittest.TestCase):
@@ -50,7 +53,7 @@ class PathwayGradientAuditTest(unittest.TestCase):
         self.assertGreater(mixed['outside_survival_graph_raw_auxiliary_norm'], 1000)
 
     def test_optional_components_preserve_default_loss_rng_and_backward(self):
-        first, batch, cfg = setup(17, n=6, small=True)
+        first, batch, cfg = build_synthetic_batch(17, n=6, small=True)
         second = deepcopy(first)
         torch.manual_seed(231)
         old_loss, old_stats = stream.pathway_objective(first, batch, torch.tensor([0.]), cfg, 4, 'feature_noise', 92)
@@ -70,7 +73,7 @@ class PathwayGradientAuditTest(unittest.TestCase):
         self.assertIn('survival', components)
 
     def test_one_forward_reconstruction_and_caller_state_preserved(self):
-        model, batch, cfg = setup(17, n=6, small=True)
+        model, batch, cfg = build_synthetic_batch(17, n=6, small=True)
         cfg = replace(cfg, common_mode='uniform')
         model.base.head.weight.grad = torch.ones_like(model.base.head.weight)
         state = deepcopy(model.state_dict())
@@ -94,7 +97,7 @@ class PathwayGradientAuditTest(unittest.TestCase):
         self.assertEqual(common['modules']['survival_head']['status'], 'no_auxiliary_dependency_in_survival_space')
 
     def test_skipped_disabled_and_connected_zero_loss_gradient(self):
-        model, batch, cfg = setup(17, n=6, small=True)
+        model, batch, cfg = build_synthetic_batch(17, n=6, small=True)
         cfg = replace(cfg, matched_common=0., matched_unique=0.)
         with torch.no_grad():
             model.base.path_projector.weight.zero_()
@@ -107,7 +110,7 @@ class PathwayGradientAuditTest(unittest.TestCase):
         self.assertEqual(within['survival_graph_space']['status'], 'zero_auxiliary_gradient')
 
     def test_zero_interaction_has_connected_but_zero_survival_gradient(self):
-        model, batch, cfg = setup(29, n=6, small=True)
+        model, batch, cfg = build_synthetic_batch(29, n=6, small=True)
         model.interaction_strength = 0.
         cfg = replace(cfg, interaction_strength=0., common_mode='uniform')
         result = audit_batch(model, batch, torch.tensor([0.]), cfg, 4, 'feature_noise', 92, 31)

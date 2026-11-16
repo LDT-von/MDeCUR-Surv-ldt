@@ -8,12 +8,14 @@ Two runners produce the two groups of arms:
   ``blca_fold0_full_dense_patientwise_v3``.
 * ``comparison_5fold.py`` runs the upstream comparator arms (``pibd_2m``,
   ``camr_2m``, ``deref_2m``, ``dimaf_2m``) under protocol
-  ``blca_5fold_dss_uni_v1_p4096_dnll_v1``.
+  ``blca_1fold_dss_uni_v1_p4096_dnll_v1``.  The upstream arms are run on the
+  **same single fold 0** as the project arms; the runner name and the protocol
+  identifier are historical, the fold scope is one fold.
 
 The two runners share the endpoint, the unit, the binning function, the patch
 budget, the patch resampling seed, the training seed, the survival likelihood
 version and the metric implementation, but they do **not** share every detail:
-the five-fold runner does not merge a short tail batch and it computes its own
+the upstream runner does not merge a short tail batch and it computes its own
 validation NLL from ``log(1 - S)`` instead of from the hazard logits.
 
 This module therefore never reads a metric from one runner and places it next
@@ -80,8 +82,8 @@ def normalize_edges(edges):
     """Map either runner's edge encoding onto plain floats.
 
     The fold0 runner serializes an infinite edge as the string ``Infinity``
-    and the five-fold runner serializes every infinite edge as ``None``.  In
-    the five-fold encoding the first edge is the open lower bound and the last
+    and the upstream runner serializes every infinite edge as ``None``.  In
+    the upstream encoding the first edge is the open lower bound and the last
     edge is the open upper bound, so the position decides the sign.
     """
     values = list(edges)
@@ -333,7 +335,7 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
     # The bridge arm is produced by both runners, so every row carries a unique
     # label while ``model`` keeps the method name.
     for row in rows:
-        row['arm'] = row['model'] if row['group'] == 'project' else f"{row['model']} [five-fold runner]"
+        row['arm'] = row['model'] if row['group'] == 'project' else f"{row['model']} [upstream runner]"
     epoch_counts = {row['epochs_completed'] for row in rows}
     if len(epoch_counts) != 1:
         raise ValueError('Refuse to merge arms that ran a different number of epochs: '
@@ -359,8 +361,13 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
     result = {
         'merged_table_version': 'fold0_plus_upstream_merged_v1',
         'fold0_protocol': FOLD0_PROTOCOL,
-        'fivefold_protocol': FIVEFOLD_PROTOCOL,
-        'fivefold_protocol_version': FIVEFOLD_PROTOCOL_VERSION,
+        'upstream_protocol': FIVEFOLD_PROTOCOL,
+        'upstream_protocol_version': FIVEFOLD_PROTOCOL_VERSION,
+        'upstream_runner_note': ('The upstream arms are run by '
+                                 '``comparison_5fold.py``. The runner name and '
+                                 'the protocol identifier are historical: the '
+                                 'upstream arms run on the same single fold 0 '
+                                 'as the project arms.'),
         'loss_version': DISCRETE_NLL_VERSION,
         'identity': identity,
         'rows': rows,
@@ -385,7 +392,7 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
             'budget, resampling seed, training seed, likelihood version and '
             'metric implementation, but not the batch tail rule and not the '
             'runner-native NLL definition.',
-            'The five-fold runner does not merge a short tail batch, so its '
+            'The upstream runner does not merge a short tail batch, so its '
             'arms take one optimizer step more per epoch than the fold0 arms.',
             'Every number is a validation-selected point estimate on one fold '
             'with no significance test and no claim of superiority.',

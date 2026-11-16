@@ -22,6 +22,13 @@ from cancer_metrics import harrell_c
 DCT_ENDPOINT = 'DSS'
 DCT_PATCH_BUDGETS = (2048, 4096)
 
+# ``sksurv`` computes the dynamic AUC with ``numpy.trapezoid``, which only
+# exists from numpy 2.0.  On numpy 1.x the same function is ``numpy.trapz``.
+# The alias is installed here so the AUC is actually produced instead of
+# being reported as an error on an older numpy.
+if not hasattr(np, 'trapezoid') and hasattr(np, 'trapz'):
+    np.trapezoid = np.trapz
+
 
 def _json_float(value):
     """Represent an infinite bin edge in a JSON-safe way."""

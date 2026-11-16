@@ -1,10 +1,22 @@
-"""Shared five-fold BLCA protocol layer for the decoupling comparators.
+"""Shared BLCA protocol layer for the decoupling comparators.
 
 One cohort loader, one binning rule, one metric call and one explicit
 train-only fitting boundary are shared by every arm (PIBD, CAMR, DeReF, DIMAF,
 DCT reference, RNA-only ridge, WSI-only).  The point of this module is that a
 comparison cannot silently differ in data preparation: every arm consumes the
 same per-fold tensors and the same labels.
+
+Fold scope
+----------
+The user reduced the schedule from five folds to **one fold** to fit the
+available time budget.  ``FOLDS`` is therefore ``(0,)``.  Two consequences
+are explicit rather than silent:
+
+* the protocol identifier and version carry the fold count, so a plan built
+  under the old five-fold setting can never be mistaken for a one-fold plan;
+* the DCT reference archive still holds five folds.  The summary therefore
+  reads **only the folds the protocol declares** from that archive and states
+  that the reference row is a single-fold value, not a five-fold mean.
 
 Leakage boundary
 ----------------
@@ -40,13 +52,15 @@ from cancer_parity import (dct_bin_edges, discretize_labels, discrete_nll,
 from cancer_rna import fit_rna_scaler, transform_rna
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 
-PROTOCOL = 'blca_5fold_dss_uni_v1_p4096_dnll_v1'
+PROTOCOL = 'blca_1fold_dss_uni_v1_p4096_dnll_v1'
 ENDPOINT = 'DSS'
 TIME_UNIT = 'months'
 N_BINS = 4
 ALPHA_SURV = .5
 NUM_PATCHES = 4096
-FOLDS = (0, 1, 2, 3, 4)
+# The schedule was reduced from five folds to one by explicit user decision
+# (2026-11-16, time budget).  Only fold 0 is in scope now.
+FOLDS = (0,)
 
 # Every arm must agree on these, otherwise the comparison is not a comparison.
 SHARED_SETTINGS = {
@@ -57,6 +71,11 @@ SHARED_SETTINGS = {
     'alpha_surv': ALPHA_SURV,
     'num_patches': NUM_PATCHES,
     'folds': list(FOLDS),
+    'fold_count': len(FOLDS),
+    'fold_scope_note': ('The user reduced the schedule from five folds to one. '
+                         'Every mean/std over folds is therefore a single-fold '
+                         'value with a zero-width spread, not a five-fold '
+                         'estimate.'),
     'selection': 'maximum validation Harrell C, earliest exact tie',
     'loss_version': DISCRETE_NLL_VERSION,
     'risk_definition': 'minus the summed survival over the discrete bins',

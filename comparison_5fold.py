@@ -53,7 +53,7 @@ from comparison_protocol import (ALPHA_SURV, ENDPOINT, FOLDS, N_BINS, NUM_PATCHE
                                  logits_to_survival, sha256_file)
 
 
-PROTOCOL_VERSION = 'fivefold_comparison_v2_multimodal_only'
+PROTOCOL_VERSION = 'onefold_comparison_v1_single_fold'
 SOURCE_MODULES = ('comparison_5fold', 'comparison_sources', 'comparison_protocol', 'comparison_camr',
                   'comparison_pibd', 'comparison_deref', 'comparison_dimaf',
                   'decur_losses', 'cancer_parity', 'cancer_parity_audit',
@@ -502,15 +502,19 @@ DCT_REFERENCE_ARCHIVE = Path(__file__).resolve().parent / 'reference' / 'dct_5fo
 
 
 def load_dct_reference(path=None):
-    """Load the archived DCT five-fold reference numbers.
+    """Load the archived DCT reference numbers for the protocol folds.
 
     The reference implementation is not re-run here.  Its numbers are read
     from a committed archive so that the summary can place every arm on the
     same table, and they are aggregated with the same mean/std rule.
 
-    Returns a dict with the per-fold records and a provenance block.  The
-    loader refuses an archive that does not cover exactly the five protocol
-    folds, so a partial archive can never masquerade as a complete one.
+    The committed archive was produced under the five-fold schedule and
+    therefore holds five folds, while the current protocol declares only the
+    folds it runs.  The loader **requires the archive to cover every protocol
+    fold** and then selects exactly those folds, so a missing fold can never
+    masquerade as a complete one and extra archived folds are simply not
+    used.  The returned block states which folds were selected, so a
+    single-fold row can never be read as a five-fold mean.
     """
     from comparison_protocol import FOLDS
 
@@ -527,8 +531,10 @@ def load_dct_reference(path=None):
         if fold in by_fold:
             raise ValueError(f'Duplicate fold {fold} in the DCT reference archive')
         by_fold[fold] = record
-    if set(by_fold) != set(FOLDS):
-        raise ValueError(f'DCT reference archive must cover folds {FOLDS}, got {sorted(by_fold)}')
+    missing = sorted(set(FOLDS) - set(by_fold))
+    if missing:
+        raise ValueError(f'DCT reference archive must cover folds {sorted(FOLDS)}; '
+                         f'missing {missing}')
     ordered = [by_fold[fold] for fold in FOLDS]
     return {'archive_id': payload.get('archive_id'),
             'archive_path': str(target.resolve()),
@@ -537,6 +543,12 @@ def load_dct_reference(path=None):
             'limits': payload.get('limits', []),
             'official_model_reproduction': True,
             're_run': False,
+            'archive_fold_count': len(by_fold),
+            'selected_folds': list(FOLDS),
+            'selection_note': ('The archive holds the five-fold schedule; only the '
+                               'protocol folds are read. The reference row is a '
+                               'single-fold value under the reduced schedule, not a '
+                               'five-fold mean.'),
             'folds': ordered}
 
 
@@ -546,6 +558,10 @@ def _metric_rows(model_id, folds, metrics_by_fold):
     ``metrics_by_fold`` maps a fold index to the metric dictionary of that
     fold.  The same rule is applied to every arm, including the archived DCT
     reference, so the table is comparable by construction.
+
+    Under the reduced one-fold schedule the ``mean`` is the single fold's
+    value and the ``std`` is zero.  The row records ``fold_count`` so a
+    reader cannot mistake it for a five-fold aggregate.
     """
     rows = []
     for key in ('c_index', 'ibs', 'iauc'):
@@ -553,17 +569,18 @@ def _metric_rows(model_id, folds, metrics_by_fold):
         if any(value is None for value in values):
             rows.append({'model': model_id, 'metric': key, 'mean': None, 'std': None,
                          'per_fold': values, 'folds': list(folds),
+                         'fold_count': len(folds),
                          'note': 'metric undefined in at least one fold'})
             continue
         array = np.asarray(values, dtype=np.float64)
         rows.append({'model': model_id, 'metric': key, 'mean': float(array.mean()),
                      'std': float(array.std(ddof=0)), 'per_fold': [float(v) for v in values],
-                     'folds': list(folds)})
+                     'folds': list(folds), 'fold_count': len(folds)})
     return rows
 
 
 def summarize(run_dirs, out, dct_reference=None):
-    """Aggregate per-fold reports into mean +/- std across folds."""
+    """Aggregate per-fold reports into mean +/- std across the protocol folds."""
     records = []
     for directory in run_dirs:
         records.append(json.loads((Path(directory)/'report.json').read_text(encoding='utf-8')))
@@ -598,7 +615,9 @@ def summarize(run_dirs, out, dct_reference=None):
               'models': sorted(set(list(by_model)+(['dct_reference'] if reference_block else []))),
               'dct_reference': reference_block,
               'metric_directions': {'c_index': 'higher', 'ibs': 'lower', 'iauc': 'higher'},
-              'limits': ['Mean and population std over five validation-selected folds.',
+              'limits': [f'Mean and population std over the {len(FOLDS)} protocol fold(s); '
+                         f'the schedule was reduced from five folds to {list(FOLDS)}, so the '
+                         'spread is not a five-fold estimate.',
                          'No significance test is performed; differences are not claims of superiority.',
                          'All arms share the same binning, likelihood, splits and metric call.',
                          'The DCT reference row is an archived reference-implementation result, not a re-run in this repository.']}

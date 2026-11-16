@@ -85,7 +85,7 @@ UPSTREAM = {
 
 
 def digest(path):
-    """SHA256 of one file."""
+    """SHA256 of one file, as stored on disk."""
     h = hashlib.sha256()
     with Path(path).open('rb') as handle:
         for block in iter(lambda: handle.read(1 << 20), b''):
@@ -93,11 +93,30 @@ def digest(path):
     return h.hexdigest()
 
 
+def line_ending_variants(path):
+    """Return the raw, LF and CRLF SHA256 of one file.
+
+    The recorded upstream hashes were taken on 2026-11-13 from a CRLF
+    checkout, while a fresh ``git clone`` on a Unix host produces LF working
+    trees.  Both are legitimate representations of the same upstream commit, so
+    the verifier accepts any of the three forms and records which one it
+    matched.  The upstream files are never rewritten.
+    """
+    raw = Path(path).read_bytes()
+    lf = raw.replace(b'\r\n', b'\n')
+    crlf = lf.replace(b'\n', b'\r\n')
+    return {'raw': hashlib.sha256(raw).hexdigest(),
+            'lf': hashlib.sha256(lf).hexdigest(),
+            'crlf': hashlib.sha256(crlf).hexdigest()}
+
+
 def verify_upstream(name=None):
     """Verify recorded hashes of one or all upstream checkouts.
 
     Returns a ``{name: {relative_path: sha256}}`` mapping so the value can be
-    embedded into an immutable comparison plan.
+    embedded into an immutable comparison plan.  The recorded digest is the
+    CRLF form; the reported digest is the form actually present on disk, so
+    the plan records what was really read.
     """
     names = [name] if name else list(UPSTREAM)
     result = {}
@@ -111,10 +130,10 @@ def verify_upstream(name=None):
             path = root / relative
             if not path.is_file():
                 raise FileNotFoundError(f'Missing upstream file: {path}')
-            actual = digest(path)
-            if actual != expected:
+            variants = line_ending_variants(path)
+            if expected not in variants.values():
                 raise ValueError(f'Upstream file modified: {path}')
-            files[relative] = actual
+            files[relative] = variants['raw']
         result[entry] = files
     return result
 

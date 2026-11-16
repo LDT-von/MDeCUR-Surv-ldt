@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Five-fold BLCA multimodal comparison: PIBD, CAMR, DeReF and DIMAF.
+# One-fold BLCA multimodal comparison: PIBD, CAMR, DeReF and DIMAF.
 # DCT numbers are an archived historical reference, never a training arm.
+#
+# The schedule was reduced from five folds to one fold by explicit user
+# decision on 2026-11-16 (time budget).  Only fold 0 is in scope; the
+# protocol layer enforces the same single fold, so this script cannot
+# silently run a different fold set than the code.
 #
 # The script is deliberately conservative:
 #   * it never touches an existing run directory, log, plan or summary;
@@ -10,8 +15,8 @@
 #   * it does not touch the outer test partition;
 #   * the DCT reference is loaded from the committed archive, never re-run.
 #
-# Run it manually on the server, one fold at a time, after checking that the
-# requested GPU is free.  Nothing here starts itself.
+# Run it manually on the server, after checking that the requested GPU is
+# free.  Nothing here starts itself.
 set -euo pipefail
 set -o noclobber
 export PYTHONHASHSEED=0
@@ -20,10 +25,10 @@ INPUTS="${COMPARISON_INPUTS_ROOT:-/data1/decur_runs/PARITY_DCT_FOLD0}"
 PROJECT="${COMPARISON_PROJECT_ROOT:-/data1/MDeCUR-Surv-ldt}"
 PY="${COMPARISON_PYTHON:-/home/ubuntu/.conda/envs/trisurv/bin/python}"
 RUN_PARENT="${COMPARISON_RUN_ROOT:-/data1/decur_runs}"
-BATCH_OUT="${COMPARISON_BATCH_OUT:-$RUN_PARENT/fivefold_comparison_$(date -u +%Y%m%dT%H%M%SZ)}"
+BATCH_OUT="${COMPARISON_BATCH_OUT:-$RUN_PARENT/onefold_comparison_$(date -u +%Y%m%dT%H%M%SZ)}"
 DEVICE="${COMPARISON_DEVICE:-cuda:0}"
 EPOCHS="${COMPARISON_EPOCHS:-30}"
-FOLDS="${COMPARISON_FOLDS:-0 1 2 3 4}"
+FOLDS="${COMPARISON_FOLDS:-0}"
 MODELS="${COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m}"
 DEREF_SIGNATURES="${COMPARISON_DEREF_SIGNATURES:-/data1/dataset_csv/signatures/deref_signatures.csv}"
 
@@ -35,6 +40,18 @@ for input in manifest.csv survival_reference.csv genes.txt combine_signatures.gm
 done
 
 cd -- "$PROJECT"
+
+# The fold list must stay inside the protocol scope.  The check reads the
+# scope from the protocol module itself, so the script can never drift away
+# from the code it drives.
+PROTOCOL_FOLDS="$("$PY" -c "from comparison_protocol import FOLDS; print(' '.join(str(f) for f in FOLDS))")"
+for fold in $FOLDS; do
+  if ! printf '%s\n' $PROTOCOL_FOLDS | grep -qx -- "$fold"; then
+    printf 'Fold %s is outside the protocol scope (%s).\n' "$fold" "$PROTOCOL_FOLDS" >&2
+    exit 2
+  fi
+done
+
 if [[ -e "$BATCH_OUT" || -L "$BATCH_OUT" ]]; then
   printf 'Refusing an existing batch output: %s\n' "$BATCH_OUT" >&2
   exit 2
@@ -43,12 +60,14 @@ mkdir -p -- "$(dirname -- "$BATCH_OUT")"
 mkdir -- "$BATCH_OUT"
 
 {
-  printf 'protocol=blca_5fold_dss_uni_v1_p4096_dnll_v1\n'
+  printf 'protocol=blca_1fold_dss_uni_v1_p4096_dnll_v1\n'
   printf 'PYTHONHASHSEED=0\n'
   printf 'epochs=%s\n' "$EPOCHS"
   printf 'device=%s\n' "$DEVICE"
   printf 'models=%s\n' "$MODELS"
   printf 'folds=%s\n' "$FOLDS"
+  printf 'fold_count=%s\n' "$(wc -w <<<"$FOLDS")"
+  printf 'protocol_folds=%s\n' "$PROTOCOL_FOLDS"
   printf 'outer_test=not_loaded\n'
 } > "$BATCH_OUT/protocol.txt"
 if revision=$(git rev-parse HEAD 2>/dev/null); then
@@ -117,5 +136,5 @@ fi
   --dct-reference reference/dct_5fold_archive.json \
   --out "$SUMMARY"
 
-printf 'Five-fold comparison completed in new batch: %s\n' "$BATCH_OUT"
+printf 'One-fold comparison completed in new batch: %s\n' "$BATCH_OUT"
 printf 'Summary: %s\n' "$SUMMARY"

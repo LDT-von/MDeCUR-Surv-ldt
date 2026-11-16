@@ -1,6 +1,13 @@
 # 五折解耦方法对照协议（2026-11-16）
 
-> 2026-11-16 文件精简：当前仅保留 PIBD/CAMR/DeReF/DIMAF 四个多模态对照，RNA-only 与 WSI-only 已删除。驱动版本为 `fivefold_comparison_v2_multimodal_only`，须重新生成plan；下方历史单模态说明不再是运行入口。DCT仍只作独立标注的历史归档。当前模型目录以 [README.md](README.md) 为准。
+> **2026-11-16 折数收敛为 1 折**：运行调度已削减为只跑 fold 0，协议标识改为
+> `blca_1fold_dss_uni_v1_p4096_dnll_v1`，驱动版本改为
+> `onefold_comparison_v1_single_fold`。代码细则、单折运行命令与"单折不能宣称
+> 优劣"的限制声明见
+> [FIVEFOLD_COMPARISON_PROTOCOL_20261116.md](FIVEFOLD_COMPARISON_PROTOCOL_20261116.md)
+> 文首与 §4.3。
+
+> 2026-11-16 文件精简：当前仅保留 PIBD/CAMR/DeReF/DIMAF 四个多模态对照，RNA-only 与 WSI-only 已删除。驱动版本为 `onefold_comparison_v1_single_fold`，须重新生成plan；下方历史单模态说明不再是运行入口。DCT仍只作独立标注的历史归档。当前模型目录以 [README.md](README.md) 为准。
 
 本文件说明 **PIBD / CAMR / DeReF / DIMAF** 四个解耦方法在 **BLCA 生存预测**上
 与 **DCT 参考、RNA-only 岭回归、WSI-only** 的五折对照：源码拉取、协议对齐、

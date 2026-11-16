@@ -145,6 +145,44 @@ class FiveFoldComparisonTest(unittest.TestCase):
             caches = [str(p.relative_to(root)) for p in root.rglob('__pycache__')]
             self.assertEqual(caches, [], f'{name} checkout was polluted: {caches}')
 
+    def test_the_upstream_verifier_accepts_either_line_ending(self):
+        """A fresh clone has LF files; the recorded hashes came from CRLF.
+
+        Both forms represent the same upstream commit, so the verifier must
+        accept either one, and it must report the digest of the bytes that
+        are actually on disk rather than the recorded one.
+        """
+        import comparison_sources as sources
+
+        for name, record in sources.UPSTREAM.items():
+            root = Path(record['root'])
+            for relative, expected in record['files'].items():
+                path = root / relative
+                if not path.is_file():
+                    continue
+                variants = sources.line_ending_variants(path)
+                self.assertIn(expected, variants.values(),
+                              f'{name}/{relative} matches no line-ending form')
+                self.assertEqual(variants['raw'], sources.digest(path))
+                break
+
+    def test_a_modified_upstream_file_is_still_refused(self):
+        """Accepting a second line-ending form must not weaken the check."""
+        import comparison_sources as sources
+
+        record = sources.UPSTREAM['CAMR']
+        relative = next(iter(record['files']))
+        path = Path(record['root'])/relative
+        if not path.is_file():
+            self.skipTest('CAMR checkout is not available')
+        original = path.read_bytes()
+        try:
+            path.write_bytes(original.replace(b'\r\n', b'\n') + b'\n# tampered\n')
+            with self.assertRaisesRegex(ValueError, 'Upstream file modified'):
+                sources.verify_upstream('CAMR')
+        finally:
+            path.write_bytes(original)
+
     def test_the_upstream_loader_disables_bytecode_writing(self):
         import comparison_sources as sources
         import sys
@@ -189,23 +227,32 @@ class FiveFoldComparisonTest(unittest.TestCase):
     # ---------------------------------------------------------- DCT reference
     def test_dct_reference_is_loaded_and_never_rerun(self):
         from comparison_5fold import load_dct_reference
+        from comparison_protocol import FOLDS
         archive = load_dct_reference()
         self.assertFalse(archive['re_run'])
         self.assertTrue(archive['official_model_reproduction'])
-        self.assertEqual([record['fold'] for record in archive['folds']], list(range(5)))
+        # The committed archive still holds the five-fold schedule, but only
+        # the protocol folds are read.
+        self.assertEqual(archive['archive_fold_count'], 5)
+        self.assertEqual([record['fold'] for record in archive['folds']], list(FOLDS))
+        self.assertEqual(archive['selected_folds'], list(FOLDS))
         self.assertTrue(all(record['c_index'] is not None for record in archive['folds']))
 
     def test_dct_reference_rejects_an_incomplete_archive(self):
         from comparison_5fold import load_dct_reference
+        from comparison_protocol import FOLDS
+        missing = [fold for fold in FOLDS if fold != 0] or [1]
         partial = self.root/'partial_archive.json'
-        partial.write_text(json.dumps({'folds': [{'fold': 0, 'c_index': .7}]}),
+        partial.write_text(json.dumps({'folds': [{'fold': fold, 'c_index': .7}
+                                                 for fold in missing]}),
                            encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'must cover folds'):
             load_dct_reference(partial)
 
     def test_summary_places_the_dct_reference_on_the_same_table(self):
         from comparison_5fold import DCT_REFERENCE_ARCHIVE
-        runs = [self._fake_report('camr_2m', fold, .60) for fold in range(5)]
+        from comparison_protocol import FOLDS
+        runs = [self._fake_report('camr_2m', fold, .60) for fold in FOLDS]
         without = runner.summarize(runs, self.root/'summary_without_dct.json')
         self.assertNotIn('dct_reference', without['models'])
         result = runner.summarize(runs, self.root/'summary_with_dct.json',
@@ -213,7 +260,8 @@ class FiveFoldComparisonTest(unittest.TestCase):
         self.assertIn('dct_reference', result['models'])
         row = [r for r in result['rows']
                if r['model'] == 'dct_reference' and r['metric'] == 'c_index'][0]
-        self.assertEqual(row['folds'], [0, 1, 2, 3, 4])
+        self.assertEqual(row['folds'], list(FOLDS))
+        self.assertEqual(row['fold_count'], len(FOLDS))
         self.assertIsNotNone(row['mean'])
         self.assertIsNotNone(row['std'])
         self.assertFalse(result['dct_reference']['re_run'])
@@ -249,29 +297,35 @@ class FiveFoldComparisonTest(unittest.TestCase):
         (directory/'report.json').write_text(json.dumps(report), encoding='utf-8')
         return directory
 
-    def test_summary_reports_mean_and_std_over_five_folds(self):
+    def test_summary_reports_mean_and_std_over_the_protocol_folds(self):
+        from comparison_protocol import FOLDS
         runs = []
-        for fold in range(5):
+        for fold in FOLDS:
             runs.append(self._fake_report('camr_2m', fold, .60 + .01*fold))
         result = runner.summarize(runs, self.root/'summary.json')
         row = [r for r in result['rows'] if r['metric'] == 'c_index'][0]
-        self.assertEqual(row['folds'], [0, 1, 2, 3, 4])
-        self.assertAlmostEqual(row['mean'], .62, places=6)
-        self.assertAlmostEqual(row['std'], float(np.std([.60, .61, .62, .63, .64])), places=6)
-        self.assertEqual(len(row['per_fold']), 5)
+        self.assertEqual(row['folds'], list(FOLDS))
+        self.assertEqual(row['fold_count'], len(FOLDS))
+        self.assertAlmostEqual(row['mean'], .60, places=6)
+        values = [.60 + .01*fold for fold in FOLDS]
+        self.assertAlmostEqual(row['std'], float(np.std(values)), places=6)
+        self.assertEqual(len(row['per_fold']), len(FOLDS))
 
     def test_summary_refuses_incomplete_and_duplicate_folds(self):
-        runs = [self._fake_report('camr_2m', fold, .6) for fold in range(4)]
+        from comparison_protocol import FOLDS
+        # A fold outside the protocol scope is refused, not silently dropped.
+        runs = [self._fake_report('camr_2m', fold, .6) for fold in (0, 1)]
         with self.assertRaisesRegex(ValueError, 'does not cover folds'):
             runner.summarize(runs, self.root/'partial.json')
-        runs = [self._fake_report('camr_2m', fold, .6) for fold in range(5)]
-        runs.append(self._fake_report('camr_2m', 2, .6))
+        runs = [self._fake_report('camr_2m', fold, .6) for fold in FOLDS]
+        runs.append(self._fake_report('camr_2m', FOLDS[0], .6))
         with self.assertRaisesRegex(ValueError, 'Duplicate fold'):
             runner.summarize(runs, self.root/'dup.json')
 
     def test_summary_refuses_smoke_runs(self):
+        from comparison_protocol import FOLDS
         runs = []
-        for fold in range(5):
+        for fold in FOLDS:
             directory = self._fake_report('camr_2m', fold, .6)
             report = json.loads((directory/'report.json').read_text(encoding='utf-8'))
             report['smoke_only'] = True
