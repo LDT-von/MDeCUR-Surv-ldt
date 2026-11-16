@@ -1,0 +1,4096 @@
+{
+  "version": "generated_censored_interaction_comparison_v1",
+  "scope": "CPU generated data only; no patient/CUDA/server input.",
+  "protocol": {
+    "scenarios": [
+      "xor",
+      "redundancy",
+      "path_only",
+      "rna_only",
+      "null",
+      "shared_plus_xor",
+      "correlated_xor",
+      "continuous_redundancy"
+    ],
+    "seeds": [
+      17,
+      29,
+      43
+    ],
+    "counts": {
+      "train": 1024,
+      "validation": 512,
+      "fresh_test": 2048
+    },
+    "tokens": 3,
+    "feature_dim": 2,
+    "bins": 3,
+    "training_steps": 120,
+    "optimizer": "Adam",
+    "learning_rate": 0.025,
+    "weight_decay": 0.001,
+    "loss_version": "patientwise_clamped_discrete_v1",
+    "training_alpha": 0.5,
+    "checkpoint": "fixed final step; validation and test not used for selection",
+    "event_generation": "conditional bin hazards; censor time independent and occurs after bin; no event by end is administratively censored",
+    "matched_reference": "old EMA held frozen in eval mode after same training-only patient/token mean fit; candidate uses explicit frozen fit; gradients enabled",
+    "legacy_ema_arm": "old model also trained in train mode with EMA; full-batch repeated fixed inputs make each reference update use the same mean",
+    "baseline_pairing": "same optimization, full generated data, parameter counts and copied initial weights",
+    "interaction_off": "candidate module retained with identical parameter count and copied initial weights but its logits multiplied by zero; non-interaction heads identically initialized and fully trained",
+    "continuous_redundancy": "P=G=Z (standard normal) exactly at first token coordinate; hazard effect = clip(.8*(Z²−1),−1,3); either modality alone determines effect; additivity head is non-linear",
+    "conditioned_arm": "synthetic approximation P_conditioned=P+.7*G ONLY for interaction input; additive heads still use P and G separately"
+  },
+  "summary": {
+    "xor": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.0171596209208171,
+        "min_observed_nll_alpha_0": 1.0095384120941162,
+        "max_observed_nll_alpha_0": 1.02692711353302,
+        "mean_survival_mse_to_generator": 0.011628763129313787
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.0171596209208171,
+        "min_observed_nll_alpha_0": 1.0095384120941162,
+        "max_observed_nll_alpha_0": 1.02692711353302,
+        "mean_survival_mse_to_generator": 0.011628763129313787
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.1952993869781494,
+        "min_observed_nll_alpha_0": 1.1806178092956543,
+        "max_observed_nll_alpha_0": 1.214622139930725,
+        "mean_survival_mse_to_generator": 0.07571172714233398
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.0171596209208171,
+        "min_observed_nll_alpha_0": 1.0095384120941162,
+        "max_observed_nll_alpha_0": 1.02692711353302,
+        "mean_survival_mse_to_generator": 0.011628763129313787
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.0188258091608684,
+        "min_observed_nll_alpha_0": 1.0143556594848633,
+        "max_observed_nll_alpha_0": 1.0267436504364014,
+        "mean_survival_mse_to_generator": 0.011724067541460196
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": -0.17813976605733237,
+        "min": -0.2050837278366089,
+        "max": -0.15369069576263428
+      }
+    },
+    "redundancy": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.0215259790420532,
+        "min_observed_nll_alpha_0": 1.0101516246795654,
+        "max_observed_nll_alpha_0": 1.0299488306045532,
+        "mean_survival_mse_to_generator": 0.01252512726932764
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.0215259790420532,
+        "min_observed_nll_alpha_0": 1.0101516246795654,
+        "max_observed_nll_alpha_0": 1.0299488306045532,
+        "mean_survival_mse_to_generator": 0.01252512726932764
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.0174757242202759,
+        "min_observed_nll_alpha_0": 1.0046005249023438,
+        "max_observed_nll_alpha_0": 1.0253472328186035,
+        "mean_survival_mse_to_generator": 0.01226425605515639
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.0215259790420532,
+        "min_observed_nll_alpha_0": 1.0101516246795654,
+        "max_observed_nll_alpha_0": 1.0299488306045532,
+        "mean_survival_mse_to_generator": 0.01252512726932764
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.0209753513336182,
+        "min_observed_nll_alpha_0": 1.0101814270019531,
+        "max_observed_nll_alpha_0": 1.02754807472229,
+        "mean_survival_mse_to_generator": 0.012438356255491575
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": 0.004050254821777344,
+        "min": 0.0019980669021606445,
+        "max": 0.00555109977722168
+      }
+    },
+    "path_only": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.0311639308929443,
+        "min_observed_nll_alpha_0": 1.0260794162750244,
+        "max_observed_nll_alpha_0": 1.0385695695877075,
+        "mean_survival_mse_to_generator": 0.012392743490636349
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.0311639308929443,
+        "min_observed_nll_alpha_0": 1.0260794162750244,
+        "max_observed_nll_alpha_0": 1.0385695695877075,
+        "mean_survival_mse_to_generator": 0.012392743490636349
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.0303934812545776,
+        "min_observed_nll_alpha_0": 1.026322603225708,
+        "max_observed_nll_alpha_0": 1.0353899002075195,
+        "mean_survival_mse_to_generator": 0.011904916726052761
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.0311638911565144,
+        "min_observed_nll_alpha_0": 1.0260794162750244,
+        "max_observed_nll_alpha_0": 1.038569450378418,
+        "mean_survival_mse_to_generator": 0.012392744111518065
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.0300508737564087,
+        "min_observed_nll_alpha_0": 1.02743661403656,
+        "max_observed_nll_alpha_0": 1.0342049598693848,
+        "mean_survival_mse_to_generator": 0.012230307484666506
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": 0.0007704496383666992,
+        "min": -0.0006251335144042969,
+        "max": 0.0031796693801879883
+      }
+    },
+    "rna_only": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.0071448882420857,
+        "min_observed_nll_alpha_0": 0.996254563331604,
+        "max_observed_nll_alpha_0": 1.0180532932281494,
+        "mean_survival_mse_to_generator": 0.011511459636191526
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.0071448882420857,
+        "min_observed_nll_alpha_0": 0.996254563331604,
+        "max_observed_nll_alpha_0": 1.0180532932281494,
+        "mean_survival_mse_to_generator": 0.011511459636191526
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.0048389037450154,
+        "min_observed_nll_alpha_0": 0.9955873489379883,
+        "max_observed_nll_alpha_0": 1.015604853630066,
+        "mean_survival_mse_to_generator": 0.010911380251248678
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.0071448882420857,
+        "min_observed_nll_alpha_0": 0.996254563331604,
+        "max_observed_nll_alpha_0": 1.0180532932281494,
+        "mean_survival_mse_to_generator": 0.011511459636191526
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.0070284207661946,
+        "min_observed_nll_alpha_0": 0.995879054069519,
+        "max_observed_nll_alpha_0": 1.0161515474319458,
+        "mean_survival_mse_to_generator": 0.011490777445336183
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": 0.0023059844970703125,
+        "min": 0.0006672143936157227,
+        "max": 0.0038022994995117188
+      }
+    },
+    "null": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.193013310432434,
+        "min_observed_nll_alpha_0": 1.1818499565124512,
+        "max_observed_nll_alpha_0": 1.203754186630249,
+        "mean_survival_mse_to_generator": 0.016308310441672802
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.193013310432434,
+        "min_observed_nll_alpha_0": 1.1818499565124512,
+        "max_observed_nll_alpha_0": 1.203754186630249,
+        "mean_survival_mse_to_generator": 0.016308310441672802
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.1914788087209065,
+        "min_observed_nll_alpha_0": 1.179334282875061,
+        "max_observed_nll_alpha_0": 1.204463243484497,
+        "mean_survival_mse_to_generator": 0.01572968065738678
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.193013310432434,
+        "min_observed_nll_alpha_0": 1.1818499565124512,
+        "max_observed_nll_alpha_0": 1.203754186630249,
+        "mean_survival_mse_to_generator": 0.016308310441672802
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.195232351620992,
+        "min_observed_nll_alpha_0": 1.1864826679229736,
+        "max_observed_nll_alpha_0": 1.205212116241455,
+        "mean_survival_mse_to_generator": 0.016355752013623714
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": 0.0015345017115275066,
+        "min": -0.0007090568542480469,
+        "max": 0.0027968883514404297
+      }
+    },
+    "shared_plus_xor": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 0.9812560876210531,
+        "min_observed_nll_alpha_0": 0.9716412425041199,
+        "max_observed_nll_alpha_0": 0.9891350865364075,
+        "mean_survival_mse_to_generator": 0.012333683669567108
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 0.9812560876210531,
+        "min_observed_nll_alpha_0": 0.9716412425041199,
+        "max_observed_nll_alpha_0": 0.9891350865364075,
+        "mean_survival_mse_to_generator": 0.012333683669567108
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.145552674929301,
+        "min_observed_nll_alpha_0": 1.1381720304489136,
+        "max_observed_nll_alpha_0": 1.1518347263336182,
+        "mean_survival_mse_to_generator": 0.06771059582630794
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 0.9812560876210531,
+        "min_observed_nll_alpha_0": 0.9716412425041199,
+        "max_observed_nll_alpha_0": 0.9891350865364075,
+        "mean_survival_mse_to_generator": 0.012333683669567108
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 0.9815169175465902,
+        "min_observed_nll_alpha_0": 0.9714296460151672,
+        "max_observed_nll_alpha_0": 0.9893627166748047,
+        "mean_survival_mse_to_generator": 0.012500311558445295
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": -0.1642965873082479,
+        "min": -0.17501002550125122,
+        "max": -0.15518009662628174
+      }
+    },
+    "correlated_xor": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.1373323599497478,
+        "min_observed_nll_alpha_0": 1.1292496919631958,
+        "max_observed_nll_alpha_0": 1.1512742042541504,
+        "mean_survival_mse_to_generator": 0.007446936176468928
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.1373323599497478,
+        "min_observed_nll_alpha_0": 1.1292496919631958,
+        "max_observed_nll_alpha_0": 1.1512742042541504,
+        "mean_survival_mse_to_generator": 0.007446936176468928
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.2398266792297363,
+        "min_observed_nll_alpha_0": 1.22158944606781,
+        "max_observed_nll_alpha_0": 1.255807876586914,
+        "mean_survival_mse_to_generator": 0.04150733724236488
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.1373323599497478,
+        "min_observed_nll_alpha_0": 1.1292496919631958,
+        "max_observed_nll_alpha_0": 1.1512742042541504,
+        "mean_survival_mse_to_generator": 0.007446936176468928
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.1378756761550903,
+        "min_observed_nll_alpha_0": 1.128428339958191,
+        "max_observed_nll_alpha_0": 1.1522412300109863,
+        "mean_survival_mse_to_generator": 0.008039952721446753
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": -0.1024943192799886,
+        "min": -0.11060953140258789,
+        "max": -0.09233975410461426
+      }
+    },
+    "continuous_redundancy": {
+      "old_independent": {
+        "mean_observed_nll_alpha_0": 1.053109884262085,
+        "min_observed_nll_alpha_0": 1.0421719551086426,
+        "max_observed_nll_alpha_0": 1.0631661415100098,
+        "mean_survival_mse_to_generator": 0.019535697375734646
+      },
+      "candidate_independent": {
+        "mean_observed_nll_alpha_0": 1.053109884262085,
+        "min_observed_nll_alpha_0": 1.0421719551086426,
+        "max_observed_nll_alpha_0": 1.0631661415100098,
+        "mean_survival_mse_to_generator": 0.019535697375734646
+      },
+      "candidate_interaction_off": {
+        "mean_observed_nll_alpha_0": 1.0562327702840169,
+        "min_observed_nll_alpha_0": 1.047419548034668,
+        "max_observed_nll_alpha_0": 1.064408302307129,
+        "mean_survival_mse_to_generator": 0.021155313899119694
+      },
+      "old_ema_independent": {
+        "mean_observed_nll_alpha_0": 1.053109844525655,
+        "min_observed_nll_alpha_0": 1.0421719551086426,
+        "max_observed_nll_alpha_0": 1.0631660223007202,
+        "mean_survival_mse_to_generator": 0.019535699238379795
+      },
+      "old_rna_conditioned_path": {
+        "mean_observed_nll_alpha_0": 1.0569660663604736,
+        "min_observed_nll_alpha_0": 1.0493848323822021,
+        "max_observed_nll_alpha_0": 1.0677485466003418,
+        "mean_survival_mse_to_generator": 0.01966100682814916
+      },
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "candidate_minus_off_observed_nll_alpha_0": {
+        "mean": -0.0031228860219319663,
+        "min": -0.005247592926025391,
+        "max": -0.0012421607971191406
+      }
+    }
+  },
+  "records": [
+    {
+      "scenario": "xor",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20278117,
+        "validation": 20278118,
+        "test": 20278119,
+        "initialization": 20278120
+      },
+      "data_sha256": {
+        "train": "ac58c952e9eda7c5985563c939d430f3962d7f79d5235d6ee588332cc7ddfe35",
+        "validation": "4b611a58a3a8401a348357574415364031680d236dec576dc1ec6af822fb2e3e",
+        "test": "ac0846c625aa9c4054247cd110f63b930ba0b51d86dafc4801ce467e83fac567"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7583920359611511,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.045287847518921,
+            "first_interaction_gradient_norm": 0.10773545503616333,
+            "last_interaction_gradient_norm_before_step": 0.002959858626127243,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8119782209396362,
+            "observed_nll_alpha_0": 1.0050077438354492,
+            "oracle_observed_nll_alpha_0": 0.9561026692390442,
+            "mean_squared_survival_error_to_generator": 0.008574235253036022,
+            "mean_prediction_minus_generator_survival": -0.08087647706270218,
+            "censor_fraction": 0.51953125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8448116183280945,
+            "observed_nll_alpha_0": 1.02692711353302,
+            "oracle_observed_nll_alpha_0": 0.9875437021255493,
+            "mean_squared_survival_error_to_generator": 0.008614166639745235,
+            "mean_prediction_minus_generator_survival": -0.08123115450143814,
+            "censor_fraction": 0.4833984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.045287847518921,
+            "first_interaction_gradient_norm": 0.10773545503616333,
+            "last_interaction_gradient_norm_before_step": 0.002959858626127243,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8119782209396362,
+            "observed_nll_alpha_0": 1.0050077438354492,
+            "oracle_observed_nll_alpha_0": 0.9561026692390442,
+            "mean_squared_survival_error_to_generator": 0.008574235253036022,
+            "mean_prediction_minus_generator_survival": -0.08087647706270218,
+            "censor_fraction": 0.51953125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8448116183280945,
+            "observed_nll_alpha_0": 1.02692711353302,
+            "oracle_observed_nll_alpha_0": 0.9875437021255493,
+            "mean_squared_survival_error_to_generator": 0.008614166639745235,
+            "mean_prediction_minus_generator_survival": -0.08123115450143814,
+            "censor_fraction": 0.4833984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0285074710845947,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9015311002731323,
+            "observed_nll_alpha_0": 1.1610499620437622,
+            "oracle_observed_nll_alpha_0": 0.9561026692390442,
+            "mean_squared_survival_error_to_generator": 0.07602787017822266,
+            "mean_prediction_minus_generator_survival": -0.13206814229488373,
+            "censor_fraction": 0.51953125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9346968531608582,
+            "observed_nll_alpha_0": 1.1806178092956543,
+            "oracle_observed_nll_alpha_0": 0.9875437021255493,
+            "mean_squared_survival_error_to_generator": 0.07402991503477097,
+            "mean_prediction_minus_generator_survival": -0.12408113479614258,
+            "censor_fraction": 0.4833984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.045287847518921,
+            "first_interaction_gradient_norm": 0.10773545503616333,
+            "last_interaction_gradient_norm_before_step": 0.002959858626127243,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8119782209396362,
+            "observed_nll_alpha_0": 1.0050077438354492,
+            "oracle_observed_nll_alpha_0": 0.9561026692390442,
+            "mean_squared_survival_error_to_generator": 0.008574235253036022,
+            "mean_prediction_minus_generator_survival": -0.08087647706270218,
+            "censor_fraction": 0.51953125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8448116183280945,
+            "observed_nll_alpha_0": 1.02692711353302,
+            "oracle_observed_nll_alpha_0": 0.9875437021255493,
+            "mean_squared_survival_error_to_generator": 0.008614166639745235,
+            "mean_prediction_minus_generator_survival": -0.08123115450143814,
+            "censor_fraction": 0.4833984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0283145904541016,
+            "first_interaction_gradient_norm": 0.05358623340725899,
+            "last_interaction_gradient_norm_before_step": 0.0027939893770962954,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8162895441055298,
+            "observed_nll_alpha_0": 1.0097460746765137,
+            "oracle_observed_nll_alpha_0": 0.9561026692390442,
+            "mean_squared_survival_error_to_generator": 0.00856818351894617,
+            "mean_prediction_minus_generator_survival": -0.08197984844446182,
+            "censor_fraction": 0.51953125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8449500799179077,
+            "observed_nll_alpha_0": 1.0267436504364014,
+            "oracle_observed_nll_alpha_0": 0.9875437021255493,
+            "mean_squared_survival_error_to_generator": 0.008418611250817776,
+            "mean_prediction_minus_generator_survival": -0.08120409399271011,
+            "censor_fraction": 0.4833984375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "xor",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20290117,
+        "validation": 20290118,
+        "test": 20290119,
+        "initialization": 20290120
+      },
+      "data_sha256": {
+        "train": "17c42dc77e3dd82f8619097dd5c4878873d3d2d5a44c9a11c4c304ab761f3263",
+        "validation": "6e5999b76c87efea449c1b70f5f26a5d460c899bc97f6ab3c908781e23a504f5",
+        "test": "44cf669bb353321a49d467d4749f857e476a81f073eac4cc2435ece89ec4e47d"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7359199523925781,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0467262268066406,
+            "first_interaction_gradient_norm": 0.047579195350408554,
+            "last_interaction_gradient_norm_before_step": 0.0025790827348828316,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.807022213935852,
+            "observed_nll_alpha_0": 1.0186153650283813,
+            "oracle_observed_nll_alpha_0": 0.9558965563774109,
+            "mean_squared_survival_error_to_generator": 0.015984760597348213,
+            "mean_prediction_minus_generator_survival": -0.1062559261918068,
+            "censor_fraction": 0.52734375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8212161064147949,
+            "observed_nll_alpha_0": 1.015013337135315,
+            "oracle_observed_nll_alpha_0": 0.9643930196762085,
+            "mean_squared_survival_error_to_generator": 0.013895031064748764,
+            "mean_prediction_minus_generator_survival": -0.09520799666643143,
+            "censor_fraction": 0.48828125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0467262268066406,
+            "first_interaction_gradient_norm": 0.047579195350408554,
+            "last_interaction_gradient_norm_before_step": 0.0025790827348828316,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.807022213935852,
+            "observed_nll_alpha_0": 1.0186153650283813,
+            "oracle_observed_nll_alpha_0": 0.9558965563774109,
+            "mean_squared_survival_error_to_generator": 0.015984760597348213,
+            "mean_prediction_minus_generator_survival": -0.1062559261918068,
+            "censor_fraction": 0.52734375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8212161064147949,
+            "observed_nll_alpha_0": 1.015013337135315,
+            "oracle_observed_nll_alpha_0": 0.9643930196762085,
+            "mean_squared_survival_error_to_generator": 0.013895031064748764,
+            "mean_prediction_minus_generator_survival": -0.09520799666643143,
+            "censor_fraction": 0.48828125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0450881719589233,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9162013530731201,
+            "observed_nll_alpha_0": 1.204643726348877,
+            "oracle_observed_nll_alpha_0": 0.9558965563774109,
+            "mean_squared_survival_error_to_generator": 0.08421629667282104,
+            "mean_prediction_minus_generator_survival": -0.1606886237859726,
+            "censor_fraction": 0.52734375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9317874908447266,
+            "observed_nll_alpha_0": 1.1906582117080688,
+            "oracle_observed_nll_alpha_0": 0.9643930196762085,
+            "mean_squared_survival_error_to_generator": 0.07534747570753098,
+            "mean_prediction_minus_generator_survival": -0.12609906494617462,
+            "censor_fraction": 0.48828125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0467262268066406,
+            "first_interaction_gradient_norm": 0.047579195350408554,
+            "last_interaction_gradient_norm_before_step": 0.0025790827348828316,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.807022213935852,
+            "observed_nll_alpha_0": 1.0186153650283813,
+            "oracle_observed_nll_alpha_0": 0.9558965563774109,
+            "mean_squared_survival_error_to_generator": 0.015984760597348213,
+            "mean_prediction_minus_generator_survival": -0.1062559261918068,
+            "censor_fraction": 0.52734375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8212161064147949,
+            "observed_nll_alpha_0": 1.015013337135315,
+            "oracle_observed_nll_alpha_0": 0.9643930196762085,
+            "mean_squared_survival_error_to_generator": 0.013895031064748764,
+            "mean_prediction_minus_generator_survival": -0.09520799666643143,
+            "censor_fraction": 0.48828125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.054282784461975,
+            "first_interaction_gradient_norm": 0.06453743577003479,
+            "last_interaction_gradient_norm_before_step": 0.0026642901357263327,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8073768615722656,
+            "observed_nll_alpha_0": 1.0185763835906982,
+            "oracle_observed_nll_alpha_0": 0.9558965563774109,
+            "mean_squared_survival_error_to_generator": 0.01591966673731804,
+            "mean_prediction_minus_generator_survival": -0.10584509372711182,
+            "censor_fraction": 0.52734375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8212171792984009,
+            "observed_nll_alpha_0": 1.0153781175613403,
+            "oracle_observed_nll_alpha_0": 0.9643930196762085,
+            "mean_squared_survival_error_to_generator": 0.013933819718658924,
+            "mean_prediction_minus_generator_survival": -0.09524746984243393,
+            "censor_fraction": 0.48828125
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "xor",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20304117,
+        "validation": 20304118,
+        "test": 20304119,
+        "initialization": 20304120
+      },
+      "data_sha256": {
+        "train": "25bf83879e0d7a89e6789adcdc923e0512395318f5d121d3db87ef2e0f9045a0",
+        "validation": "e512fbbf94d4744714bcd28d18eb1e5cdf61a76080e34fc4da2db0c901a3628d",
+        "test": "92dc90d98e9c947c26ea09b2d32a6aa2b6fa8f83bb1c2039851f6a10c4e093db"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7575259804725647,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0418546199798584,
+            "first_interaction_gradient_norm": 0.0983191654086113,
+            "last_interaction_gradient_norm_before_step": 0.003099131863564253,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8164955973625183,
+            "observed_nll_alpha_0": 1.008049488067627,
+            "oracle_observed_nll_alpha_0": 0.9568377137184143,
+            "mean_squared_survival_error_to_generator": 0.011686642654240131,
+            "mean_prediction_minus_generator_survival": -0.08899766206741333,
+            "censor_fraction": 0.48046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8163039684295654,
+            "observed_nll_alpha_0": 1.0095384120941162,
+            "oracle_observed_nll_alpha_0": 0.9553476572036743,
+            "mean_squared_survival_error_to_generator": 0.012377091683447361,
+            "mean_prediction_minus_generator_survival": -0.09130937606096268,
+            "censor_fraction": 0.4931640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0418546199798584,
+            "first_interaction_gradient_norm": 0.0983191654086113,
+            "last_interaction_gradient_norm_before_step": 0.003099131863564253,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8164955973625183,
+            "observed_nll_alpha_0": 1.008049488067627,
+            "oracle_observed_nll_alpha_0": 0.9568377137184143,
+            "mean_squared_survival_error_to_generator": 0.011686642654240131,
+            "mean_prediction_minus_generator_survival": -0.08899766206741333,
+            "censor_fraction": 0.48046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8163039684295654,
+            "observed_nll_alpha_0": 1.0095384120941162,
+            "oracle_observed_nll_alpha_0": 0.9553476572036743,
+            "mean_squared_survival_error_to_generator": 0.012377091683447361,
+            "mean_prediction_minus_generator_survival": -0.09130937606096268,
+            "censor_fraction": 0.4931640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0379135608673096,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9334931969642639,
+            "observed_nll_alpha_0": 1.2060596942901611,
+            "oracle_observed_nll_alpha_0": 0.9568377137184143,
+            "mean_squared_survival_error_to_generator": 0.07649747282266617,
+            "mean_prediction_minus_generator_survival": -0.13002243638038635,
+            "censor_fraction": 0.48046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9399781823158264,
+            "observed_nll_alpha_0": 1.214622139930725,
+            "oracle_observed_nll_alpha_0": 0.9553476572036743,
+            "mean_squared_survival_error_to_generator": 0.07775779068470001,
+            "mean_prediction_minus_generator_survival": -0.13148897886276245,
+            "censor_fraction": 0.4931640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0418546199798584,
+            "first_interaction_gradient_norm": 0.0983191654086113,
+            "last_interaction_gradient_norm_before_step": 0.003099131863564253,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8164955973625183,
+            "observed_nll_alpha_0": 1.008049488067627,
+            "oracle_observed_nll_alpha_0": 0.9568377137184143,
+            "mean_squared_survival_error_to_generator": 0.011686642654240131,
+            "mean_prediction_minus_generator_survival": -0.08899766206741333,
+            "censor_fraction": 0.48046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8163039684295654,
+            "observed_nll_alpha_0": 1.0095384120941162,
+            "oracle_observed_nll_alpha_0": 0.9553476572036743,
+            "mean_squared_survival_error_to_generator": 0.012377091683447361,
+            "mean_prediction_minus_generator_survival": -0.09130937606096268,
+            "censor_fraction": 0.4931640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0291335582733154,
+            "first_interaction_gradient_norm": 0.06786680221557617,
+            "last_interaction_gradient_norm_before_step": 0.002683520084246993,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8186260461807251,
+            "observed_nll_alpha_0": 1.0118019580841064,
+            "oracle_observed_nll_alpha_0": 0.9568377137184143,
+            "mean_squared_survival_error_to_generator": 0.012164197862148285,
+            "mean_prediction_minus_generator_survival": -0.09035255759954453,
+            "censor_fraction": 0.48046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8197718262672424,
+            "observed_nll_alpha_0": 1.0143556594848633,
+            "oracle_observed_nll_alpha_0": 0.9553476572036743,
+            "mean_squared_survival_error_to_generator": 0.012819771654903889,
+            "mean_prediction_minus_generator_survival": -0.09252125024795532,
+            "censor_fraction": 0.4931640625
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "redundancy",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20378117,
+        "validation": 20378118,
+        "test": 20378119,
+        "initialization": 20378120
+      },
+      "data_sha256": {
+        "train": "52baef854f24799c1ae5b2b107a56eb0838744cb37e38261b1a5789edba4b498",
+        "validation": "60506178969a2ec8cce7ec3bdf8e49e63c55b4d5da23a31dcc982adb1717408d",
+        "test": "bf91caf1a784ea01f630d282ca9329a9b4c5ea844b37b5a6157e71f7dceef8df"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7649765014648438,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9509227275848389,
+            "first_interaction_gradient_norm": 0.06948671489953995,
+            "last_interaction_gradient_norm_before_step": 0.0014679001178592443,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8337082862854004,
+            "observed_nll_alpha_0": 0.9925553202629089,
+            "oracle_observed_nll_alpha_0": 0.9549535512924194,
+            "mean_squared_survival_error_to_generator": 0.010699537582695484,
+            "mean_prediction_minus_generator_survival": -0.08874691277742386,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8451826572418213,
+            "observed_nll_alpha_0": 1.024477481842041,
+            "oracle_observed_nll_alpha_0": 0.9864340424537659,
+            "mean_squared_survival_error_to_generator": 0.010972912423312664,
+            "mean_prediction_minus_generator_survival": -0.09019318968057632,
+            "censor_fraction": 0.4677734375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9509227275848389,
+            "first_interaction_gradient_norm": 0.06948671489953995,
+            "last_interaction_gradient_norm_before_step": 0.0014679001178592443,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8337082862854004,
+            "observed_nll_alpha_0": 0.9925553202629089,
+            "oracle_observed_nll_alpha_0": 0.9549535512924194,
+            "mean_squared_survival_error_to_generator": 0.010699537582695484,
+            "mean_prediction_minus_generator_survival": -0.08874691277742386,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8451826572418213,
+            "observed_nll_alpha_0": 1.024477481842041,
+            "oracle_observed_nll_alpha_0": 0.9864340424537659,
+            "mean_squared_survival_error_to_generator": 0.010972912423312664,
+            "mean_prediction_minus_generator_survival": -0.09019318968057632,
+            "censor_fraction": 0.4677734375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.956947922706604,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8316670060157776,
+            "observed_nll_alpha_0": 0.9904839992523193,
+            "oracle_observed_nll_alpha_0": 0.9549535512924194,
+            "mean_squared_survival_error_to_generator": 0.010554545558989048,
+            "mean_prediction_minus_generator_survival": -0.0893542468547821,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8434973359107971,
+            "observed_nll_alpha_0": 1.0224794149398804,
+            "oracle_observed_nll_alpha_0": 0.9864340424537659,
+            "mean_squared_survival_error_to_generator": 0.010915414430201054,
+            "mean_prediction_minus_generator_survival": -0.09080149978399277,
+            "censor_fraction": 0.4677734375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9509227275848389,
+            "first_interaction_gradient_norm": 0.06948671489953995,
+            "last_interaction_gradient_norm_before_step": 0.0014678997686132789,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8337082862854004,
+            "observed_nll_alpha_0": 0.9925553202629089,
+            "oracle_observed_nll_alpha_0": 0.9549535512924194,
+            "mean_squared_survival_error_to_generator": 0.010699539445340633,
+            "mean_prediction_minus_generator_survival": -0.08874692767858505,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8451825976371765,
+            "observed_nll_alpha_0": 1.024477481842041,
+            "oracle_observed_nll_alpha_0": 0.9864340424537659,
+            "mean_squared_survival_error_to_generator": 0.010972912423312664,
+            "mean_prediction_minus_generator_survival": -0.09019318968057632,
+            "censor_fraction": 0.4677734375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9442649483680725,
+            "first_interaction_gradient_norm": 0.12079501897096634,
+            "last_interaction_gradient_norm_before_step": 0.0019414349226281047,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8345777988433838,
+            "observed_nll_alpha_0": 0.9936192631721497,
+            "oracle_observed_nll_alpha_0": 0.9549535512924194,
+            "mean_squared_survival_error_to_generator": 0.010762589983642101,
+            "mean_prediction_minus_generator_survival": -0.08834008127450943,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8460344672203064,
+            "observed_nll_alpha_0": 1.0251965522766113,
+            "oracle_observed_nll_alpha_0": 0.9864340424537659,
+            "mean_squared_survival_error_to_generator": 0.011075501330196857,
+            "mean_prediction_minus_generator_survival": -0.08995843678712845,
+            "censor_fraction": 0.4677734375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "redundancy",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20390117,
+        "validation": 20390118,
+        "test": 20390119,
+        "initialization": 20390120
+      },
+      "data_sha256": {
+        "train": "f6cbef0a61d48f512112ec3163a0b9c74849d1505197a729aead90ef0991f273",
+        "validation": "76df7046f43b86dd143009263f104de3542259ff8c9d231364acb34e60f5e2c7",
+        "test": "b740de6a2d979e7b5b59131da8f955ad382f7c82f12e2b6fc78b6000896dc255"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7511770129203796,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9360642433166504,
+            "first_interaction_gradient_norm": 0.03037176840007305,
+            "last_interaction_gradient_norm_before_step": 0.0014795211609452963,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8055462837219238,
+            "observed_nll_alpha_0": 1.0208696126937866,
+            "oracle_observed_nll_alpha_0": 0.9436405897140503,
+            "mean_squared_survival_error_to_generator": 0.01592806726694107,
+            "mean_prediction_minus_generator_survival": -0.10512641817331314,
+            "censor_fraction": 0.509765625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8280104398727417,
+            "observed_nll_alpha_0": 1.0299488306045532,
+            "oracle_observed_nll_alpha_0": 0.9667253494262695,
+            "mean_squared_survival_error_to_generator": 0.01579168438911438,
+            "mean_prediction_minus_generator_survival": -0.10610461235046387,
+            "censor_fraction": 0.4970703125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9360642433166504,
+            "first_interaction_gradient_norm": 0.03037176840007305,
+            "last_interaction_gradient_norm_before_step": 0.0014795211609452963,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8055462837219238,
+            "observed_nll_alpha_0": 1.0208696126937866,
+            "oracle_observed_nll_alpha_0": 0.9436405897140503,
+            "mean_squared_survival_error_to_generator": 0.01592806726694107,
+            "mean_prediction_minus_generator_survival": -0.10512641817331314,
+            "censor_fraction": 0.509765625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8280104398727417,
+            "observed_nll_alpha_0": 1.0299488306045532,
+            "oracle_observed_nll_alpha_0": 0.9667253494262695,
+            "mean_squared_survival_error_to_generator": 0.01579168438911438,
+            "mean_prediction_minus_generator_survival": -0.10610461235046387,
+            "censor_fraction": 0.4970703125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9300849437713623,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8010864853858948,
+            "observed_nll_alpha_0": 1.0151429176330566,
+            "oracle_observed_nll_alpha_0": 0.9436405897140503,
+            "mean_squared_survival_error_to_generator": 0.014978300780057907,
+            "mean_prediction_minus_generator_survival": -0.10414902120828629,
+            "censor_fraction": 0.509765625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8242952227592468,
+            "observed_nll_alpha_0": 1.0253472328186035,
+            "oracle_observed_nll_alpha_0": 0.9667253494262695,
+            "mean_squared_survival_error_to_generator": 0.015269152820110321,
+            "mean_prediction_minus_generator_survival": -0.10544490069150925,
+            "censor_fraction": 0.4970703125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9360642433166504,
+            "first_interaction_gradient_norm": 0.03037176840007305,
+            "last_interaction_gradient_norm_before_step": 0.0014795211609452963,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8055462837219238,
+            "observed_nll_alpha_0": 1.0208696126937866,
+            "oracle_observed_nll_alpha_0": 0.9436405897140503,
+            "mean_squared_survival_error_to_generator": 0.01592806726694107,
+            "mean_prediction_minus_generator_survival": -0.10512641817331314,
+            "censor_fraction": 0.509765625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8280104398727417,
+            "observed_nll_alpha_0": 1.0299488306045532,
+            "oracle_observed_nll_alpha_0": 0.9667253494262695,
+            "mean_squared_survival_error_to_generator": 0.01579168438911438,
+            "mean_prediction_minus_generator_survival": -0.10610461235046387,
+            "censor_fraction": 0.4970703125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9523906707763672,
+            "first_interaction_gradient_norm": 0.0818251296877861,
+            "last_interaction_gradient_norm_before_step": 0.0015406515449285507,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8040902018547058,
+            "observed_nll_alpha_0": 1.0190166234970093,
+            "oracle_observed_nll_alpha_0": 0.9436405897140503,
+            "mean_squared_survival_error_to_generator": 0.015514743514358997,
+            "mean_prediction_minus_generator_survival": -0.10448464006185532,
+            "censor_fraction": 0.509765625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8258124589920044,
+            "observed_nll_alpha_0": 1.02754807472229,
+            "oracle_observed_nll_alpha_0": 0.9667253494262695,
+            "mean_squared_survival_error_to_generator": 0.015435542911291122,
+            "mean_prediction_minus_generator_survival": -0.10580607503652573,
+            "censor_fraction": 0.4970703125
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "redundancy",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20404117,
+        "validation": 20404118,
+        "test": 20404119,
+        "initialization": 20404120
+      },
+      "data_sha256": {
+        "train": "7cb542950ecbbaf32a60bf3f62a9691c9ae8dd770c4cc6d711634799254f3b4b",
+        "validation": "c41e0b083b8f57397d7185b18bba5136b9f9f365f36f33606ef9087c69b9c140",
+        "test": "24bfe70e46acafc56679fff626e9511a5bc093777c7aae00f70da85a17514064"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7601441740989685,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.167608618736267,
+            "first_interaction_gradient_norm": 0.11533626168966293,
+            "last_interaction_gradient_norm_before_step": 0.0016788251232355833,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8322929739952087,
+            "observed_nll_alpha_0": 1.023699402809143,
+            "oracle_observed_nll_alpha_0": 0.9645586609840393,
+            "mean_squared_survival_error_to_generator": 0.010627567768096924,
+            "mean_prediction_minus_generator_survival": -0.08556916564702988,
+            "censor_fraction": 0.4921875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8293948173522949,
+            "observed_nll_alpha_0": 1.0101516246795654,
+            "oracle_observed_nll_alpha_0": 0.9555625915527344,
+            "mean_squared_survival_error_to_generator": 0.010810784995555878,
+            "mean_prediction_minus_generator_survival": -0.08885863423347473,
+            "censor_fraction": 0.49267578125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.167608618736267,
+            "first_interaction_gradient_norm": 0.11533626168966293,
+            "last_interaction_gradient_norm_before_step": 0.0016788251232355833,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8322929739952087,
+            "observed_nll_alpha_0": 1.023699402809143,
+            "oracle_observed_nll_alpha_0": 0.9645586609840393,
+            "mean_squared_survival_error_to_generator": 0.010627567768096924,
+            "mean_prediction_minus_generator_survival": -0.08556916564702988,
+            "censor_fraction": 0.4921875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8293948173522949,
+            "observed_nll_alpha_0": 1.0101516246795654,
+            "oracle_observed_nll_alpha_0": 0.9555625915527344,
+            "mean_squared_survival_error_to_generator": 0.010810784995555878,
+            "mean_prediction_minus_generator_survival": -0.08885863423347473,
+            "censor_fraction": 0.49267578125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1804414987564087,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8260806202888489,
+            "observed_nll_alpha_0": 1.0164101123809814,
+            "oracle_observed_nll_alpha_0": 0.9645586609840393,
+            "mean_squared_survival_error_to_generator": 0.010263699106872082,
+            "mean_prediction_minus_generator_survival": -0.08602694422006607,
+            "censor_fraction": 0.4921875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8244228959083557,
+            "observed_nll_alpha_0": 1.0046005249023438,
+            "oracle_observed_nll_alpha_0": 0.9555625915527344,
+            "mean_squared_survival_error_to_generator": 0.010608200915157795,
+            "mean_prediction_minus_generator_survival": -0.08972654491662979,
+            "censor_fraction": 0.49267578125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.167608618736267,
+            "first_interaction_gradient_norm": 0.11533626168966293,
+            "last_interaction_gradient_norm_before_step": 0.0016788251232355833,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8322929739952087,
+            "observed_nll_alpha_0": 1.023699402809143,
+            "oracle_observed_nll_alpha_0": 0.9645586609840393,
+            "mean_squared_survival_error_to_generator": 0.010627567768096924,
+            "mean_prediction_minus_generator_survival": -0.08556916564702988,
+            "censor_fraction": 0.4921875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8293948173522949,
+            "observed_nll_alpha_0": 1.0101516246795654,
+            "oracle_observed_nll_alpha_0": 0.9555625915527344,
+            "mean_squared_survival_error_to_generator": 0.010810784995555878,
+            "mean_prediction_minus_generator_survival": -0.08885863423347473,
+            "censor_fraction": 0.49267578125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.159163475036621,
+            "first_interaction_gradient_norm": 0.18603874742984772,
+            "last_interaction_gradient_norm_before_step": 0.0017766105011105537,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8324761986732483,
+            "observed_nll_alpha_0": 1.023667573928833,
+            "oracle_observed_nll_alpha_0": 0.9645586609840393,
+            "mean_squared_survival_error_to_generator": 0.010690022259950638,
+            "mean_prediction_minus_generator_survival": -0.0855788066983223,
+            "censor_fraction": 0.4921875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.829649031162262,
+            "observed_nll_alpha_0": 1.0101814270019531,
+            "oracle_observed_nll_alpha_0": 0.9555625915527344,
+            "mean_squared_survival_error_to_generator": 0.010804024524986744,
+            "mean_prediction_minus_generator_survival": -0.08864013105630875,
+            "censor_fraction": 0.49267578125
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "path_only",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20478117,
+        "validation": 20478118,
+        "test": 20478119,
+        "initialization": 20478120
+      },
+      "data_sha256": {
+        "train": "6930eeaa803e9a6890f01aaf7803045d5fe0d3d28c2fd73e54d7fd3c900b5b98",
+        "validation": "79d5447d4a87b0c843f177aa890a17c4f483f379e4bfaa15cd415a005f73948a",
+        "test": "972b339a7e913414eb485f9b39eef5862d9689b1e4b66e8d0c0219dcdd8a0723"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7410263419151306,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.063157558441162,
+            "first_interaction_gradient_norm": 0.011659516952931881,
+            "last_interaction_gradient_norm_before_step": 0.0013527293922379613,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8215562105178833,
+            "observed_nll_alpha_0": 1.0411646366119385,
+            "oracle_observed_nll_alpha_0": 0.9792261719703674,
+            "mean_squared_survival_error_to_generator": 0.014838393777608871,
+            "mean_prediction_minus_generator_survival": -0.09948628395795822,
+            "censor_fraction": 0.48828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8351286053657532,
+            "observed_nll_alpha_0": 1.0385695695877075,
+            "oracle_observed_nll_alpha_0": 0.9766319394111633,
+            "mean_squared_survival_error_to_generator": 0.015206844545900822,
+            "mean_prediction_minus_generator_survival": -0.09957601875066757,
+            "censor_fraction": 0.484375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.063157558441162,
+            "first_interaction_gradient_norm": 0.011659516952931881,
+            "last_interaction_gradient_norm_before_step": 0.0013527293922379613,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8215562105178833,
+            "observed_nll_alpha_0": 1.0411646366119385,
+            "oracle_observed_nll_alpha_0": 0.9792261719703674,
+            "mean_squared_survival_error_to_generator": 0.014838393777608871,
+            "mean_prediction_minus_generator_survival": -0.09948628395795822,
+            "censor_fraction": 0.48828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8351286053657532,
+            "observed_nll_alpha_0": 1.0385695695877075,
+            "oracle_observed_nll_alpha_0": 0.9766319394111633,
+            "mean_squared_survival_error_to_generator": 0.015206844545900822,
+            "mean_prediction_minus_generator_survival": -0.09957601875066757,
+            "censor_fraction": 0.484375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.061259388923645,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8246731758117676,
+            "observed_nll_alpha_0": 1.043826937675476,
+            "oracle_observed_nll_alpha_0": 0.9792261719703674,
+            "mean_squared_survival_error_to_generator": 0.014852161519229412,
+            "mean_prediction_minus_generator_survival": -0.0999104455113411,
+            "censor_fraction": 0.48828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8323659896850586,
+            "observed_nll_alpha_0": 1.0353899002075195,
+            "oracle_observed_nll_alpha_0": 0.9766319394111633,
+            "mean_squared_survival_error_to_generator": 0.015116368420422077,
+            "mean_prediction_minus_generator_survival": -0.10012256354093552,
+            "censor_fraction": 0.484375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.063157558441162,
+            "first_interaction_gradient_norm": 0.011659516952931881,
+            "last_interaction_gradient_norm_before_step": 0.0013527292758226395,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8215562105178833,
+            "observed_nll_alpha_0": 1.0411646366119385,
+            "oracle_observed_nll_alpha_0": 0.9792261719703674,
+            "mean_squared_survival_error_to_generator": 0.014838396571576595,
+            "mean_prediction_minus_generator_survival": -0.09948628395795822,
+            "censor_fraction": 0.48828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8351286053657532,
+            "observed_nll_alpha_0": 1.038569450378418,
+            "oracle_observed_nll_alpha_0": 0.9766319394111633,
+            "mean_squared_survival_error_to_generator": 0.015206846408545971,
+            "mean_prediction_minus_generator_survival": -0.09957602620124817,
+            "censor_fraction": 0.484375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.064048171043396,
+            "first_interaction_gradient_norm": 0.08628078550100327,
+            "last_interaction_gradient_norm_before_step": 0.0012213027803227305,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8208410143852234,
+            "observed_nll_alpha_0": 1.0395530462265015,
+            "oracle_observed_nll_alpha_0": 0.9792261719703674,
+            "mean_squared_survival_error_to_generator": 0.014863073825836182,
+            "mean_prediction_minus_generator_survival": -0.10017302632331848,
+            "censor_fraction": 0.48828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8318978548049927,
+            "observed_nll_alpha_0": 1.0342049598693848,
+            "oracle_observed_nll_alpha_0": 0.9766319394111633,
+            "mean_squared_survival_error_to_generator": 0.014853160828351974,
+            "mean_prediction_minus_generator_survival": -0.09967287629842758,
+            "censor_fraction": 0.484375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "path_only",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20490117,
+        "validation": 20490118,
+        "test": 20490119,
+        "initialization": 20490120
+      },
+      "data_sha256": {
+        "train": "0d8272965e037addc2696367f45bcfa3bee725688f2ea1b80fb40e95acdc78f6",
+        "validation": "e2f903a5079aa184adff514e1c101678524c8892e7ada21f01e5f9cc2c4c20ae",
+        "test": "0878af5fd8c12ec8cbd174a4dcc896734eef707fd3d61b425abdf9f2e6edf0aa"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7747719883918762,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9986631870269775,
+            "first_interaction_gradient_norm": 0.04249090328812599,
+            "last_interaction_gradient_norm_before_step": 0.001591708161868155,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7998787760734558,
+            "observed_nll_alpha_0": 0.9858344793319702,
+            "oracle_observed_nll_alpha_0": 0.9260855913162231,
+            "mean_squared_survival_error_to_generator": 0.010362996719777584,
+            "mean_prediction_minus_generator_survival": -0.08651769161224365,
+            "censor_fraction": 0.513671875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8424144983291626,
+            "observed_nll_alpha_0": 1.0260794162750244,
+            "oracle_observed_nll_alpha_0": 0.9906017184257507,
+            "mean_squared_survival_error_to_generator": 0.010503425262868404,
+            "mean_prediction_minus_generator_survival": -0.08681458979845047,
+            "censor_fraction": 0.4765625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9986631870269775,
+            "first_interaction_gradient_norm": 0.04249090328812599,
+            "last_interaction_gradient_norm_before_step": 0.001591708161868155,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7998787760734558,
+            "observed_nll_alpha_0": 0.9858344793319702,
+            "oracle_observed_nll_alpha_0": 0.9260855913162231,
+            "mean_squared_survival_error_to_generator": 0.010362996719777584,
+            "mean_prediction_minus_generator_survival": -0.08651769161224365,
+            "censor_fraction": 0.513671875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8424144983291626,
+            "observed_nll_alpha_0": 1.0260794162750244,
+            "oracle_observed_nll_alpha_0": 0.9906017184257507,
+            "mean_squared_survival_error_to_generator": 0.010503425262868404,
+            "mean_prediction_minus_generator_survival": -0.08681458979845047,
+            "censor_fraction": 0.4765625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9895585775375366,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7966915369033813,
+            "observed_nll_alpha_0": 0.9812050461769104,
+            "oracle_observed_nll_alpha_0": 0.9260855913162231,
+            "mean_squared_survival_error_to_generator": 0.009732643142342567,
+            "mean_prediction_minus_generator_survival": -0.08682247996330261,
+            "censor_fraction": 0.513671875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8419480323791504,
+            "observed_nll_alpha_0": 1.026322603225708,
+            "oracle_observed_nll_alpha_0": 0.9906017184257507,
+            "mean_squared_survival_error_to_generator": 0.009610739536583424,
+            "mean_prediction_minus_generator_survival": -0.0863136574625969,
+            "censor_fraction": 0.4765625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9986631870269775,
+            "first_interaction_gradient_norm": 0.04249090328812599,
+            "last_interaction_gradient_norm_before_step": 0.001591708161868155,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7998787760734558,
+            "observed_nll_alpha_0": 0.9858344793319702,
+            "oracle_observed_nll_alpha_0": 0.9260855913162231,
+            "mean_squared_survival_error_to_generator": 0.010362996719777584,
+            "mean_prediction_minus_generator_survival": -0.08651769161224365,
+            "censor_fraction": 0.513671875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8424144983291626,
+            "observed_nll_alpha_0": 1.0260794162750244,
+            "oracle_observed_nll_alpha_0": 0.9906017184257507,
+            "mean_squared_survival_error_to_generator": 0.010503425262868404,
+            "mean_prediction_minus_generator_survival": -0.08681458979845047,
+            "censor_fraction": 0.4765625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0006710290908813,
+            "first_interaction_gradient_norm": 0.08533859252929688,
+            "last_interaction_gradient_norm_before_step": 0.0015813045902177691,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8013084530830383,
+            "observed_nll_alpha_0": 0.9870851635932922,
+            "oracle_observed_nll_alpha_0": 0.9260855913162231,
+            "mean_squared_survival_error_to_generator": 0.010526132769882679,
+            "mean_prediction_minus_generator_survival": -0.08658453077077866,
+            "censor_fraction": 0.513671875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8436733484268188,
+            "observed_nll_alpha_0": 1.02743661403656,
+            "oracle_observed_nll_alpha_0": 0.9906017184257507,
+            "mean_squared_survival_error_to_generator": 0.010558891110122204,
+            "mean_prediction_minus_generator_survival": -0.08642103523015976,
+            "censor_fraction": 0.4765625
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "path_only",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20504117,
+        "validation": 20504118,
+        "test": 20504119,
+        "initialization": 20504120
+      },
+      "data_sha256": {
+        "train": "c4b35fe7c38f22c677f50d6325c8e94b5493b4ec3bbcda7757fd5f6d0f5026c5",
+        "validation": "95a42e353cd6d1ebcf6641154874daf107437b3775954dc5daed76f07ad62172",
+        "test": "522d6479925e9049278120383fec7832386c340aaa6e9425c1ff429bcde448b0"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7621488571166992,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0956740379333496,
+            "first_interaction_gradient_norm": 0.031301550567150116,
+            "last_interaction_gradient_norm_before_step": 0.0017847520066425204,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8436077237129211,
+            "observed_nll_alpha_0": 1.0268924236297607,
+            "oracle_observed_nll_alpha_0": 0.9825650453567505,
+            "mean_squared_survival_error_to_generator": 0.011298379860818386,
+            "mean_prediction_minus_generator_survival": -0.08386596292257309,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8489162921905518,
+            "observed_nll_alpha_0": 1.028842806816101,
+            "oracle_observed_nll_alpha_0": 0.9921316504478455,
+            "mean_squared_survival_error_to_generator": 0.01146796066313982,
+            "mean_prediction_minus_generator_survival": -0.08551932126283646,
+            "censor_fraction": 0.4609375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0956740379333496,
+            "first_interaction_gradient_norm": 0.031301550567150116,
+            "last_interaction_gradient_norm_before_step": 0.0017847520066425204,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8436077237129211,
+            "observed_nll_alpha_0": 1.0268924236297607,
+            "oracle_observed_nll_alpha_0": 0.9825650453567505,
+            "mean_squared_survival_error_to_generator": 0.011298379860818386,
+            "mean_prediction_minus_generator_survival": -0.08386596292257309,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8489162921905518,
+            "observed_nll_alpha_0": 1.028842806816101,
+            "oracle_observed_nll_alpha_0": 0.9921316504478455,
+            "mean_squared_survival_error_to_generator": 0.01146796066313982,
+            "mean_prediction_minus_generator_survival": -0.08551932126283646,
+            "censor_fraction": 0.4609375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0875738859176636,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8394970893859863,
+            "observed_nll_alpha_0": 1.021269679069519,
+            "oracle_observed_nll_alpha_0": 0.9825650453567505,
+            "mean_squared_survival_error_to_generator": 0.011007661931216717,
+            "mean_prediction_minus_generator_survival": -0.084378182888031,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.850091814994812,
+            "observed_nll_alpha_0": 1.0294679403305054,
+            "oracle_observed_nll_alpha_0": 0.9921316504478455,
+            "mean_squared_survival_error_to_generator": 0.010987642221152782,
+            "mean_prediction_minus_generator_survival": -0.08551555126905441,
+            "censor_fraction": 0.4609375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0956740379333496,
+            "first_interaction_gradient_norm": 0.031301550567150116,
+            "last_interaction_gradient_norm_before_step": 0.0017847520066425204,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8436077237129211,
+            "observed_nll_alpha_0": 1.0268924236297607,
+            "oracle_observed_nll_alpha_0": 0.9825650453567505,
+            "mean_squared_survival_error_to_generator": 0.011298379860818386,
+            "mean_prediction_minus_generator_survival": -0.08386596292257309,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8489162921905518,
+            "observed_nll_alpha_0": 1.028842806816101,
+            "oracle_observed_nll_alpha_0": 0.9921316504478455,
+            "mean_squared_survival_error_to_generator": 0.01146796066313982,
+            "mean_prediction_minus_generator_survival": -0.08551932126283646,
+            "censor_fraction": 0.4609375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.079751968383789,
+            "first_interaction_gradient_norm": 0.11253931373357773,
+            "last_interaction_gradient_norm_before_step": 0.0016125852707773447,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8415344953536987,
+            "observed_nll_alpha_0": 1.0242546796798706,
+            "oracle_observed_nll_alpha_0": 0.9825650453567505,
+            "mean_squared_survival_error_to_generator": 0.011008203960955143,
+            "mean_prediction_minus_generator_survival": -0.08385974168777466,
+            "censor_fraction": 0.46875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8487602472305298,
+            "observed_nll_alpha_0": 1.0285110473632812,
+            "oracle_observed_nll_alpha_0": 0.9921316504478455,
+            "mean_squared_survival_error_to_generator": 0.011278870515525341,
+            "mean_prediction_minus_generator_survival": -0.085543692111969,
+            "censor_fraction": 0.4609375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "rna_only",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20578117,
+        "validation": 20578118,
+        "test": 20578119,
+        "initialization": 20578120
+      },
+      "data_sha256": {
+        "train": "fd18c163b156c01f5a2d923b6eb8251df2608694cf2dae88977617ebcc25eddd",
+        "validation": "29e42b309e8e2e84188612f65905288240698e13a76d7985258be28a90eb0859",
+        "test": "3d40504dd116c56e02271bf834e9ebc8dd3d09b065c53226143a4202fbf5d837"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7619408965110779,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9822162985801697,
+            "first_interaction_gradient_norm": 0.03471760079264641,
+            "last_interaction_gradient_norm_before_step": 0.001699815969914198,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7921591401100159,
+            "observed_nll_alpha_0": 0.9715943336486816,
+            "oracle_observed_nll_alpha_0": 0.9008698463439941,
+            "mean_squared_survival_error_to_generator": 0.010721500962972641,
+            "mean_prediction_minus_generator_survival": -0.08805461972951889,
+            "censor_fraction": 0.541015625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.825384259223938,
+            "observed_nll_alpha_0": 1.0180532932281494,
+            "oracle_observed_nll_alpha_0": 0.9609462022781372,
+            "mean_squared_survival_error_to_generator": 0.010799302719533443,
+            "mean_prediction_minus_generator_survival": -0.08858367800712585,
+            "censor_fraction": 0.50537109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9822162985801697,
+            "first_interaction_gradient_norm": 0.03471760079264641,
+            "last_interaction_gradient_norm_before_step": 0.001699815969914198,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7921591401100159,
+            "observed_nll_alpha_0": 0.9715943336486816,
+            "oracle_observed_nll_alpha_0": 0.9008698463439941,
+            "mean_squared_survival_error_to_generator": 0.010721500962972641,
+            "mean_prediction_minus_generator_survival": -0.08805461972951889,
+            "censor_fraction": 0.541015625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.825384259223938,
+            "observed_nll_alpha_0": 1.0180532932281494,
+            "oracle_observed_nll_alpha_0": 0.9609462022781372,
+            "mean_squared_survival_error_to_generator": 0.010799302719533443,
+            "mean_prediction_minus_generator_survival": -0.08858367800712585,
+            "censor_fraction": 0.50537109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9745152592658997,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7906653881072998,
+            "observed_nll_alpha_0": 0.970417320728302,
+            "oracle_observed_nll_alpha_0": 0.9008698463439941,
+            "mean_squared_survival_error_to_generator": 0.009884748607873917,
+            "mean_prediction_minus_generator_survival": -0.08720579743385315,
+            "censor_fraction": 0.541015625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8236965537071228,
+            "observed_nll_alpha_0": 1.015604853630066,
+            "oracle_observed_nll_alpha_0": 0.9609462022781372,
+            "mean_squared_survival_error_to_generator": 0.009945976547896862,
+            "mean_prediction_minus_generator_survival": -0.0874997153878212,
+            "censor_fraction": 0.50537109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9822162985801697,
+            "first_interaction_gradient_norm": 0.03471760079264641,
+            "last_interaction_gradient_norm_before_step": 0.001699815969914198,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7921591401100159,
+            "observed_nll_alpha_0": 0.9715943336486816,
+            "oracle_observed_nll_alpha_0": 0.9008698463439941,
+            "mean_squared_survival_error_to_generator": 0.010721500962972641,
+            "mean_prediction_minus_generator_survival": -0.08805461972951889,
+            "censor_fraction": 0.541015625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.825384259223938,
+            "observed_nll_alpha_0": 1.0180532932281494,
+            "oracle_observed_nll_alpha_0": 0.9609462022781372,
+            "mean_squared_survival_error_to_generator": 0.010799302719533443,
+            "mean_prediction_minus_generator_survival": -0.08858367800712585,
+            "censor_fraction": 0.50537109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9811463356018066,
+            "first_interaction_gradient_norm": 0.06339046359062195,
+            "last_interaction_gradient_norm_before_step": 0.0019040137995034456,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7830005884170532,
+            "observed_nll_alpha_0": 0.9618896245956421,
+            "oracle_observed_nll_alpha_0": 0.9008698463439941,
+            "mean_squared_survival_error_to_generator": 0.010437128134071827,
+            "mean_prediction_minus_generator_survival": -0.087141253054142,
+            "censor_fraction": 0.541015625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8239018321037292,
+            "observed_nll_alpha_0": 1.0161515474319458,
+            "oracle_observed_nll_alpha_0": 0.9609462022781372,
+            "mean_squared_survival_error_to_generator": 0.010431391187012196,
+            "mean_prediction_minus_generator_survival": -0.08720798045396805,
+            "censor_fraction": 0.50537109375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "rna_only",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20590117,
+        "validation": 20590118,
+        "test": 20590119,
+        "initialization": 20590120
+      },
+      "data_sha256": {
+        "train": "134c7f763b0cd5d362786ddaea901ab96a6f27681e9dc83c188e159b011f3d7c",
+        "validation": "b58710a8d4fbd1d6edc168f68072ffc5149055f2a69b908443c4b540292e2a92",
+        "test": "58f9f259d4d8c2c4ae3157e91bdb22dda048d43c3270cb7d6714b18c9446ff2a"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.745278537273407,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.276694893836975,
+            "first_interaction_gradient_norm": 0.02295043133199215,
+            "last_interaction_gradient_norm_before_step": 0.0013634716160595417,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7822465300559998,
+            "observed_nll_alpha_0": 0.9699560403823853,
+            "oracle_observed_nll_alpha_0": 0.933138906955719,
+            "mean_squared_survival_error_to_generator": 0.010691204108297825,
+            "mean_prediction_minus_generator_survival": -0.08833983540534973,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8067519664764404,
+            "observed_nll_alpha_0": 0.996254563331604,
+            "oracle_observed_nll_alpha_0": 0.955660343170166,
+            "mean_squared_survival_error_to_generator": 0.01058893371373415,
+            "mean_prediction_minus_generator_survival": -0.08673644065856934,
+            "censor_fraction": 0.5068359375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.276694893836975,
+            "first_interaction_gradient_norm": 0.02295043133199215,
+            "last_interaction_gradient_norm_before_step": 0.0013634716160595417,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7822465300559998,
+            "observed_nll_alpha_0": 0.9699560403823853,
+            "oracle_observed_nll_alpha_0": 0.933138906955719,
+            "mean_squared_survival_error_to_generator": 0.010691204108297825,
+            "mean_prediction_minus_generator_survival": -0.08833983540534973,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8067519664764404,
+            "observed_nll_alpha_0": 0.996254563331604,
+            "oracle_observed_nll_alpha_0": 0.955660343170166,
+            "mean_squared_survival_error_to_generator": 0.01058893371373415,
+            "mean_prediction_minus_generator_survival": -0.08673644065856934,
+            "censor_fraction": 0.5068359375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.2732479572296143,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7812088131904602,
+            "observed_nll_alpha_0": 0.9688292741775513,
+            "oracle_observed_nll_alpha_0": 0.933138906955719,
+            "mean_squared_survival_error_to_generator": 0.010031971149146557,
+            "mean_prediction_minus_generator_survival": -0.08775465935468674,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8054248094558716,
+            "observed_nll_alpha_0": 0.9955873489379883,
+            "oracle_observed_nll_alpha_0": 0.955660343170166,
+            "mean_squared_survival_error_to_generator": 0.010049191303551197,
+            "mean_prediction_minus_generator_survival": -0.0875416025519371,
+            "censor_fraction": 0.5068359375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.276694893836975,
+            "first_interaction_gradient_norm": 0.02295043133199215,
+            "last_interaction_gradient_norm_before_step": 0.0013634716160595417,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7822465300559998,
+            "observed_nll_alpha_0": 0.9699560403823853,
+            "oracle_observed_nll_alpha_0": 0.933138906955719,
+            "mean_squared_survival_error_to_generator": 0.010691204108297825,
+            "mean_prediction_minus_generator_survival": -0.08833983540534973,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8067519664764404,
+            "observed_nll_alpha_0": 0.996254563331604,
+            "oracle_observed_nll_alpha_0": 0.955660343170166,
+            "mean_squared_survival_error_to_generator": 0.01058893371373415,
+            "mean_prediction_minus_generator_survival": -0.08673644065856934,
+            "censor_fraction": 0.5068359375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.2613996267318726,
+            "first_interaction_gradient_norm": 0.20501089096069336,
+            "last_interaction_gradient_norm_before_step": 0.0014290895778685808,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7802887558937073,
+            "observed_nll_alpha_0": 0.9675890207290649,
+            "oracle_observed_nll_alpha_0": 0.933138906955719,
+            "mean_squared_survival_error_to_generator": 0.010612369515001774,
+            "mean_prediction_minus_generator_survival": -0.08878451585769653,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8060511350631714,
+            "observed_nll_alpha_0": 0.995879054069519,
+            "oracle_observed_nll_alpha_0": 0.955660343170166,
+            "mean_squared_survival_error_to_generator": 0.010594562627375126,
+            "mean_prediction_minus_generator_survival": -0.08715987950563431,
+            "censor_fraction": 0.5068359375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "rna_only",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20604117,
+        "validation": 20604118,
+        "test": 20604119,
+        "initialization": 20604120
+      },
+      "data_sha256": {
+        "train": "3d256a088ed3bafcb6bd3f06f477c050dc1eb7978fb050a3eaf681672b806602",
+        "validation": "4a098ac42592c60ea4d6340d27db92f854dcd6447f32ff8ac47533640ba31248",
+        "test": "df178c7f4cce56c7084e99bce521dea06b7dd2bdcbbece71b6f854a51be3fba2"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7446181178092957,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0271810293197632,
+            "first_interaction_gradient_norm": 0.04542612284421921,
+            "last_interaction_gradient_norm_before_step": 0.001460642321035266,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.814077615737915,
+            "observed_nll_alpha_0": 1.0136005878448486,
+            "oracle_observed_nll_alpha_0": 0.9468802213668823,
+            "mean_squared_survival_error_to_generator": 0.013778407126665115,
+            "mean_prediction_minus_generator_survival": -0.0995725467801094,
+            "censor_fraction": 0.49609375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.815787136554718,
+            "observed_nll_alpha_0": 1.007126808166504,
+            "oracle_observed_nll_alpha_0": 0.9523175358772278,
+            "mean_squared_survival_error_to_generator": 0.013146142475306988,
+            "mean_prediction_minus_generator_survival": -0.09759906679391861,
+            "censor_fraction": 0.49462890625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0271810293197632,
+            "first_interaction_gradient_norm": 0.04542612284421921,
+            "last_interaction_gradient_norm_before_step": 0.001460642321035266,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.814077615737915,
+            "observed_nll_alpha_0": 1.0136005878448486,
+            "oracle_observed_nll_alpha_0": 0.9468802213668823,
+            "mean_squared_survival_error_to_generator": 0.013778407126665115,
+            "mean_prediction_minus_generator_survival": -0.0995725467801094,
+            "censor_fraction": 0.49609375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.815787136554718,
+            "observed_nll_alpha_0": 1.007126808166504,
+            "oracle_observed_nll_alpha_0": 0.9523175358772278,
+            "mean_squared_survival_error_to_generator": 0.013146142475306988,
+            "mean_prediction_minus_generator_survival": -0.09759906679391861,
+            "censor_fraction": 0.49462890625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0173290967941284,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8100666403770447,
+            "observed_nll_alpha_0": 1.0098762512207031,
+            "oracle_observed_nll_alpha_0": 0.9468802213668823,
+            "mean_squared_survival_error_to_generator": 0.01314452663064003,
+            "mean_prediction_minus_generator_survival": -0.09879675507545471,
+            "censor_fraction": 0.49609375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8123805522918701,
+            "observed_nll_alpha_0": 1.0033245086669922,
+            "oracle_observed_nll_alpha_0": 0.9523175358772278,
+            "mean_squared_survival_error_to_generator": 0.012738972902297974,
+            "mean_prediction_minus_generator_survival": -0.09780190140008926,
+            "censor_fraction": 0.49462890625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0271810293197632,
+            "first_interaction_gradient_norm": 0.04542612284421921,
+            "last_interaction_gradient_norm_before_step": 0.001460642321035266,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.814077615737915,
+            "observed_nll_alpha_0": 1.0136005878448486,
+            "oracle_observed_nll_alpha_0": 0.9468802213668823,
+            "mean_squared_survival_error_to_generator": 0.013778407126665115,
+            "mean_prediction_minus_generator_survival": -0.0995725467801094,
+            "censor_fraction": 0.49609375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.815787136554718,
+            "observed_nll_alpha_0": 1.007126808166504,
+            "oracle_observed_nll_alpha_0": 0.9523175358772278,
+            "mean_squared_survival_error_to_generator": 0.013146142475306988,
+            "mean_prediction_minus_generator_survival": -0.09759906679391861,
+            "censor_fraction": 0.49462890625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0359811782836914,
+            "first_interaction_gradient_norm": 0.07886747270822525,
+            "last_interaction_gradient_norm_before_step": 0.0015762920957058668,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8162333965301514,
+            "observed_nll_alpha_0": 1.0163087844848633,
+            "oracle_observed_nll_alpha_0": 0.9468802213668823,
+            "mean_squared_survival_error_to_generator": 0.014281943440437317,
+            "mean_prediction_minus_generator_survival": -0.09983065724372864,
+            "censor_fraction": 0.49609375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8174301385879517,
+            "observed_nll_alpha_0": 1.0090546607971191,
+            "oracle_observed_nll_alpha_0": 0.9523175358772278,
+            "mean_squared_survival_error_to_generator": 0.013446378521621227,
+            "mean_prediction_minus_generator_survival": -0.09733135253190994,
+            "censor_fraction": 0.49462890625
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "null",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20678117,
+        "validation": 20678118,
+        "test": 20678119,
+        "initialization": 20678120
+      },
+      "data_sha256": {
+        "train": "e47594080c918ce9943e025245145d3b1690fbbd15b1fc31fcfc11ec21474bf2",
+        "validation": "898f2a76904e20bfb215a6ccada20fe02e9d8936dfd7fef6fdd4f7d6b60d0c5d",
+        "test": "86541856b510576e8509ffaf03c3f64bb129eb65b4da3c81210e871148313ea2"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7731859683990479,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0435330867767334,
+            "first_interaction_gradient_norm": 0.03565294295549393,
+            "last_interaction_gradient_norm_before_step": 0.0014762895880267024,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9497619867324829,
+            "observed_nll_alpha_0": 1.2021818161010742,
+            "oracle_observed_nll_alpha_0": 1.1427853107452393,
+            "mean_squared_survival_error_to_generator": 0.015205574221909046,
+            "mean_prediction_minus_generator_survival": -0.11341927200555801,
+            "censor_fraction": 0.498046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9534286856651306,
+            "observed_nll_alpha_0": 1.203754186630249,
+            "oracle_observed_nll_alpha_0": 1.1537415981292725,
+            "mean_squared_survival_error_to_generator": 0.015164484269917011,
+            "mean_prediction_minus_generator_survival": -0.1129680648446083,
+            "censor_fraction": 0.49169921875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0435330867767334,
+            "first_interaction_gradient_norm": 0.03565294295549393,
+            "last_interaction_gradient_norm_before_step": 0.0014762895880267024,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9497619867324829,
+            "observed_nll_alpha_0": 1.2021818161010742,
+            "oracle_observed_nll_alpha_0": 1.1427853107452393,
+            "mean_squared_survival_error_to_generator": 0.015205574221909046,
+            "mean_prediction_minus_generator_survival": -0.11341927200555801,
+            "censor_fraction": 0.498046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9534286856651306,
+            "observed_nll_alpha_0": 1.203754186630249,
+            "oracle_observed_nll_alpha_0": 1.1537415981292725,
+            "mean_squared_survival_error_to_generator": 0.015164484269917011,
+            "mean_prediction_minus_generator_survival": -0.1129680648446083,
+            "censor_fraction": 0.49169921875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0380663871765137,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9505420923233032,
+            "observed_nll_alpha_0": 1.202807068824768,
+            "oracle_observed_nll_alpha_0": 1.1427853107452393,
+            "mean_squared_survival_error_to_generator": 0.014561600983142853,
+            "mean_prediction_minus_generator_survival": -0.11336472630500793,
+            "censor_fraction": 0.498046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9541512131690979,
+            "observed_nll_alpha_0": 1.204463243484497,
+            "oracle_observed_nll_alpha_0": 1.1537415981292725,
+            "mean_squared_survival_error_to_generator": 0.014494008384644985,
+            "mean_prediction_minus_generator_survival": -0.11305858939886093,
+            "censor_fraction": 0.49169921875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0435330867767334,
+            "first_interaction_gradient_norm": 0.03565294295549393,
+            "last_interaction_gradient_norm_before_step": 0.0014762895880267024,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9497619867324829,
+            "observed_nll_alpha_0": 1.2021818161010742,
+            "oracle_observed_nll_alpha_0": 1.1427853107452393,
+            "mean_squared_survival_error_to_generator": 0.015205574221909046,
+            "mean_prediction_minus_generator_survival": -0.11341927200555801,
+            "censor_fraction": 0.498046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9534286856651306,
+            "observed_nll_alpha_0": 1.203754186630249,
+            "oracle_observed_nll_alpha_0": 1.1537415981292725,
+            "mean_squared_survival_error_to_generator": 0.015164484269917011,
+            "mean_prediction_minus_generator_survival": -0.1129680648446083,
+            "censor_fraction": 0.49169921875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0546150207519531,
+            "first_interaction_gradient_norm": 0.10087168216705322,
+            "last_interaction_gradient_norm_before_step": 0.0013278730912134051,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9501948356628418,
+            "observed_nll_alpha_0": 1.2028218507766724,
+            "oracle_observed_nll_alpha_0": 1.1427853107452393,
+            "mean_squared_survival_error_to_generator": 0.015045065432786942,
+            "mean_prediction_minus_generator_survival": -0.11332244426012039,
+            "censor_fraction": 0.498046875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9551309943199158,
+            "observed_nll_alpha_0": 1.205212116241455,
+            "oracle_observed_nll_alpha_0": 1.1537415981292725,
+            "mean_squared_survival_error_to_generator": 0.014936134219169617,
+            "mean_prediction_minus_generator_survival": -0.11263235658407211,
+            "censor_fraction": 0.49169921875
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "null",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20690117,
+        "validation": 20690118,
+        "test": 20690119,
+        "initialization": 20690120
+      },
+      "data_sha256": {
+        "train": "14217c59180a82010cd15a43545a1f57ae1a215f797dfcb29042df5338687b76",
+        "validation": "913badfd27a7cf82d7b7c36eadf34d782070ceb1a73eb1d7f1cc6c5e3af08036",
+        "test": "df65d4414628510cae25840d1d9a3cbe48593ebdec1a331de649c1db06e9261f"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7608718276023865,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.166668176651001,
+            "first_interaction_gradient_norm": 0.044425107538700104,
+            "last_interaction_gradient_norm_before_step": 0.0016018395544961095,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9748303890228271,
+            "observed_nll_alpha_0": 1.2353419065475464,
+            "oracle_observed_nll_alpha_0": 1.1604397296905518,
+            "mean_squared_survival_error_to_generator": 0.018869122490286827,
+            "mean_prediction_minus_generator_survival": -0.12595811486244202,
+            "censor_fraction": 0.484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9124414920806885,
+            "observed_nll_alpha_0": 1.193435788154602,
+            "oracle_observed_nll_alpha_0": 1.1054725646972656,
+            "mean_squared_survival_error_to_generator": 0.01898573338985443,
+            "mean_prediction_minus_generator_survival": -0.12593777477741241,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.166668176651001,
+            "first_interaction_gradient_norm": 0.044425107538700104,
+            "last_interaction_gradient_norm_before_step": 0.0016018395544961095,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9748303890228271,
+            "observed_nll_alpha_0": 1.2353419065475464,
+            "oracle_observed_nll_alpha_0": 1.1604397296905518,
+            "mean_squared_survival_error_to_generator": 0.018869122490286827,
+            "mean_prediction_minus_generator_survival": -0.12595811486244202,
+            "censor_fraction": 0.484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9124414920806885,
+            "observed_nll_alpha_0": 1.193435788154602,
+            "oracle_observed_nll_alpha_0": 1.1054725646972656,
+            "mean_squared_survival_error_to_generator": 0.01898573338985443,
+            "mean_prediction_minus_generator_survival": -0.12593777477741241,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1567836999893188,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9735358357429504,
+            "observed_nll_alpha_0": 1.2321304082870483,
+            "oracle_observed_nll_alpha_0": 1.1604397296905518,
+            "mean_squared_survival_error_to_generator": 0.018102729693055153,
+            "mean_prediction_minus_generator_survival": -0.12595126032829285,
+            "censor_fraction": 0.484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9103807210922241,
+            "observed_nll_alpha_0": 1.1906388998031616,
+            "oracle_observed_nll_alpha_0": 1.1054725646972656,
+            "mean_squared_survival_error_to_generator": 0.018204422667622566,
+            "mean_prediction_minus_generator_survival": -0.12630392611026764,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.166668176651001,
+            "first_interaction_gradient_norm": 0.044425107538700104,
+            "last_interaction_gradient_norm_before_step": 0.0016018407186493278,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9748303890228271,
+            "observed_nll_alpha_0": 1.2353419065475464,
+            "oracle_observed_nll_alpha_0": 1.1604397296905518,
+            "mean_squared_survival_error_to_generator": 0.018869124352931976,
+            "mean_prediction_minus_generator_survival": -0.12595811486244202,
+            "censor_fraction": 0.484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9124414920806885,
+            "observed_nll_alpha_0": 1.193435788154602,
+            "oracle_observed_nll_alpha_0": 1.1054725646972656,
+            "mean_squared_survival_error_to_generator": 0.01898573338985443,
+            "mean_prediction_minus_generator_survival": -0.12593777477741241,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1361114978790283,
+            "first_interaction_gradient_norm": 0.12186961621046066,
+            "last_interaction_gradient_norm_before_step": 0.0017919803503900766,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9714552164077759,
+            "observed_nll_alpha_0": 1.2315587997436523,
+            "oracle_observed_nll_alpha_0": 1.1604397296905518,
+            "mean_squared_survival_error_to_generator": 0.018959680572152138,
+            "mean_prediction_minus_generator_survival": -0.1258140653371811,
+            "censor_fraction": 0.484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9132495522499084,
+            "observed_nll_alpha_0": 1.1940022706985474,
+            "oracle_observed_nll_alpha_0": 1.1054725646972656,
+            "mean_squared_survival_error_to_generator": 0.01897463947534561,
+            "mean_prediction_minus_generator_survival": -0.12558703124523163,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "null",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20704117,
+        "validation": 20704118,
+        "test": 20704119,
+        "initialization": 20704120
+      },
+      "data_sha256": {
+        "train": "4275f63f77841edbd30023b16860cca34c76e78b809a5a3cf3c791f74fe33439",
+        "validation": "a6f124efdbcf547a7270e2e4e11e077bd0159e831d801aa7eccd9a66a33c5125",
+        "test": "94c271e45b92eed74835fbad3f2399067ab31430001a334e3729abe814f6643c"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7660470008850098,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.024291753768921,
+            "first_interaction_gradient_norm": 0.016352273523807526,
+            "last_interaction_gradient_norm_before_step": 0.0013159886002540588,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.962180495262146,
+            "observed_nll_alpha_0": 1.220412015914917,
+            "oracle_observed_nll_alpha_0": 1.1584112644195557,
+            "mean_squared_survival_error_to_generator": 0.013919512741267681,
+            "mean_prediction_minus_generator_survival": -0.10063594579696655,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9386715888977051,
+            "observed_nll_alpha_0": 1.1818499565124512,
+            "oracle_observed_nll_alpha_0": 1.1308969259262085,
+            "mean_squared_survival_error_to_generator": 0.014774713665246964,
+            "mean_prediction_minus_generator_survival": -0.10438448935747147,
+            "censor_fraction": 0.505859375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.024291753768921,
+            "first_interaction_gradient_norm": 0.016352273523807526,
+            "last_interaction_gradient_norm_before_step": 0.0013159886002540588,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.962180495262146,
+            "observed_nll_alpha_0": 1.220412015914917,
+            "oracle_observed_nll_alpha_0": 1.1584112644195557,
+            "mean_squared_survival_error_to_generator": 0.013919512741267681,
+            "mean_prediction_minus_generator_survival": -0.10063594579696655,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9386715888977051,
+            "observed_nll_alpha_0": 1.1818499565124512,
+            "oracle_observed_nll_alpha_0": 1.1308969259262085,
+            "mean_squared_survival_error_to_generator": 0.014774713665246964,
+            "mean_prediction_minus_generator_survival": -0.10438448935747147,
+            "censor_fraction": 0.505859375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.022763729095459,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.966585636138916,
+            "observed_nll_alpha_0": 1.2258775234222412,
+            "oracle_observed_nll_alpha_0": 1.1584112644195557,
+            "mean_squared_survival_error_to_generator": 0.013732642866671085,
+            "mean_prediction_minus_generator_survival": -0.1006779745221138,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9360049962997437,
+            "observed_nll_alpha_0": 1.179334282875061,
+            "oracle_observed_nll_alpha_0": 1.1308969259262085,
+            "mean_squared_survival_error_to_generator": 0.014490610919892788,
+            "mean_prediction_minus_generator_survival": -0.10416996479034424,
+            "censor_fraction": 0.505859375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.024291753768921,
+            "first_interaction_gradient_norm": 0.016352273523807526,
+            "last_interaction_gradient_norm_before_step": 0.0013159886002540588,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.962180495262146,
+            "observed_nll_alpha_0": 1.220412015914917,
+            "oracle_observed_nll_alpha_0": 1.1584112644195557,
+            "mean_squared_survival_error_to_generator": 0.013919512741267681,
+            "mean_prediction_minus_generator_survival": -0.10063594579696655,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9386715888977051,
+            "observed_nll_alpha_0": 1.1818499565124512,
+            "oracle_observed_nll_alpha_0": 1.1308969259262085,
+            "mean_squared_survival_error_to_generator": 0.014774713665246964,
+            "mean_prediction_minus_generator_survival": -0.10438448935747147,
+            "censor_fraction": 0.505859375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0173935890197754,
+            "first_interaction_gradient_norm": 0.03506968542933464,
+            "last_interaction_gradient_norm_before_step": 0.001353012165054679,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9657623767852783,
+            "observed_nll_alpha_0": 1.2237905263900757,
+            "oracle_observed_nll_alpha_0": 1.1584112644195557,
+            "mean_squared_survival_error_to_generator": 0.014212212525308132,
+            "mean_prediction_minus_generator_survival": -0.10047423094511032,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9431136846542358,
+            "observed_nll_alpha_0": 1.1864826679229736,
+            "oracle_observed_nll_alpha_0": 1.1308969259262085,
+            "mean_squared_survival_error_to_generator": 0.015156482346355915,
+            "mean_prediction_minus_generator_survival": -0.10468707233667374,
+            "censor_fraction": 0.505859375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "shared_plus_xor",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20778117,
+        "validation": 20778118,
+        "test": 20778119,
+        "initialization": 20778120
+      },
+      "data_sha256": {
+        "train": "ecac2594d4e4bea0fba7ddf774d4566c63f6ec5427b5faeac78acd39029fc428",
+        "validation": "77fe90fd51821cc7d789f4d2d83fb65b1b026cbec358a210572bc7d2e035a0d1",
+        "test": "8d59d662c608c2d37c973265f191e6622eb7f6e5ca8cfcc7a961587ffd399c66"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7357483506202698,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1155160665512085,
+            "first_interaction_gradient_norm": 0.15442147850990295,
+            "last_interaction_gradient_norm_before_step": 0.0029586548916995525,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7950790524482727,
+            "observed_nll_alpha_0": 0.9989351034164429,
+            "oracle_observed_nll_alpha_0": 0.9279687404632568,
+            "mean_squared_survival_error_to_generator": 0.011850100010633469,
+            "mean_prediction_minus_generator_survival": -0.09391634911298752,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.801625669002533,
+            "observed_nll_alpha_0": 0.9829919338226318,
+            "oracle_observed_nll_alpha_0": 0.9397701621055603,
+            "mean_squared_survival_error_to_generator": 0.011737700551748276,
+            "mean_prediction_minus_generator_survival": -0.09399787336587906,
+            "censor_fraction": 0.48779296875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1155160665512085,
+            "first_interaction_gradient_norm": 0.15442147850990295,
+            "last_interaction_gradient_norm_before_step": 0.0029586548916995525,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7950790524482727,
+            "observed_nll_alpha_0": 0.9989351034164429,
+            "oracle_observed_nll_alpha_0": 0.9279687404632568,
+            "mean_squared_survival_error_to_generator": 0.011850100010633469,
+            "mean_prediction_minus_generator_survival": -0.09391634911298752,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.801625669002533,
+            "observed_nll_alpha_0": 0.9829919338226318,
+            "oracle_observed_nll_alpha_0": 0.9397701621055603,
+            "mean_squared_survival_error_to_generator": 0.011737700551748276,
+            "mean_prediction_minus_generator_survival": -0.09399787336587906,
+            "censor_fraction": 0.48779296875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0951590538024902,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8942923545837402,
+            "observed_nll_alpha_0": 1.158002257347107,
+            "oracle_observed_nll_alpha_0": 0.9279687404632568,
+            "mean_squared_survival_error_to_generator": 0.06608527898788452,
+            "mean_prediction_minus_generator_survival": -0.12732355296611786,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8944530487060547,
+            "observed_nll_alpha_0": 1.1381720304489136,
+            "oracle_observed_nll_alpha_0": 0.9397701621055603,
+            "mean_squared_survival_error_to_generator": 0.06619685143232346,
+            "mean_prediction_minus_generator_survival": -0.13068196177482605,
+            "censor_fraction": 0.48779296875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1155160665512085,
+            "first_interaction_gradient_norm": 0.15442147850990295,
+            "last_interaction_gradient_norm_before_step": 0.0029586548916995525,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7950790524482727,
+            "observed_nll_alpha_0": 0.9989351034164429,
+            "oracle_observed_nll_alpha_0": 0.9279687404632568,
+            "mean_squared_survival_error_to_generator": 0.011850100010633469,
+            "mean_prediction_minus_generator_survival": -0.09391634911298752,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.801625669002533,
+            "observed_nll_alpha_0": 0.9829919338226318,
+            "oracle_observed_nll_alpha_0": 0.9397701621055603,
+            "mean_squared_survival_error_to_generator": 0.011737700551748276,
+            "mean_prediction_minus_generator_survival": -0.09399787336587906,
+            "censor_fraction": 0.48779296875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1221884489059448,
+            "first_interaction_gradient_norm": 0.17560242116451263,
+            "last_interaction_gradient_norm_before_step": 0.003229035995900631,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7960799336433411,
+            "observed_nll_alpha_0": 1.0009979009628296,
+            "oracle_observed_nll_alpha_0": 0.9279687404632568,
+            "mean_squared_survival_error_to_generator": 0.01214455347508192,
+            "mean_prediction_minus_generator_survival": -0.09485676884651184,
+            "censor_fraction": 0.50390625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8018845319747925,
+            "observed_nll_alpha_0": 0.9837583899497986,
+            "oracle_observed_nll_alpha_0": 0.9397701621055603,
+            "mean_squared_survival_error_to_generator": 0.012005206197500229,
+            "mean_prediction_minus_generator_survival": -0.0948975682258606,
+            "censor_fraction": 0.48779296875
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "shared_plus_xor",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20790117,
+        "validation": 20790118,
+        "test": 20790119,
+        "initialization": 20790120
+      },
+      "data_sha256": {
+        "train": "c044c0d9a7ad86e348ac30f2173ae551a9dd4948515aed4acf5a76ec0752d79e",
+        "validation": "8c6e3398aba05fdc6932d5492b5ba8d0dd6ad04a5fc9caa85d51fa42d9025bbf",
+        "test": "a7b86ad1dbbedd10646b4305fd6c743e759e30be4d29794dd72be461ad67ff1d"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7180673480033875,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0865943431854248,
+            "first_interaction_gradient_norm": 0.11777627468109131,
+            "last_interaction_gradient_norm_before_step": 0.0031524053774774075,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8245580792427063,
+            "observed_nll_alpha_0": 1.0218613147735596,
+            "oracle_observed_nll_alpha_0": 0.956423819065094,
+            "mean_squared_survival_error_to_generator": 0.011514251120388508,
+            "mean_prediction_minus_generator_survival": -0.0848739743232727,
+            "censor_fraction": 0.482421875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7871330380439758,
+            "observed_nll_alpha_0": 0.9716412425041199,
+            "oracle_observed_nll_alpha_0": 0.9217835664749146,
+            "mean_squared_survival_error_to_generator": 0.012093489058315754,
+            "mean_prediction_minus_generator_survival": -0.08757469803094864,
+            "censor_fraction": 0.5
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0865943431854248,
+            "first_interaction_gradient_norm": 0.11777627468109131,
+            "last_interaction_gradient_norm_before_step": 0.0031524053774774075,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8245580792427063,
+            "observed_nll_alpha_0": 1.0218613147735596,
+            "oracle_observed_nll_alpha_0": 0.956423819065094,
+            "mean_squared_survival_error_to_generator": 0.011514251120388508,
+            "mean_prediction_minus_generator_survival": -0.0848739743232727,
+            "censor_fraction": 0.482421875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7871330380439758,
+            "observed_nll_alpha_0": 0.9716412425041199,
+            "oracle_observed_nll_alpha_0": 0.9217835664749146,
+            "mean_squared_survival_error_to_generator": 0.012093489058315754,
+            "mean_prediction_minus_generator_survival": -0.08757469803094864,
+            "censor_fraction": 0.5
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1067659854888916,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.927253007888794,
+            "observed_nll_alpha_0": 1.18221914768219,
+            "oracle_observed_nll_alpha_0": 0.956423819065094,
+            "mean_squared_survival_error_to_generator": 0.06314264982938766,
+            "mean_prediction_minus_generator_survival": -0.1089068055152893,
+            "censor_fraction": 0.482421875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8950812220573425,
+            "observed_nll_alpha_0": 1.146651268005371,
+            "oracle_observed_nll_alpha_0": 0.9217835664749146,
+            "mean_squared_survival_error_to_generator": 0.06740003079175949,
+            "mean_prediction_minus_generator_survival": -0.1292363554239273,
+            "censor_fraction": 0.5
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0865943431854248,
+            "first_interaction_gradient_norm": 0.11777627468109131,
+            "last_interaction_gradient_norm_before_step": 0.0031524053774774075,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8245580792427063,
+            "observed_nll_alpha_0": 1.0218613147735596,
+            "oracle_observed_nll_alpha_0": 0.956423819065094,
+            "mean_squared_survival_error_to_generator": 0.011514251120388508,
+            "mean_prediction_minus_generator_survival": -0.0848739743232727,
+            "censor_fraction": 0.482421875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7871330380439758,
+            "observed_nll_alpha_0": 0.9716412425041199,
+            "oracle_observed_nll_alpha_0": 0.9217835664749146,
+            "mean_squared_survival_error_to_generator": 0.012093489058315754,
+            "mean_prediction_minus_generator_survival": -0.08757469803094864,
+            "censor_fraction": 0.5
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0873726606369019,
+            "first_interaction_gradient_norm": 0.1829567849636078,
+            "last_interaction_gradient_norm_before_step": 0.003503207117319107,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8251891136169434,
+            "observed_nll_alpha_0": 1.022308349609375,
+            "oracle_observed_nll_alpha_0": 0.956423819065094,
+            "mean_squared_survival_error_to_generator": 0.011414188891649246,
+            "mean_prediction_minus_generator_survival": -0.08388721942901611,
+            "censor_fraction": 0.482421875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7871944308280945,
+            "observed_nll_alpha_0": 0.9714296460151672,
+            "oracle_observed_nll_alpha_0": 0.9217835664749146,
+            "mean_squared_survival_error_to_generator": 0.012017852626740932,
+            "mean_prediction_minus_generator_survival": -0.08647943288087845,
+            "censor_fraction": 0.5
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "shared_plus_xor",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20804117,
+        "validation": 20804118,
+        "test": 20804119,
+        "initialization": 20804120
+      },
+      "data_sha256": {
+        "train": "5cf005d2880882d6982a2a4957ce19f377f3709a728e00b1ff07c53da2db32fb",
+        "validation": "8d40725ee605c5c1a2c47dca70be5f821cf447074add874301bde90116d279e0",
+        "test": "a44aae92131587b7e7ed5ece99d707ad6d72ec9674eaa83a2752ddf9513023b7"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.6958913803100586,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9810696840286255,
+            "first_interaction_gradient_norm": 0.13255199790000916,
+            "last_interaction_gradient_norm_before_step": 0.0027343924157321453,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7912911176681519,
+            "observed_nll_alpha_0": 0.9649779796600342,
+            "oracle_observed_nll_alpha_0": 0.9255926609039307,
+            "mean_squared_survival_error_to_generator": 0.013406433165073395,
+            "mean_prediction_minus_generator_survival": -0.09545725584030151,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7854716777801514,
+            "observed_nll_alpha_0": 0.9891350865364075,
+            "oracle_observed_nll_alpha_0": 0.9249899983406067,
+            "mean_squared_survival_error_to_generator": 0.013169861398637295,
+            "mean_prediction_minus_generator_survival": -0.09496549516916275,
+            "censor_fraction": 0.50830078125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9810696840286255,
+            "first_interaction_gradient_norm": 0.13255199790000916,
+            "last_interaction_gradient_norm_before_step": 0.0027343924157321453,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7912911176681519,
+            "observed_nll_alpha_0": 0.9649779796600342,
+            "oracle_observed_nll_alpha_0": 0.9255926609039307,
+            "mean_squared_survival_error_to_generator": 0.013406433165073395,
+            "mean_prediction_minus_generator_survival": -0.09545725584030151,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7854716777801514,
+            "observed_nll_alpha_0": 0.9891350865364075,
+            "oracle_observed_nll_alpha_0": 0.9249899983406067,
+            "mean_squared_survival_error_to_generator": 0.013169861398637295,
+            "mean_prediction_minus_generator_survival": -0.09496549516916275,
+            "censor_fraction": 0.50830078125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9608161449432373,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8901062607765198,
+            "observed_nll_alpha_0": 1.1375571489334106,
+            "oracle_observed_nll_alpha_0": 0.9255926609039307,
+            "mean_squared_survival_error_to_generator": 0.07057701796293259,
+            "mean_prediction_minus_generator_survival": -0.13817943632602692,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8825371265411377,
+            "observed_nll_alpha_0": 1.1518347263336182,
+            "oracle_observed_nll_alpha_0": 0.9249899983406067,
+            "mean_squared_survival_error_to_generator": 0.06953490525484085,
+            "mean_prediction_minus_generator_survival": -0.13810880482196808,
+            "censor_fraction": 0.50830078125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9810696840286255,
+            "first_interaction_gradient_norm": 0.13255199790000916,
+            "last_interaction_gradient_norm_before_step": 0.0027343924157321453,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7912911176681519,
+            "observed_nll_alpha_0": 0.9649779796600342,
+            "oracle_observed_nll_alpha_0": 0.9255926609039307,
+            "mean_squared_survival_error_to_generator": 0.013406433165073395,
+            "mean_prediction_minus_generator_survival": -0.09545725584030151,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7854716777801514,
+            "observed_nll_alpha_0": 0.9891350865364075,
+            "oracle_observed_nll_alpha_0": 0.9249899983406067,
+            "mean_squared_survival_error_to_generator": 0.013169861398637295,
+            "mean_prediction_minus_generator_survival": -0.09496549516916275,
+            "censor_fraction": 0.50830078125
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.984931468963623,
+            "first_interaction_gradient_norm": 0.15370891988277435,
+            "last_interaction_gradient_norm_before_step": 0.0026709011290222406,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.7906268835067749,
+            "observed_nll_alpha_0": 0.9645466208457947,
+            "oracle_observed_nll_alpha_0": 0.9255926609039307,
+            "mean_squared_survival_error_to_generator": 0.013589230366051197,
+            "mean_prediction_minus_generator_survival": -0.09588103741407394,
+            "censor_fraction": 0.490234375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.7852070927619934,
+            "observed_nll_alpha_0": 0.9893627166748047,
+            "oracle_observed_nll_alpha_0": 0.9249899983406067,
+            "mean_squared_survival_error_to_generator": 0.013477875851094723,
+            "mean_prediction_minus_generator_survival": -0.09573101997375488,
+            "censor_fraction": 0.50830078125
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "correlated_xor",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20878117,
+        "validation": 20878118,
+        "test": 20878119,
+        "initialization": 20878120
+      },
+      "data_sha256": {
+        "train": "af18c6f4cab504fe584de92ee8fc161bf9aaf43aa2ee203fba12724736d15779",
+        "validation": "0ddbdb8cbfb22c198c529c8543c3693cd2fd1bfa86ff248c932e731ed4fe0942",
+        "test": "7915ae3d5fd82201dd4b747ecec8d06fe67277f65e1f297810f1d6512fad60f7"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7344136238098145,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0962895154953003,
+            "first_interaction_gradient_norm": 0.05968104302883148,
+            "last_interaction_gradient_norm_before_step": 0.00280559528619051,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9579609632492065,
+            "observed_nll_alpha_0": 1.1655523777008057,
+            "oracle_observed_nll_alpha_0": 1.1071064472198486,
+            "mean_squared_survival_error_to_generator": 0.0054789017885923386,
+            "mean_prediction_minus_generator_survival": -0.060997817665338516,
+            "censor_fraction": 0.333984375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9435482025146484,
+            "observed_nll_alpha_0": 1.1292496919631958,
+            "oracle_observed_nll_alpha_0": 1.097567081451416,
+            "mean_squared_survival_error_to_generator": 0.005509303882718086,
+            "mean_prediction_minus_generator_survival": -0.06048964336514473,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0962895154953003,
+            "first_interaction_gradient_norm": 0.05968104302883148,
+            "last_interaction_gradient_norm_before_step": 0.00280559528619051,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9579609632492065,
+            "observed_nll_alpha_0": 1.1655523777008057,
+            "oracle_observed_nll_alpha_0": 1.1071064472198486,
+            "mean_squared_survival_error_to_generator": 0.0054789017885923386,
+            "mean_prediction_minus_generator_survival": -0.060997817665338516,
+            "censor_fraction": 0.333984375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9435482025146484,
+            "observed_nll_alpha_0": 1.1292496919631958,
+            "oracle_observed_nll_alpha_0": 1.097567081451416,
+            "mean_squared_survival_error_to_generator": 0.005509303882718086,
+            "mean_prediction_minus_generator_survival": -0.06048964336514473,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0934536457061768,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 1.019440770149231,
+            "observed_nll_alpha_0": 1.2822747230529785,
+            "oracle_observed_nll_alpha_0": 1.1071064472198486,
+            "mean_squared_survival_error_to_generator": 0.04071076214313507,
+            "mean_prediction_minus_generator_survival": -0.09128272533416748,
+            "censor_fraction": 0.333984375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9945986866950989,
+            "observed_nll_alpha_0": 1.22158944606781,
+            "oracle_observed_nll_alpha_0": 1.097567081451416,
+            "mean_squared_survival_error_to_generator": 0.03699469938874245,
+            "mean_prediction_minus_generator_survival": -0.08366318792104721,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0962895154953003,
+            "first_interaction_gradient_norm": 0.05968104302883148,
+            "last_interaction_gradient_norm_before_step": 0.00280559528619051,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9579609632492065,
+            "observed_nll_alpha_0": 1.1655523777008057,
+            "oracle_observed_nll_alpha_0": 1.1071064472198486,
+            "mean_squared_survival_error_to_generator": 0.0054789017885923386,
+            "mean_prediction_minus_generator_survival": -0.060997817665338516,
+            "censor_fraction": 0.333984375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9435482025146484,
+            "observed_nll_alpha_0": 1.1292496919631958,
+            "oracle_observed_nll_alpha_0": 1.097567081451416,
+            "mean_squared_survival_error_to_generator": 0.005509303882718086,
+            "mean_prediction_minus_generator_survival": -0.06048964336514473,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.112841010093689,
+            "first_interaction_gradient_norm": 0.13857470452785492,
+            "last_interaction_gradient_norm_before_step": 0.00259954622015357,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9585798978805542,
+            "observed_nll_alpha_0": 1.1668528318405151,
+            "oracle_observed_nll_alpha_0": 1.1071064472198486,
+            "mean_squared_survival_error_to_generator": 0.005883473437279463,
+            "mean_prediction_minus_generator_survival": -0.06198568269610405,
+            "censor_fraction": 0.333984375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9422819018363953,
+            "observed_nll_alpha_0": 1.128428339958191,
+            "oracle_observed_nll_alpha_0": 1.097567081451416,
+            "mean_squared_survival_error_to_generator": 0.005947523284703493,
+            "mean_prediction_minus_generator_survival": -0.061211537569761276,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "correlated_xor",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20890117,
+        "validation": 20890118,
+        "test": 20890119,
+        "initialization": 20890120
+      },
+      "data_sha256": {
+        "train": "54539caf7981c2d2ab564037bab0742fc97a6ed34d7a64ca10597d2593177e6d",
+        "validation": "7c61c9f36c614a3f097111fb24d9e8008b84d094e42a3202b758a2b825ef90a8",
+        "test": "9a69fa0aac51e2b0a8aaab4950827438453d9f1c9a713afc05d9603a49bc8e7a"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.770388662815094,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0868911743164062,
+            "first_interaction_gradient_norm": 0.053052593022584915,
+            "last_interaction_gradient_norm_before_step": 0.002921157283708453,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9542866945266724,
+            "observed_nll_alpha_0": 1.1386808156967163,
+            "oracle_observed_nll_alpha_0": 1.1048041582107544,
+            "mean_squared_survival_error_to_generator": 0.007413382176309824,
+            "mean_prediction_minus_generator_survival": -0.07378481328487396,
+            "censor_fraction": 0.298828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9447495937347412,
+            "observed_nll_alpha_0": 1.131473183631897,
+            "oracle_observed_nll_alpha_0": 1.0925254821777344,
+            "mean_squared_survival_error_to_generator": 0.007732816506177187,
+            "mean_prediction_minus_generator_survival": -0.07328803837299347,
+            "censor_fraction": 0.31201171875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0868911743164062,
+            "first_interaction_gradient_norm": 0.053052593022584915,
+            "last_interaction_gradient_norm_before_step": 0.002921157283708453,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9542866945266724,
+            "observed_nll_alpha_0": 1.1386808156967163,
+            "oracle_observed_nll_alpha_0": 1.1048041582107544,
+            "mean_squared_survival_error_to_generator": 0.007413382176309824,
+            "mean_prediction_minus_generator_survival": -0.07378481328487396,
+            "censor_fraction": 0.298828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9447495937347412,
+            "observed_nll_alpha_0": 1.131473183631897,
+            "oracle_observed_nll_alpha_0": 1.0925254821777344,
+            "mean_squared_survival_error_to_generator": 0.007732816506177187,
+            "mean_prediction_minus_generator_survival": -0.07328803837299347,
+            "censor_fraction": 0.31201171875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0770899057388306,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9821951985359192,
+            "observed_nll_alpha_0": 1.1991701126098633,
+            "oracle_observed_nll_alpha_0": 1.1048041582107544,
+            "mean_squared_survival_error_to_generator": 0.038916464895009995,
+            "mean_prediction_minus_generator_survival": -0.09477156400680542,
+            "censor_fraction": 0.298828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9987516403198242,
+            "observed_nll_alpha_0": 1.2420827150344849,
+            "oracle_observed_nll_alpha_0": 1.0925254821777344,
+            "mean_squared_survival_error_to_generator": 0.04556914046406746,
+            "mean_prediction_minus_generator_survival": -0.1056104302406311,
+            "censor_fraction": 0.31201171875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0868911743164062,
+            "first_interaction_gradient_norm": 0.053052593022584915,
+            "last_interaction_gradient_norm_before_step": 0.002921157283708453,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9542866945266724,
+            "observed_nll_alpha_0": 1.1386808156967163,
+            "oracle_observed_nll_alpha_0": 1.1048041582107544,
+            "mean_squared_survival_error_to_generator": 0.007413382176309824,
+            "mean_prediction_minus_generator_survival": -0.07378481328487396,
+            "censor_fraction": 0.298828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9447495937347412,
+            "observed_nll_alpha_0": 1.131473183631897,
+            "oracle_observed_nll_alpha_0": 1.0925254821777344,
+            "mean_squared_survival_error_to_generator": 0.007732816506177187,
+            "mean_prediction_minus_generator_survival": -0.07328803837299347,
+            "censor_fraction": 0.31201171875
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1031460762023926,
+            "first_interaction_gradient_norm": 0.1724816858768463,
+            "last_interaction_gradient_norm_before_step": 0.0025154973845928907,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9495300054550171,
+            "observed_nll_alpha_0": 1.1350958347320557,
+            "oracle_observed_nll_alpha_0": 1.1048041582107544,
+            "mean_squared_survival_error_to_generator": 0.00780467689037323,
+            "mean_prediction_minus_generator_survival": -0.07529961317777634,
+            "censor_fraction": 0.298828125
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9443724155426025,
+            "observed_nll_alpha_0": 1.1329574584960938,
+            "oracle_observed_nll_alpha_0": 1.0925254821777344,
+            "mean_squared_survival_error_to_generator": 0.008285163901746273,
+            "mean_prediction_minus_generator_survival": -0.07556694000959396,
+            "censor_fraction": 0.31201171875
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "correlated_xor",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 20904117,
+        "validation": 20904118,
+        "test": 20904119,
+        "initialization": 20904120
+      },
+      "data_sha256": {
+        "train": "8a86ce3714054a34872a6f7dfddb7c267fbd440dd246c9296921810bda98e12b",
+        "validation": "b41b9de140d7e5103cfaa493c052fdd525f43513ac81153a8b343b69322c6732",
+        "test": "cfa8ef08479bcc995fabde05bc75e1d5d6ad3140ac4a2b0f6fb338daae58b003"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7412120699882507,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1320189237594604,
+            "first_interaction_gradient_norm": 0.10791344940662384,
+            "last_interaction_gradient_norm_before_step": 0.0028064672369509935,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9484120607376099,
+            "observed_nll_alpha_0": 1.1415629386901855,
+            "oracle_observed_nll_alpha_0": 1.1052696704864502,
+            "mean_squared_survival_error_to_generator": 0.008733716793358326,
+            "mean_prediction_minus_generator_survival": -0.07604037970304489,
+            "censor_fraction": 0.318359375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9528177976608276,
+            "observed_nll_alpha_0": 1.1512742042541504,
+            "oracle_observed_nll_alpha_0": 1.0985013246536255,
+            "mean_squared_survival_error_to_generator": 0.009098688140511513,
+            "mean_prediction_minus_generator_survival": -0.07681809365749359,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1320189237594604,
+            "first_interaction_gradient_norm": 0.10791344940662384,
+            "last_interaction_gradient_norm_before_step": 0.0028064672369509935,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9484120607376099,
+            "observed_nll_alpha_0": 1.1415629386901855,
+            "oracle_observed_nll_alpha_0": 1.1052696704864502,
+            "mean_squared_survival_error_to_generator": 0.008733716793358326,
+            "mean_prediction_minus_generator_survival": -0.07604037970304489,
+            "censor_fraction": 0.318359375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9528177976608276,
+            "observed_nll_alpha_0": 1.1512742042541504,
+            "oracle_observed_nll_alpha_0": 1.0985013246536255,
+            "mean_squared_survival_error_to_generator": 0.009098688140511513,
+            "mean_prediction_minus_generator_survival": -0.07681809365749359,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1138523817062378,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 1.0072412490844727,
+            "observed_nll_alpha_0": 1.2510020732879639,
+            "oracle_observed_nll_alpha_0": 1.1052696704864502,
+            "mean_squared_survival_error_to_generator": 0.04190366342663765,
+            "mean_prediction_minus_generator_survival": -0.10042840987443924,
+            "censor_fraction": 0.318359375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 1.0098600387573242,
+            "observed_nll_alpha_0": 1.255807876586914,
+            "oracle_observed_nll_alpha_0": 1.0985013246536255,
+            "mean_squared_survival_error_to_generator": 0.041958171874284744,
+            "mean_prediction_minus_generator_survival": -0.09927471727132797,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1320189237594604,
+            "first_interaction_gradient_norm": 0.10791344940662384,
+            "last_interaction_gradient_norm_before_step": 0.0028064672369509935,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9484120607376099,
+            "observed_nll_alpha_0": 1.1415629386901855,
+            "oracle_observed_nll_alpha_0": 1.1052696704864502,
+            "mean_squared_survival_error_to_generator": 0.008733716793358326,
+            "mean_prediction_minus_generator_survival": -0.07604037970304489,
+            "censor_fraction": 0.318359375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9528177976608276,
+            "observed_nll_alpha_0": 1.1512742042541504,
+            "oracle_observed_nll_alpha_0": 1.0985013246536255,
+            "mean_squared_survival_error_to_generator": 0.009098688140511513,
+            "mean_prediction_minus_generator_survival": -0.07681809365749359,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.1688446998596191,
+            "first_interaction_gradient_norm": 0.30466344952583313,
+            "last_interaction_gradient_norm_before_step": 0.002840921748429537,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.9529341459274292,
+            "observed_nll_alpha_0": 1.147191047668457,
+            "oracle_observed_nll_alpha_0": 1.1052696704864502,
+            "mean_squared_survival_error_to_generator": 0.009322714060544968,
+            "mean_prediction_minus_generator_survival": -0.0740816667675972,
+            "censor_fraction": 0.318359375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.9545337557792664,
+            "observed_nll_alpha_0": 1.1522412300109863,
+            "oracle_observed_nll_alpha_0": 1.0985013246536255,
+            "mean_squared_survival_error_to_generator": 0.009887170977890491,
+            "mean_prediction_minus_generator_survival": -0.07543054223060608,
+            "censor_fraction": 0.306640625
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "continuous_redundancy",
+      "seed": 17,
+      "generated_seeds": {
+        "train": 20978117,
+        "validation": 20978118,
+        "test": 20978119,
+        "initialization": 20978120
+      },
+      "data_sha256": {
+        "train": "d5b0c404824f13cb3d6e036983eb8688939cedf56df68ba7c8b2150e4f56aca3",
+        "validation": "475071950cbc1c0b0e293e9643aeeceb2082a1010afefb7ba9c0757b48a0b2b2",
+        "test": "2b53c51581071c5e6813a9db4e34829e333c6e5fdd1462391c5cb0a9acebd4ab"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7880848050117493,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0308620929718018,
+            "first_interaction_gradient_norm": 0.055922526866197586,
+            "last_interaction_gradient_norm_before_step": 0.002360101556405425,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8497982025146484,
+            "observed_nll_alpha_0": 1.0705512762069702,
+            "oracle_observed_nll_alpha_0": 0.9911785125732422,
+            "mean_squared_survival_error_to_generator": 0.020331446081399918,
+            "mean_prediction_minus_generator_survival": -0.12193099409341812,
+            "censor_fraction": 0.515625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8213759064674377,
+            "observed_nll_alpha_0": 1.0421719551086426,
+            "oracle_observed_nll_alpha_0": 0.9792495965957642,
+            "mean_squared_survival_error_to_generator": 0.02086811698973179,
+            "mean_prediction_minus_generator_survival": -0.12465832382440567,
+            "censor_fraction": 0.5166015625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0308620929718018,
+            "first_interaction_gradient_norm": 0.055922526866197586,
+            "last_interaction_gradient_norm_before_step": 0.002360101556405425,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8497982025146484,
+            "observed_nll_alpha_0": 1.0705512762069702,
+            "oracle_observed_nll_alpha_0": 0.9911785125732422,
+            "mean_squared_survival_error_to_generator": 0.020331446081399918,
+            "mean_prediction_minus_generator_survival": -0.12193099409341812,
+            "censor_fraction": 0.515625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8213759064674377,
+            "observed_nll_alpha_0": 1.0421719551086426,
+            "oracle_observed_nll_alpha_0": 0.9792495965957642,
+            "mean_squared_survival_error_to_generator": 0.02086811698973179,
+            "mean_prediction_minus_generator_survival": -0.12465832382440567,
+            "censor_fraction": 0.5166015625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.023158073425293,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8571110367774963,
+            "observed_nll_alpha_0": 1.076424241065979,
+            "oracle_observed_nll_alpha_0": 0.9911785125732422,
+            "mean_squared_survival_error_to_generator": 0.020917043089866638,
+            "mean_prediction_minus_generator_survival": -0.11778493970632553,
+            "censor_fraction": 0.515625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8277837038040161,
+            "observed_nll_alpha_0": 1.047419548034668,
+            "oracle_observed_nll_alpha_0": 0.9792495965957642,
+            "mean_squared_survival_error_to_generator": 0.02186404913663864,
+            "mean_prediction_minus_generator_survival": -0.12073728442192078,
+            "censor_fraction": 0.5166015625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0308620929718018,
+            "first_interaction_gradient_norm": 0.055922526866197586,
+            "last_interaction_gradient_norm_before_step": 0.0023600985296070576,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8497982025146484,
+            "observed_nll_alpha_0": 1.0705512762069702,
+            "oracle_observed_nll_alpha_0": 0.9911785125732422,
+            "mean_squared_survival_error_to_generator": 0.020331447944045067,
+            "mean_prediction_minus_generator_survival": -0.12193101644515991,
+            "censor_fraction": 0.515625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8213759064674377,
+            "observed_nll_alpha_0": 1.0421719551086426,
+            "oracle_observed_nll_alpha_0": 0.9792495965957642,
+            "mean_squared_survival_error_to_generator": 0.020868120715022087,
+            "mean_prediction_minus_generator_survival": -0.12465833872556686,
+            "censor_fraction": 0.5166015625
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0274078845977783,
+            "first_interaction_gradient_norm": 0.12284087389707565,
+            "last_interaction_gradient_norm_before_step": 0.0021057461854070425,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8489158153533936,
+            "observed_nll_alpha_0": 1.0689458847045898,
+            "oracle_observed_nll_alpha_0": 0.9911785125732422,
+            "mean_squared_survival_error_to_generator": 0.02056243270635605,
+            "mean_prediction_minus_generator_survival": -0.12035498023033142,
+            "censor_fraction": 0.515625
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8280459642410278,
+            "observed_nll_alpha_0": 1.0493848323822021,
+            "oracle_observed_nll_alpha_0": 0.9792495965957642,
+            "mean_squared_survival_error_to_generator": 0.021305495873093605,
+            "mean_prediction_minus_generator_survival": -0.12409621477127075,
+            "censor_fraction": 0.5166015625
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "continuous_redundancy",
+      "seed": 29,
+      "generated_seeds": {
+        "train": 20990117,
+        "validation": 20990118,
+        "test": 20990119,
+        "initialization": 20990120
+      },
+      "data_sha256": {
+        "train": "3e53a219a0145c3ebcef09810919945a2fab84578c33f5b51e8d383efe45c011",
+        "validation": "c0b7a6605b84188987fa6be83fefa36e0516a90edc2edce9f52375fcb051eb47",
+        "test": "efa7d7c847ce518c28d258fb10ed058bdb5ff156a246a67a02988097746d9663"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7796363830566406,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.970649778842926,
+            "first_interaction_gradient_norm": 0.03894595429301262,
+            "last_interaction_gradient_norm_before_step": 0.002802081871777773,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8329786658287048,
+            "observed_nll_alpha_0": 1.0459939241409302,
+            "oracle_observed_nll_alpha_0": 1.0024477243423462,
+            "mean_squared_survival_error_to_generator": 0.015391726978123188,
+            "mean_prediction_minus_generator_survival": -0.10255247354507446,
+            "censor_fraction": 0.521484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8338146209716797,
+            "observed_nll_alpha_0": 1.0539915561676025,
+            "oracle_observed_nll_alpha_0": 0.9894158840179443,
+            "mean_squared_survival_error_to_generator": 0.016005320474505424,
+            "mean_prediction_minus_generator_survival": -0.10641747713088989,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.970649778842926,
+            "first_interaction_gradient_norm": 0.03894595429301262,
+            "last_interaction_gradient_norm_before_step": 0.002802081871777773,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8329786658287048,
+            "observed_nll_alpha_0": 1.0459939241409302,
+            "oracle_observed_nll_alpha_0": 1.0024477243423462,
+            "mean_squared_survival_error_to_generator": 0.015391726978123188,
+            "mean_prediction_minus_generator_survival": -0.10255247354507446,
+            "censor_fraction": 0.521484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8338146209716797,
+            "observed_nll_alpha_0": 1.0539915561676025,
+            "oracle_observed_nll_alpha_0": 0.9894158840179443,
+            "mean_squared_survival_error_to_generator": 0.016005320474505424,
+            "mean_prediction_minus_generator_survival": -0.10641747713088989,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9709926247596741,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8435748815536499,
+            "observed_nll_alpha_0": 1.0601860284805298,
+            "oracle_observed_nll_alpha_0": 1.0024477243423462,
+            "mean_squared_survival_error_to_generator": 0.017715739086270332,
+            "mean_prediction_minus_generator_survival": -0.10220462083816528,
+            "censor_fraction": 0.521484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8365998268127441,
+            "observed_nll_alpha_0": 1.056870460510254,
+            "oracle_observed_nll_alpha_0": 0.9894158840179443,
+            "mean_squared_survival_error_to_generator": 0.017952922731637955,
+            "mean_prediction_minus_generator_survival": -0.1040535569190979,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.970649778842926,
+            "first_interaction_gradient_norm": 0.03894595429301262,
+            "last_interaction_gradient_norm_before_step": 0.0028020725585520267,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8329786062240601,
+            "observed_nll_alpha_0": 1.0459939241409302,
+            "oracle_observed_nll_alpha_0": 1.0024477243423462,
+            "mean_squared_survival_error_to_generator": 0.015391728840768337,
+            "mean_prediction_minus_generator_survival": -0.10255248099565506,
+            "censor_fraction": 0.521484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8338146209716797,
+            "observed_nll_alpha_0": 1.0539915561676025,
+            "oracle_observed_nll_alpha_0": 0.9894158840179443,
+            "mean_squared_survival_error_to_generator": 0.016005320474505424,
+            "mean_prediction_minus_generator_survival": -0.10641748458147049,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 0.9928455352783203,
+            "first_interaction_gradient_norm": 0.1430741846561432,
+            "last_interaction_gradient_norm_before_step": 0.0024838761892169714,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8343563675880432,
+            "observed_nll_alpha_0": 1.0479881763458252,
+            "oracle_observed_nll_alpha_0": 1.0024477243423462,
+            "mean_squared_survival_error_to_generator": 0.015386012382805347,
+            "mean_prediction_minus_generator_survival": -0.10325580090284348,
+            "censor_fraction": 0.521484375
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8334818482398987,
+            "observed_nll_alpha_0": 1.053764820098877,
+            "oracle_observed_nll_alpha_0": 0.9894158840179443,
+            "mean_squared_survival_error_to_generator": 0.015830425545573235,
+            "mean_prediction_minus_generator_survival": -0.10640085488557816,
+            "censor_fraction": 0.53662109375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    },
+    {
+      "scenario": "continuous_redundancy",
+      "seed": 43,
+      "generated_seeds": {
+        "train": 21004117,
+        "validation": 21004118,
+        "test": 21004119,
+        "initialization": 21004120
+      },
+      "data_sha256": {
+        "train": "a943d0da8fcd470f6b9ce52932169dd64fc3e3daf020d2a5ec5fd58363fcf318",
+        "validation": "c6ebf71080e321cac504214d6d1b799d231d8eb0031ab341c83753faa3dac9ad",
+        "test": "41f03fa5dd9d02ce97b544f5412cec8d3282276cd21394d16cdf7d1f55fd7b98"
+      },
+      "initial_independent_max_logit_difference": 0.0,
+      "independent_old_candidate_max_test_logit_difference": 0.0,
+      "conditioned_path_mean_absolute_change_when_only_rna_rolled": 0.7734987139701843,
+      "arms": {
+        "old_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0570465326309204,
+            "first_interaction_gradient_norm": 0.09261390566825867,
+            "last_interaction_gradient_norm_before_step": 0.003014438319951296,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8493486642837524,
+            "observed_nll_alpha_0": 1.0747917890548706,
+            "oracle_observed_nll_alpha_0": 0.9990134835243225,
+            "mean_squared_survival_error_to_generator": 0.021613379940390587,
+            "mean_prediction_minus_generator_survival": -0.12215578556060791,
+            "censor_fraction": 0.51171875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8293801546096802,
+            "observed_nll_alpha_0": 1.0631661415100098,
+            "oracle_observed_nll_alpha_0": 0.975410521030426,
+            "mean_squared_survival_error_to_generator": 0.021733654662966728,
+            "mean_prediction_minus_generator_survival": -0.1226394772529602,
+            "censor_fraction": 0.5458984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0570465326309204,
+            "first_interaction_gradient_norm": 0.09261390566825867,
+            "last_interaction_gradient_norm_before_step": 0.003014438319951296,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8493486642837524,
+            "observed_nll_alpha_0": 1.0747917890548706,
+            "oracle_observed_nll_alpha_0": 0.9990134835243225,
+            "mean_squared_survival_error_to_generator": 0.021613379940390587,
+            "mean_prediction_minus_generator_survival": -0.12215578556060791,
+            "censor_fraction": 0.51171875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8293801546096802,
+            "observed_nll_alpha_0": 1.0631661415100098,
+            "oracle_observed_nll_alpha_0": 0.975410521030426,
+            "mean_squared_survival_error_to_generator": 0.021733654662966728,
+            "mean_prediction_minus_generator_survival": -0.1226394772529602,
+            "censor_fraction": 0.5458984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "candidate_interaction_off": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0455933809280396,
+            "first_interaction_gradient_norm": 0.0,
+            "last_interaction_gradient_norm_before_step": 0.0,
+            "legacy_reference_updates": null,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8564392924308777,
+            "observed_nll_alpha_0": 1.0818326473236084,
+            "oracle_observed_nll_alpha_0": 0.9990134835243225,
+            "mean_squared_survival_error_to_generator": 0.023685067892074585,
+            "mean_prediction_minus_generator_survival": -0.12169397622346878,
+            "censor_fraction": 0.51171875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8305575251579285,
+            "observed_nll_alpha_0": 1.064408302307129,
+            "oracle_observed_nll_alpha_0": 0.975410521030426,
+            "mean_squared_survival_error_to_generator": 0.02364896982908249,
+            "mean_prediction_minus_generator_survival": -0.12131502479314804,
+            "censor_fraction": 0.5458984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_ema_independent": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0570465326309204,
+            "first_interaction_gradient_norm": 0.09261390566825867,
+            "last_interaction_gradient_norm_before_step": 0.003014445072039962,
+            "legacy_reference_updates": 120,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8493486046791077,
+            "observed_nll_alpha_0": 1.0747917890548706,
+            "oracle_observed_nll_alpha_0": 0.9990134835243225,
+            "mean_squared_survival_error_to_generator": 0.021613379940390587,
+            "mean_prediction_minus_generator_survival": -0.12215578556060791,
+            "censor_fraction": 0.51171875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.8293801546096802,
+            "observed_nll_alpha_0": 1.0631660223007202,
+            "oracle_observed_nll_alpha_0": 0.975410521030426,
+            "mean_squared_survival_error_to_generator": 0.021733656525611877,
+            "mean_prediction_minus_generator_survival": -0.1226394847035408,
+            "censor_fraction": 0.5458984375
+          },
+          "state_dict_reload_exact_logits": true
+        },
+        "old_rna_conditioned_path": {
+          "parameters": 158,
+          "training": {
+            "first_weighted_train_objective": 1.0722746849060059,
+            "first_interaction_gradient_norm": 0.202346071600914,
+            "last_interaction_gradient_norm_before_step": 0.0029492152389138937,
+            "legacy_reference_updates": 0,
+            "optimizer_steps": 120
+          },
+          "validation": {
+            "weighted_objective_alpha_0p5": 0.8516365885734558,
+            "observed_nll_alpha_0": 1.0788655281066895,
+            "oracle_observed_nll_alpha_0": 0.9990134835243225,
+            "mean_squared_survival_error_to_generator": 0.022291548550128937,
+            "mean_prediction_minus_generator_survival": -0.12289903312921524,
+            "censor_fraction": 0.51171875
+          },
+          "test": {
+            "weighted_objective_alpha_0p5": 0.834221363067627,
+            "observed_nll_alpha_0": 1.0677485466003418,
+            "oracle_observed_nll_alpha_0": 0.975410521030426,
+            "mean_squared_survival_error_to_generator": 0.02184709906578064,
+            "mean_prediction_minus_generator_survival": -0.12125581502914429,
+            "censor_fraction": 0.5458984375
+          },
+          "state_dict_reload_exact_logits": true
+        }
+      }
+    }
+  ],
+  "source_sha256": {
+    "scripts/check_interaction_candidate_synthetic.py": "9de84317c9e3e8fbe06401476b9b9a48dd3e128ccf82174d1bff0da6a51377df",
+    "cancer_dense_model.py": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+    "cancer_independent_interaction.py": "ee84ff2da602c3017de8ed396a6303c480fcd0bdc2055a3309b03e53e2d944e4",
+    "cancer_parity.py": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3"
+  },
+  "sources_unchanged_during_run": true,
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124",
+    "device": "cpu",
+    "torch_threads": 1,
+    "elapsed_seconds": 61.58046170000307
+  },
+  "limits": [
+    "No patient data or evidence of clinical benefit.",
+    "Old and candidate are mathematically equivalent under paired independent inputs, matched frozen references and copied weights; tiny numerical differences are expected.",
+    "The conditioned pathology arm is a deliberately simplified RNA-leakage sensitivity demonstration, not the actual trainable matcher or full DensePathwaySurvival.",
+    "The weighted alpha=.5 training objective is not ordinary observed likelihood or necessarily calibrated to the generator.",
+    "Ground-truth survival MSE is available only because the generated event hazards are known.",
+    "Continuous redundancy deliberately permits a product branch to predict a purely redundant target; a nonzero product or gradient is not evidence of synergy.",
+    "The same-sized off arm contains noncontributing interaction parameters; it controls parameter count but does not represent an equally expressive non-interaction model.",
+    "Interaction predictions do not identify PID synergy or imply statistical independence.",
+    "Full batch fixed-last-step generated results do not test minibatch, real inputs or CUDA behavior."
+  ]
+}

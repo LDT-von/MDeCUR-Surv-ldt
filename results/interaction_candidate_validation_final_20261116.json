@@ -1,0 +1,112 @@
+{
+  "version": "independent_region_candidate_validation_v1",
+  "created_utc": "2026-11-16T14:05:41.163822+00:00",
+  "scope": "CPU generated data; no patient data, CUDA, remote server or clinical performance",
+  "pytest": {
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "reported_seconds": 8.93,
+    "test_scope": "new independent candidate and fixed-reference components plus focused legacy prediction, checkpoint, gradients, and streaming checks"
+  },
+  "source_sha256": {
+    "cancer_pathway_stream.py": "ab3274bfe4569781ae086f57c069835ba45b854b0aa7c9ff0d7efdb22616e9fd",
+    "cancer_dense_model.py": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+    "cancer_dense_independent.py": "37c06f43b3249faeb748434983b50c337e1b3d08f51078884de187038ca48818",
+    "cancer_independent_interaction.py": "ee84ff2da602c3017de8ed396a6303c480fcd0bdc2055a3309b03e53e2d944e4",
+    "test_cancer_dense_independent.py": "49164321ff294a9aca44165555ca65c054528ff1d4a4dc68ae6b3959da61a768",
+    "test_cancer_independent_interaction.py": "95d34e2c470268f26e333ac53b3d320b903892cec466bd2c5a12278abd3e314d",
+    "scripts/check_interaction_candidate_synthetic.py": "9de84317c9e3e8fbe06401476b9b9a48dd3e128ccf82174d1bff0da6a51377df",
+    "scripts/check_full_dense_independent_synthetic.py": "954ee44182fd0cd501b124dd91caad21b622cb15541efdb21fdadd4af040b44e",
+    "scripts/diagnose_dense_estimability_generated.py": "00a35ca5888e7da5e2d2ecd6751e811ea256c5fc0b2e09ad0ff485464399b3d4"
+  },
+  "result_sha256": {
+    "results/interaction_candidate_synthetic_final_20261116.json": "e22a3bbddecbbf93f1c2b8da9a612747af7c666a1ba189ab6bd5ae414422c6cd",
+    "results/full_dense_independent_synthetic_final_20261116.json": "ccd77d96db47cd1cd4c4f09ac0dbbf8c467eb96c9959b98e75f7fa84303789df",
+    "results/dense_estimability_token_count_diagnostic_20261116.json": "544fe6a280e2737f14f60dc1912df0ae4d117a926b7b64d7855deb0b8263a2b4"
+  },
+  "result_source_hashes_match_current": true,
+  "limits": [
+    "No identified PID synergy, patient effectiveness, or GPU validation.",
+    "Full-Dense generated comparison has five optimizer steps and some nonestimable dense terms.",
+    "Candidate patient CLI is not integrated."
+  ],
+  "git_line_ending_audit": {
+    "description": "Result receipts preserve SHA256 of exact Windows workspace bytes used during execution. Git blobs for four tracked source files use LF; their SHA256 differs only because CRLF was normalized to LF. Git blob hashes below let another checkout verify the same code without falsifying original execution receipts.",
+    "sources": {
+      "cancer_dense_independent.py": {
+        "workspace_sha256": "37c06f43b3249faeb748434983b50c337e1b3d08f51078884de187038ca48818",
+        "git_blob_sha256": "37c06f43b3249faeb748434983b50c337e1b3d08f51078884de187038ca48818",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "cancer_dense_model.py": {
+        "workspace_sha256": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+        "git_blob_sha256": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "cancer_dense_tokens.py": {
+        "workspace_sha256": "677c37e353215c5327aa4479596a926ea1569f0454d9352a2b24cab73633e396",
+        "git_blob_sha256": "677c37e353215c5327aa4479596a926ea1569f0454d9352a2b24cab73633e396",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "cancer_independent_interaction.py": {
+        "workspace_sha256": "ee84ff2da602c3017de8ed396a6303c480fcd0bdc2055a3309b03e53e2d944e4",
+        "git_blob_sha256": "ee84ff2da602c3017de8ed396a6303c480fcd0bdc2055a3309b03e53e2d944e4",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "cancer_parity.py": {
+        "workspace_sha256": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3",
+        "git_blob_sha256": "ef23a900c16b334ac8e3f2fef3e70ebb93f3f7828b293caf2c98a4c4ef1723a0",
+        "git_object_source": "index",
+        "byte_relation": "CRLF_to_LF_only"
+      },
+      "cancer_pathway.py": {
+        "workspace_sha256": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+        "git_blob_sha256": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "cancer_pathway_stream.py": {
+        "workspace_sha256": "ab3274bfe4569781ae086f57c069835ba45b854b0aa7c9ff0d7efdb22616e9fd",
+        "git_blob_sha256": "f85d2f3e9f0649364d58981a7d8f65ce97fb194b0fc63c86c611a43a2749a16e",
+        "git_object_source": "index",
+        "byte_relation": "CRLF_to_LF_only"
+      },
+      "cancer_rna.py": {
+        "workspace_sha256": "a336a3973023b412fea390744d0fcfa318eaa306e3d3dfda17256ab009b25c6a",
+        "git_blob_sha256": "4b198c0b01275c15e4c1e4493a5b2131bba002cdb5a49133b3de523f649a3cca",
+        "git_object_source": "index",
+        "byte_relation": "CRLF_to_LF_only"
+      },
+      "cancer_stream.py": {
+        "workspace_sha256": "8583d9a525e0219ef9a4e590c883d9974f4a2e715ddc75fbf94aca0ffd3a5986",
+        "git_blob_sha256": "95d9753a205d3b0d06aec92da5d8bbf61232d4fc63f234b6e2e19edfc505c6ad",
+        "git_object_source": "index",
+        "byte_relation": "CRLF_to_LF_only"
+      },
+      "scripts/check_full_dense_independent_synthetic.py": {
+        "workspace_sha256": "954ee44182fd0cd501b124dd91caad21b622cb15541efdb21fdadd4af040b44e",
+        "git_blob_sha256": "954ee44182fd0cd501b124dd91caad21b622cb15541efdb21fdadd4af040b44e",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "scripts/check_interaction_candidate_synthetic.py": {
+        "workspace_sha256": "9de84317c9e3e8fbe06401476b9b9a48dd3e128ccf82174d1bff0da6a51377df",
+        "git_blob_sha256": "9de84317c9e3e8fbe06401476b9b9a48dd3e128ccf82174d1bff0da6a51377df",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      },
+      "scripts/diagnose_dense_estimability_generated.py": {
+        "workspace_sha256": "00a35ca5888e7da5e2d2ecd6751e811ea256c5fc0b2e09ad0ff485464399b3d4",
+        "git_blob_sha256": "00a35ca5888e7da5e2d2ecd6751e811ea256c5fc0b2e09ad0ff485464399b3d4",
+        "git_object_source": "index",
+        "byte_relation": "identical"
+      }
+    }
+  }
+}

@@ -233,6 +233,40 @@ def _stream_patient(model, bag, rna_queries, chunk_size, view_source,
     return [x[1] for x in pools], moments, entropy, max_weight
 
 
+def _pathology_only_reference_regions(model, bag, chunk_size, replay):
+    """Pool real reference patches with pathology-only queries; omit padding.
+
+    This research path makes a separate checkpointable pass.  It does not
+    change the legacy global/conditional pooling or the auxiliary losses.
+    """
+    padding = getattr(bag, 'padding', 0)
+    if type(padding) is not int or not 0 <= padding < bag.n_patches:
+        raise ValueError('Pathology-only regions need at least one real patch')
+    real, seen, pool = bag.n_patches - padding, 0, None
+    parameter = next(model.parameters())
+    for block in bag.blocks(chunk_size):
+        length = block[2] - block[1]
+        if length < 1 or seen + length > bag.n_patches:
+            raise ValueError('Patch chunks must cover the declared budget')
+        count = max(0, min(length, real - seen))
+        if count:
+            def region_chunk(queries, block=block, count=count):
+                rows, = bag.read_block(block, ('features_reference',))
+                if rows.ndim != 2 or len(rows) != block[2] - block[1]:
+                    raise ValueError('Patch chunk rows do not match the declared block')
+                features = model.base.patch_encoder(rows[:count].to(
+                    device=parameter.device, dtype=parameter.dtype))
+                return _pool_summary(features, features @ queries.T / math.sqrt(model.hidden))
+            values = checkpoint(region_chunk, model.pathway_queries, use_reentrant=False,
+                                preserve_rng_state=True) if replay and torch.is_grad_enabled() \
+                     else region_chunk(model.pathway_queries)
+            pool = values if pool is None else _merge_pool(pool, values)
+        seen += length
+    if pool is None or seen != bag.n_patches:
+        raise ValueError('Patch chunks must cover every patient patch exactly once')
+    return pool[1]
+
+
 def pathway_stream_forward(model, bags, rna, chunk_size=2048, view_source='feature_noise',
                            include_views=False, include_patch=False, rna_views=None,
                            feature_noise=.05, view_seed=0, checkpoint_chunks=True):
@@ -269,10 +303,21 @@ def pathway_stream_forward(model, bags, rna, chunk_size=2048, view_source='featu
     global_path = torch.stack([item[0][0] for item in pooled])
     matched_path = torch.stack([item[0][1+k:1+2*k] for item in pooled])
     global_rna = model.base.rna_encoder(rna)
-    logits, interaction = model.prediction(global_path, global_rna, matched_path, tokens)
+    # Optional research model hook: the existing prediction path remains the
+    # default.  These regions use learned pathology-only queries and do not
+    # read this patient's RNA during their forward pass.
+    independent_prediction = getattr(model, 'prediction_with_pathology_regions', None)
+    if independent_prediction is None:
+        logits, interaction = model.prediction(global_path, global_rna, matched_path, tokens)
+    else:
+        regions = torch.stack([_pathology_only_reference_regions(model, bag, chunk_size, checkpoint_chunks)
+                               for bag in bags])
+        logits, interaction = independent_prediction(global_path, global_rna, matched_path, tokens, regions)
     output = {'log_rates': logits, 'interaction_logits': interaction,
               'path_hidden': global_path, 'rna_hidden': global_rna,
               'matched_path': matched_path, 'rna_pathways': tokens}
+    if independent_prediction is not None:
+        output['independent_pathology_regions'] = regions
     match_entropy = torch.stack([h[1+k:1+2*k] for h in entropies])
     normalizers = match_entropy.new_tensor([math.log(b.n_patches) if b.n_patches > 1 else 1. for b in bags])[:, None]
     output['matching_entropy'] = match_entropy

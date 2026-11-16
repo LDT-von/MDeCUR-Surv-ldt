@@ -1,0 +1,134 @@
+"""Frozen-reference token interaction for independent modality representations.
+
+This is a research candidate, not a PID/synergy estimator.  The caller must
+provide pathology tokens encoded without RNA and RNA tokens encoded without
+pathology.  This provenance cannot be inferred from tensors.  Only the caller
+can guarantee that ``fit_reference`` receives training patients only.
+
+For ``paired`` pooling, token j on one side is paired with token j on the
+other side.  It requires a predeclared alignment, not learned cross-modal
+matching.  ``all_pairs`` instead uniformly averages every valid cross-modal
+token pair in each patient; bilinearity makes it the product of each side's
+mean.  Neither mode identifies biological or spatial correspondence.
+"""
+from __future__ import annotations
+
+import torch
+from torch import nn
+
+
+class IndependentCenteredInteraction(nn.Module):
+    """Train-only frozen marginal reference with matched- or all-pairs product.
+
+    References average tokens within each patient, then average patients, so
+    patients with more real tokens do not have greater reference weight.  In
+    paired mode both means use the intersection of valid pair masks; all-pairs
+    uses each modality's own mask.  References never update implicitly.
+
+    Centering a separable bilinear interaction is a product-marginal function
+    decomposition; it is NOT a proof of independence on a correlated joint
+    patient distribution, an information-theoretic synergy, or clinical value.
+    If upstream encoders change, the frozen feature references may become stale;
+    callers must model and audit that drift explicitly.
+    """
+
+    def __init__(self, dimension: int, hidden: int, bins: int, *, pairing: str = 'paired'):
+        super().__init__()
+        if any(type(x) is not int or x < 1 for x in (dimension, hidden, bins)):
+            raise ValueError('dimension, hidden and bins must be positive integers')
+        if pairing not in ('paired', 'all_pairs'):
+            raise ValueError("pairing must be 'paired' or 'all_pairs'")
+        self.dimension, self.hidden, self.bins, self.pairing = dimension, hidden, bins, pairing
+        self.path = nn.Linear(dimension, hidden, bias=False)
+        self.rna = nn.Linear(dimension, hidden, bias=False)
+        self.head = nn.Linear(hidden, bins, bias=False)
+        self.register_buffer('path_reference', torch.zeros(dimension))
+        self.register_buffer('rna_reference', torch.zeros(dimension))
+        self.register_buffer('reference_fitted', torch.tensor(False))
+        self.register_buffer('reference_patients', torch.tensor(0, dtype=torch.long))
+
+    def get_extra_state(self):
+        return {'version': 'independent_centered_interaction_v1',
+                'dimension': self.dimension, 'hidden': self.hidden,
+                'bins': self.bins, 'pairing': self.pairing}
+
+    def set_extra_state(self, state):
+        if state != self.get_extra_state():
+            raise ValueError('Checkpoint interaction configuration differs from this module')
+
+    def _prepare(self, x, mask, name):
+        if not isinstance(x, torch.Tensor) or not x.is_floating_point():
+            raise ValueError(f'{name} must be a floating tensor')
+        if x.ndim != 3 or x.shape[0] == 0 or x.shape[1] == 0 or x.shape[2] != self.dimension:
+            raise ValueError(f'{name} must have shape [patients, tokens, {self.dimension}]')
+        if x.device != self.path.weight.device or x.dtype != self.path.weight.dtype:
+            raise ValueError(f'{name} must match the module device and dtype')
+        if mask is None:
+            mask = torch.ones(x.shape[:2], dtype=torch.bool, device=x.device)
+        elif not isinstance(mask, torch.Tensor) or mask.dtype != torch.bool or mask.shape != x.shape[:2]:
+            raise ValueError(f'{name} mask must be a boolean [patients, tokens] tensor')
+        elif mask.device != x.device:
+            raise ValueError(f'{name} mask must match the input device')
+        if not bool(mask.any(dim=1).all()):
+            raise ValueError(f'{name} must have at least one valid token per patient')
+        if not bool(torch.isfinite(x[mask]).all()):
+            raise ValueError(f'{name} valid tokens must be finite')
+        # torch.where prevents NaN/inf padding from contaminating the reduction.
+        clean = torch.where(mask.unsqueeze(-1), x, torch.zeros((), device=x.device, dtype=x.dtype))
+        return clean, mask
+
+    def _inputs(self, path, rna, path_mask, rna_mask):
+        path, path_mask = self._prepare(path, path_mask, 'path')
+        rna, rna_mask = self._prepare(rna, rna_mask, 'rna')
+        if path.shape[0] != rna.shape[0]:
+            raise ValueError('path and rna patient counts must match')
+        return path, rna, path_mask, rna_mask
+
+    @staticmethod
+    def _patient_mean(x, mask):
+        return x.sum(dim=1) / mask.sum(dim=1, keepdim=True).to(dtype=x.dtype)
+
+    @torch.no_grad()
+    def fit_reference(self, path, rna, path_mask=None, rna_mask=None):
+        """Fit references once on caller-supplied training patients; no labels."""
+        if bool(self.reference_fitted):
+            raise RuntimeError('Reference already fitted; create a new module')
+        path, rna, path_mask, rna_mask = self._inputs(path, rna, path_mask, rna_mask)
+        if self.pairing == 'paired':
+            if path.shape[1] != rna.shape[1]:
+                raise ValueError('paired mode requires equal token counts')
+            pair_mask = path_mask & rna_mask
+            if not bool(pair_mask.any(dim=1).all()):
+                raise ValueError('paired mode requires at least one valid token pair per patient')
+            path = torch.where(pair_mask.unsqueeze(-1), path, torch.zeros_like(path))
+            rna = torch.where(pair_mask.unsqueeze(-1), rna, torch.zeros_like(rna))
+            path_mask = rna_mask = pair_mask
+        p = self._patient_mean(path, path_mask).mean(dim=0)
+        g = self._patient_mean(rna, rna_mask).mean(dim=0)
+        if not bool(torch.isfinite(p).all() and torch.isfinite(g).all()):
+            raise ValueError('Reference means must be finite')
+        self.path_reference.copy_(p)
+        self.rna_reference.copy_(g)
+        self.reference_patients.fill_(path.shape[0])
+        self.reference_fitted.fill_(True)
+        return self
+
+    def forward(self, path, rna, path_mask=None, rna_mask=None):
+        if not bool(self.reference_fitted):
+            raise RuntimeError('Call fit_reference on training patients before forward')
+        path, rna, path_mask, rna_mask = self._inputs(path, rna, path_mask, rna_mask)
+        if self.pairing == 'paired':
+            if path.shape[1] != rna.shape[1]:
+                raise ValueError('paired mode requires equal token counts')
+            mask = path_mask & rna_mask
+            if not bool(mask.any(dim=1).all()):
+                raise ValueError('paired mode requires at least one valid token pair per patient')
+            p = self.path(path - self.path_reference)
+            g = self.rna(rna - self.rna_reference)
+            joint = torch.where(mask.unsqueeze(-1), p*g, torch.zeros_like(p))
+            joint = joint.sum(dim=1)/mask.sum(dim=1, keepdim=True).to(dtype=joint.dtype)
+        else:
+            p = self.path(self._patient_mean(path, path_mask)-self.path_reference)
+            g = self.rna(self._patient_mean(rna, rna_mask)-self.rna_reference)
+            joint = p*g
+        return self.head(joint)
