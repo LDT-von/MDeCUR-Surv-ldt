@@ -44,6 +44,8 @@ MurreNet/MoHD 没有可验证的本地实现，不列为已下载模型。
 - `train_pathway_parity.py`：完整主模型默认入口。
 - `comparison_fold0.py`：full dense、同架构 aux-off、CAMR、**CAMR 官方生存契约**、**MorphID（含无交互消融）** 的共同单折计划；aux-off 是同一架构消融，MorphID 两臂是同一模型的交互项消融。
 - `comparison_5fold.py`：四个多模态对照适配器的共享驱动；可按指定 fold 单独计划/执行。RNA-only、WSI-only 已移除。
+- `comparison_merge.py`：把**项目臂**（`comparison_fold0.py`）与**上游对照臂**（`comparison_5fold.py`，同一 fold 0）合成一张排名表。它不信任任何 runner 报出的指标，而是从两边保存的生存矩阵**用同一套代码重算**所有指标，并核对两份 plan 描述的是同一批患者。`camr_2m` 在两个 runner 各跑一次，作为**桥接臂**量化跨 runner 偏移。
+- `scripts/fetch_upstream_comparators.sh`：在服务器上按固定 commit 拉取 `papers/comparators/` 下的四个上游仓库并校验逐文件 SHA256（这些第三方树**不在本仓库内**）。
 - `uni_views/`：冻结 UNI 特征提取和缓存接口。
 - `diagnose_parity_*.py`：已有检查点的输入控制和交互诊断；不训练独立的 RNA/WSI 基线。
 

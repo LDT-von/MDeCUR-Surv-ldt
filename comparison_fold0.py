@@ -342,7 +342,7 @@ def save_predictions(path, ids, survival):
         writer.writerows([p, float(r), *map(float, s)] for p, r, s in zip(ids, dct_risk(survival), survival))
 
 
-def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
+def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False, epochs=None):
     if model_id not in MODELS:
         raise ValueError(UNAVAILABLE.get(model_id, 'Unknown model; no implicit substitute'))
     destination = Path(out)
@@ -429,7 +429,7 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
         sample_hash = hashlib.sha256()
         schedule_hash = hashlib.sha256()
         total_optimizer_steps = total_discriminator_steps = 0
-        count_epochs = 1 if smoke else 30
+        count_epochs = 1 if smoke else int(epochs or SETTINGS['epochs'])
         for epoch in range(1, count_epochs+1):
             model.train()
             for bag in bags['train']:
@@ -665,6 +665,8 @@ def main():
     p.add_argument('--out', required=True)
     p.add_argument('--device', default='cpu')
     p.add_argument('--smoke', action='store_true', help='One-epoch engineering check; excluded from comparison')
+    p.add_argument('--epochs', type=int, default=None,
+                   help='Override the protocol epoch count; the summary refuses runs that differ')
     p = sub.add_parser('summary')
     p.add_argument('--runs', nargs='+', required=True)
     p.add_argument('--out', required=True)
@@ -674,7 +676,7 @@ def main():
     if a.action == 'plan':
         write_new(a.out, make_plan(a.manifest, a.survival_reference, a.reference_run))
     elif a.action == 'run':
-        run_model(a.plan, a.plan_sha256, a.model, a.out, a.device, a.smoke)
+        run_model(a.plan, a.plan_sha256, a.model, a.out, a.device, a.smoke, a.epochs)
     else:
         summarize(a.runs, a.out)
     print(json.dumps({'action': a.action, 'out': a.out}), flush=True)
