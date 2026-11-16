@@ -29,6 +29,7 @@ run () {
     --out $BASE/$tag \
     --num-patches 4096 --n-bins 4 --alpha-surv 0.5 --epochs 30 \
     --patient-batch-size 17 --patch-chunk-size 4096 \
+    --legacy-architecture \
     --rna-scale-policy none --lr 0.0005 --weight-decay 0.0005 --seed 3 \
     --endpoint DSS --time-unit months \
     --split-name "5fold/blca/fold_0 (legacy_val)" --device "$device" "$@" \

@@ -1,0 +1,49 @@
+{
+  "scope": "generated synthetic 20 train/4 validation only; no patient or CUDA evidence",
+  "results": {
+    "mdecur_full_dense": {
+      "epochs": 30,
+      "best_epoch": 1,
+      "last_epoch": 30,
+      "best_and_last_weights_differ": true,
+      "both_checkpoint_predictions_and_metrics_reproduced": true,
+      "training_sampling_sha256": "d28b79fa5671f7408950d878ba3548930af63ca2b5ebdb5d20d2002200d60c64"
+    },
+    "mdecur_dense_aux_off": {
+      "epochs": 30,
+      "best_epoch": 1,
+      "last_epoch": 30,
+      "best_and_last_weights_differ": true,
+      "both_checkpoint_predictions_and_metrics_reproduced": true,
+      "training_sampling_sha256": "d28b79fa5671f7408950d878ba3548930af63ca2b5ebdb5d20d2002200d60c64"
+    },
+    "camr_2m": {
+      "epochs": 30,
+      "best_epoch": 2,
+      "last_epoch": 30,
+      "best_and_last_weights_differ": true,
+      "both_checkpoint_predictions_and_metrics_reproduced": true,
+      "training_sampling_sha256": "d28b79fa5671f7408950d878ba3548930af63ca2b5ebdb5d20d2002200d60c64"
+    }
+  },
+  "common_plan_sha256": "99419c713a95f20b8fb7dc5b7ffb6799aac7869d429ce6e1262c423fcdaf9a30",
+  "source_sha256": {
+    "comparison_fold0": "2175df5b6ab56e020dbbe4f91c2ea1f4e4b6309cef4c29908429d57f1b52e2e9",
+    "comparison_camr": "454a054f21d306545555939093dacb0740ae0500f9531f6d7181ed4bef926a6e",
+    "cancer_parity": "c508c00a360ed845d102f9158580b25648fad869895852b2aeeadd4c52f9a198",
+    "cancer_parity_bag": "55726ba735284d963bbb01a5d79302b17d19d4f7d636fde1fc217eba87d1647e",
+    "cancer_pathway": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+    "cancer_model": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_rna": "a336a3973023b412fea390744d0fcfa318eaa306e3d3dfda17256ab009b25c6a",
+    "cancer_metrics": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_stream_data": "ac750fb1ef865df4252596cfa47a23465a9bb6796d4ea061d31fcb4129ccb3a2",
+    "cancer_single_view": "57a643af68316d7ad0732217ca6bdbb80a4198cfd3f86489714f9b1a0941a6f1",
+    "cancer_stream": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "model": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "cancer_dense_model": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+    "cancer_dense_tokens": "677c37e353215c5327aa4479596a926ea1569f0454d9352a2b24cab73633e396",
+    "cancer_parity_audit": "ec57a670ba717e7752858e89aeaa6c2151d415220e0f235cfec9c09ffe891294"
+  },
+  "six_row_summary_verified": true
+}

@@ -1,5 +1,7 @@
 # 癌症代码仓库的会话接续
 
+2026-11-14 最新用户要求：全部辅助必须默认开启、加入DenseTwins式token目标与跨模态协同候选。先读 `FULL_DENSE_TOKEN_PROTOCOL_20261114.md`。comparison默认 `mdecur_full_dense`，11旧＋4dense辅助均正系数，DensePathwaySurvival的local common/private直接进NLL并加训练参考中心化token交互；不叫严格PID。aux-off只是显式消融。V2共同batch20＋末批merge以满足16维identity必要rank；旧batch8/V1/0.7361不能混入新排名。已核实legacy时间列映射影响Brier/IBS/AUC，但不能据此说Harrell 0.7361虚假；先用 `scripts/audit_parity_saved_predictions.py` 只读核对旧CSV/标签/报告，再新的一折。最近邻能对独立token云制造约.99976相关，必须保留负控，不以高相关当真实共性。所有本地证据仅CPU合成，无新患者结果/SSH。下方V1 aux-off默认安排已过时。
+
 2026-11-13 最新单折对照交付：当前用户要求拉取CAMR/MurreNet/MoHD并适配同输入同协议，先BLCA fold0，比较最高val C轮与epoch30末轮，不补4折。先读 `BLCA_FOLD0_COMPARISON_20261113.md`。统一入口 `comparison_fold0.py`，CAMR适配 `comparison_camr.py`；源码状态 `comparison_sources.json`。CAMR官方8fbae0a已拉到本地父目录papers/comparators/CAMR，仅源码，无附带pkl。MurreNet会议Code N/A，作者主页无该模型链接；MoHD未找到可验证作者code，二者无可运行入口，不能冒充已完成三篇。新计划固定PYTHONHASHSEED=0并锁输入/代码/环境，MDeCUR aux-off与CAMR-2M都重新训练；不能把旧0.7361填进新计划排名。本窗口只做本地合成验证和Git交付，不连接服务器，不启动患者作业。下面关于remote协议、旧HEAD及未推送状态均为历史，需实时git核对。
 
 2026-11-13推送完成（完整SHA a2925c3e...）：已push `main`到origin，远端新增提交c08dcac（服务器端AI的梯度审计复核与只读提取器）已先fetch并rebase整合，无冲突、无强推。origin已从HTTPS改为SSH（`git@github.com:LDT-von/MDeCUR-Surv-ldt.git`），此前HTTPS无凭据无法推送。变基后完整测试176项+28子测试通过、0失败。`search_harness/`为本次新增（Stage1–3调度器，原先只在运行目录），全部路径经`SEARCH_*`环境变量可覆盖，已在真实队列上验证`progress.py`/`reconcile_queue.py`/claim-release逻辑/命令行生成与原运行一致；仓库版`run_pathway_with_measure.py`已在真实fold0跑通1轮（5090，352s）。
