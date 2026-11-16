@@ -121,6 +121,9 @@ class Fold0ComparisonTest(unittest.TestCase):
             self.assertTrue((out/'checkpoint_last.pt').is_file())
             self.assertEqual((out/'val_predictions_best.csv').read_bytes(), (out/'val_predictions_last.csv').read_bytes())
         self.assertEqual(len({r['training_sampling_sha256'] for r in reports}), 1)
+        self.assertEqual(len({r['training_schedule_sha256'] for r in reports}), 1)
+        self.assertEqual({r['optimizer_steps'] for r in reports}, {1})
+        self.assertEqual([r['discriminator_optimizer_steps'] for r in reports], [0, 0, 0, 1])
         self.assertIn('adversarial', reports[-1]['history'][0]['train_terms'])
         self.assertTrue(reports[-1]['metadata']['fake_CNA_used'] is False)
         self.assertEqual(len(reports[0]['history'][0]['train_terms']), 16)
@@ -147,11 +150,18 @@ class Fold0ComparisonTest(unittest.TestCase):
         self.save_report()
         # Rewrite the first train row's follow-up time without relying on the
         # exact event value, which is irrelevant to the label mismatch check.
-        lines = self.reference.read_text(encoding='utf-8').splitlines()
-        fields = lines[1].split(',')
-        fields[2] = '100'
-        lines[1] = ','.join(fields)
-        self.reference.write_text('\n'.join(lines)+'\n', encoding='utf-8')
+        with self.reference.open(encoding='utf-8', newline='') as handle:
+            reader = csv.DictReader(handle)
+            fieldnames, rows = reader.fieldnames, list(reader)
+        original_time = rows[0]['time']
+        rows[0]['time'] = str(float(original_time)+100.)
+        self.assertNotEqual(rows[0]['time'], original_time)
+        with self.reference.open('w', encoding='utf-8', newline='') as handle:
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        with self.reference.open(encoding='utf-8', newline='') as handle:
+            self.assertEqual(next(csv.DictReader(handle))['time'], rows[0]['time'])
         with self.assertRaisesRegex(ValueError, 'labels differ'):
             compare.make_plan(self.manifest, self.reference, self.ref_run)
 
@@ -182,7 +192,10 @@ class Fold0ComparisonTest(unittest.TestCase):
                                  'brier': [.1, .2], 'ibs': .15, 'iauc': .8,
                                  'metric_times': [8., 15.], 'errors': []}
             compare.write_new(out/'report.json', {'model_id': model, 'plan_sha256': 'same', 'smoke_only': False,
+                'protocol': compare.PROTOCOL, 'loss_version': compare.SETTINGS['loss_version'],
+                'settings': compare.SETTINGS,
                 'epochs_completed': 30, 'test_evaluated': False, 'training_sampling_sha256': 'equal',
+                'training_schedule_sha256': 'same-order-and-batches', 'optimizer_steps': 450,
                 'best_epoch': 20, 'last_epoch': 30, 'best_validation': metric(best_c), 'last_validation': metric(last_c)})
             runs.append(out)
         result = compare.summarize(runs, self.root/'summary.json')
@@ -196,6 +209,94 @@ class Fold0ComparisonTest(unittest.TestCase):
         (runs[0]/'report.json').write_text(json.dumps(damaged), encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'incomplete/smoke'):
             compare.summarize(runs, self.root/'bad_summary.json')
+        damaged['last_epoch'] = 30
+        damaged['training_schedule_sha256'] = 'changed-patient-order'
+        (runs[0]/'report.json').write_text(json.dumps(damaged), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'different-sampling'):
+            compare.summarize(runs, self.root/'bad_schedule_summary.json')
+        damaged['training_schedule_sha256'] = 'same-order-and-batches'
+        damaged['optimizer_steps'] = 449
+        (runs[0]/'report.json').write_text(json.dumps(damaged), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'different-sampling'):
+            compare.summarize(runs, self.root/'bad_steps_summary.json')
+
+    def test_summary_refuses_missing_or_stale_patientwise_versions(self):
+        run = self.root/'version_guard'
+        run.mkdir()
+        valid = {'model_id': 'mdecur_full_dense', 'plan_sha256': 'same',
+                 'protocol': compare.PROTOCOL, 'loss_version': compare.SETTINGS['loss_version'],
+                 'settings': dict(compare.SETTINGS)}
+        for field in ('protocol', 'loss_version', 'settings.loss_version'):
+            for replacement in (None, 'legacy_broadcast_v2'):
+                damaged = json.loads(json.dumps(valid))
+                container = damaged['settings'] if field.startswith('settings.') else damaged
+                key = field.split('.')[-1]
+                if replacement is None:
+                    container.pop(key)
+                else:
+                    container[key] = replacement
+                (run/'report.json').write_text(json.dumps(damaged), encoding='utf-8')
+                with self.subTest(field=field, replacement=replacement):
+                    with self.assertRaisesRegex(ValueError, 'protocol/loss versions'):
+                        compare.summarize([run], self.root/'refused_version.json')
+
+    def test_sampling_is_identical_across_interpreter_hash_seeds(self):
+        code = ('import json; from cancer_parity import select_patch_rows; '
+                'print(json.dumps([select_patch_rows(5000,4096,"train",3001,p)[0].tolist() '
+                'for p in ("p0","患者1","p20")]))')
+        outputs = []
+        for hash_seed in ('0', '123', 'random'):
+            environment = dict(os.environ, PYTHONHASHSEED=hash_seed,
+                               OMP_NUM_THREADS='1', MKL_NUM_THREADS='1')
+            process = subprocess.run([sys.executable, '-c', code], capture_output=True,
+                                     env=environment, cwd=Path(compare.__file__).parent)
+            self.assertEqual(process.returncode, 0, process.stderr.decode('utf-8', errors='replace'))
+            outputs.append(process.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
+
+    def test_the_plan_carries_no_hash_derived_field(self):
+        """The plan must not contain a value that varies per interpreter.
+
+        ``hash()`` of a string is randomized per process unless
+        ``PYTHONHASHSEED`` was set before the interpreter started, so a
+        plan field derived from it makes the plan lock reject a run that was
+        planned in a different process.  The plan records the *state* of the
+        hash setting instead of a value derived from it.
+        """
+        path, _ = self.plan()
+        plan = json.loads(path.read_text(encoding='utf-8'))
+        self.assertNotIn('python_hash_seed', plan)
+        self.assertNotIn('sampler_runtime_signature', plan)
+        state = plan['hash_seed_state']
+        self.assertFalse(state['sampler_depends_on_python_hash'])
+        self.assertIn('hash_randomization_active', state)
+
+    def test_the_plan_is_byte_identical_across_interpreter_hash_seeds(self):
+        """Building the plan in differently started processes must agree.
+
+        This is the property the plan lock relies on: ``run`` rebuilds the
+        plan and compares it byte-for-byte, so a plan field that depends on
+        the interpreter's hash state makes the comparison fail at random.
+        """
+        code = ('import json,sys; sys.path.insert(0, %r); import comparison_fold0 as c; '
+                'plan = c.make_plan(sys.argv[1], sys.argv[2], sys.argv[3]); '
+                'plan.pop("hash_seed_state", None); '
+                'print(json.dumps(plan, sort_keys=True))'
+                % str(Path(compare.__file__).resolve().parent))
+        outputs = []
+        for hash_seed in ('0', '123', 'random'):
+            environment = dict(os.environ, PYTHONHASHSEED=hash_seed,
+                               OMP_NUM_THREADS='1', MKL_NUM_THREADS='1')
+            process = subprocess.run(
+                [sys.executable, '-c', code, str(self.manifest), str(self.reference),
+                 str(self.ref_run)], capture_output=True,
+                env=environment, cwd=Path(compare.__file__).parent)
+            self.assertEqual(process.returncode, 0,
+                             process.stderr.decode('utf-8', errors='replace'))
+            outputs.append(process.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+        self.assertEqual(outputs[0], outputs[2])
 
     def test_cli_plan_and_separate_process_run_share_hash_seed(self):
         script = Path(compare.__file__)
