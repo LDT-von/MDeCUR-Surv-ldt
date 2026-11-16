@@ -5,6 +5,12 @@
 # artifacts).  The server must clone them once, at the exact commits recorded
 # in comparison_sources.py, before any upstream arm can run.
 #
+# The paths are derived from this script's own location, so the layout matches
+# what comparison_sources.py computes:
+#
+#   <code dir>/scripts/fetch_upstream_comparators.sh
+#   <code dir>/comparison_sources.py   ->  COMPARATORS = <code dir>/../papers/comparators
+#
 # The script is deliberately conservative:
 #   * it never modifies an existing checkout;
 #   * it refuses to continue when a checkout has a dirty working tree;
@@ -12,8 +18,8 @@
 #   * it never writes into the upstream trees.
 set -euo pipefail
 
-REPO="${COMPARATOR_REPO_ROOT:-/data1/MDeCUR-Surv-ldt}"
-COMPARATORS="${COMPARATOR_ROOT:-$(cd -- "$REPO/.." && pwd)/papers/comparators}"
+CODE_DIR="${COMPARATOR_CODE_ROOT:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)}"
+COMPARATORS="${COMPARATOR_ROOT:-$(cd -- "$CODE_DIR/.." && pwd)/papers/comparators}"
 
 PIBD_URL=https://github.com/zylbuaa/PIBD
 PIBD_COMMIT=bd5bd94e6f8d48e7679c6e68209a3a65c9e56a78
@@ -24,6 +30,9 @@ DEREF_COMMIT=6bdbf81e76d1c7fa1d49b05f1a8fec2fbfc7b6d3
 DIMAF_URL=https://github.com/Trustworthy-AI-UU-NKI/DIMAF
 DIMAF_COMMIT=3fe81236aafac88977b730745314b8c9906cb4d3
 
+printf 'Code directory: %s\n' "$CODE_DIR"
+printf 'Upstream root:  %s\n' "$COMPARATORS"
+
 mkdir -p -- "$COMPARATORS"
 
 fetch_one() {
@@ -31,20 +40,19 @@ fetch_one() {
   local target="$COMPARATORS/$name"
   if [[ -e "$target" ]]; then
     printf '%s already exists; verifying the pinned commit\n' "$name"
-    if [[ -d "$target/.git" ]]; then
-      local current
-      current=$(git -C "$target" rev-parse HEAD)
-      if [[ "$current" != "$commit" ]]; then
-        printf '%s is at %s, not the pinned %s\n' "$name" "$current" "$commit" >&2
-        printf 'Fetch the pinned commit yourself and report; do not reset a dirty tree.\n' >&2
-        return 2
-      fi
-      if [[ -n "$(git -C "$target" status --porcelain)" ]]; then
-        printf '%s has uncommitted changes; refusing to touch it\n' "$name" >&2
-        return 2
-      fi
-    else
+    if [[ ! -d "$target/.git" ]]; then
       printf '%s is not a git checkout; refusing to overwrite it\n' "$name" >&2
+      return 2
+    fi
+    if [[ -n "$(git -C "$target" status --porcelain)" ]]; then
+      printf '%s has uncommitted changes; refusing to touch it\n' "$name" >&2
+      return 2
+    fi
+    local current
+    current=$(git -C "$target" rev-parse HEAD)
+    if [[ "$current" != "$commit" ]]; then
+      printf '%s is at %s, not the pinned %s\n' "$name" "$current" "$commit" >&2
+      printf 'Fetch the pinned commit yourself and report; do not reset a dirty tree.\n' >&2
       return 2
     fi
   else
@@ -68,7 +76,7 @@ fetch_one DeReF "$DEREF_URL" "$DEREF_COMMIT"
 fetch_one DIMAF "$DIMAF_URL" "$DIMAF_COMMIT"
 
 printf 'Verifying the recorded per-file hashes\n'
-cd -- "$REPO"
+cd -- "$CODE_DIR"
 python - <<'PY'
 import comparison_sources as sources
 hashes = sources.verify_upstream()
