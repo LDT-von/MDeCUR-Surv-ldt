@@ -372,11 +372,7 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False, 
         torch.backends.cudnn.deterministic = True
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
-        # The recorded runtime deliberately keeps the device *type* and the GPU
-        # model, not the device index: two arms trained concurrently on two
-        # identical GPUs are still comparable, and recording the index would
-        # make the summary refuse an otherwise valid set of runs.
-        runtime = {'device': device.type, 'cuda_name': torch.cuda.get_device_name(device) if device.type == 'cuda' else None,
+        runtime = {'device': str(device), 'cuda_name': torch.cuda.get_device_name(device) if device.type == 'cuda' else None,
                    'cublas_workspace_config': os.environ.get('CUBLAS_WORKSPACE_CONFIG'),
                    'deterministic_algorithms': 'warn_only', 'tf32': False}
         scaler = fit_rna_scaler(cohort['train']['rna'], 'none')
