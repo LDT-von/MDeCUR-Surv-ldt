@@ -47,6 +47,18 @@ UNI_FEATURE_DIM = 1024
 DEFAULT_AUXILIARY_WEIGHTS = {'disentanglement': 7.0}
 DEFAULT_DISENTANGLEMENT = 'distcor'
 
+# The upstream prototype step samples ``n_proto * n_proto_patches`` patch rows
+# from the training slides (upstream default: 16 * 100000 = 1.6e6 rows) and
+# clusters them with the upstream ``kmeans_clustering``.  That sample needs
+# 1.6e6 * 1024 * 4 B = 6.4 GB, and the scikit-learn KMeans working copy is
+# float64, so the upstream default does not fit next to the other arms on this
+# host.  The quota is therefore reduced to 16 * 10000 = 1.6e5 rows, which is
+# still 1e4 rows per prototype and keeps the step inside a few gigabytes.
+# This is a documented adaptation of the upstream sampling size; the sampling
+# rule, the upstream clustering implementation and the prototype count are
+# unchanged.
+DIMAF_PROTOTYPE_PATCHES_PER_PROTO = 10000
+
 
 def _load_prototype_module():
     """Import the upstream prototype clustering helper."""
@@ -55,6 +67,76 @@ def _load_prototype_module():
         'embeddings.prototype', root / 'src' / 'embeddings' / 'prototype.py',
         [str(root / 'src')])
 
+
+def sample_prototype_rows(bags, n_proto, n_patches_per_proto, feature_dim, seed=3):
+    """Draw the prototype clustering sample from the training bags.
+
+    This reproduces the upstream ``embeddings.prototype.get_patches`` rule: the
+    sample holds at most ``n_proto * n_patches_per_proto`` rows, a fixed quota
+    is drawn from every training slide with ``torch.randperm``, and the sample
+    is what the upstream ``kmeans_clustering`` then clusters.  Unlike the
+    upstream code the rows are read from the protocol bags in bounded blocks
+    instead of one dense in-memory copy of every slide, which is what makes
+    the step fit in memory on this host.  The upstream ``get_patches`` samples
+    with ``torch.randperm`` per slide; the same generator is used here so the
+    draw is reproducible from the recorded seed.
+    """
+    if type(n_proto) is not int or n_proto < 1:
+        raise ValueError('n_proto must be a positive integer')
+    if type(n_patches_per_proto) is not int or n_patches_per_proto < 1:
+        raise ValueError('n_patches_per_proto must be a positive integer')
+    if not isinstance(bags, (list, tuple)) or not bags:
+        raise ValueError('A nonempty list of training bags is required')
+    # The upstream rule draws a quota of rows from every training slide with
+    # ``torch.randperm``.  The rows are collected per patient bag and read
+    # through the bag's batched ``read_rows`` call, which copies only the
+    # requested rows; reading whole slides would pull the complete training
+    # bags (tens of gigabytes) through the page cache.
+    generator = torch.Generator().manual_seed(seed)
+    offsets_per_bag = []
+    total_slides = 0
+    for bag in bags:
+        offsets, cursor = [], 0
+        for block in bag.blocks(bag.n_patches):
+            offsets.append((cursor, cursor + (block[2] - block[1])))
+            cursor += block[2] - block[1]
+            total_slides += 1
+        if cursor != bag.n_patches:
+            raise ValueError('The source bag rows do not match its declared patch count')
+        offsets_per_bag.append((bag, offsets))
+    if total_slides < 1:
+        raise ValueError('The training bags hold no slide rows')
+    total_target = n_proto * n_patches_per_proto
+    per_slide = max(1, -(-total_target // total_slides))
+    # The sample is allocated once: repeated concatenation would hold a second
+    # full copy of a multi-gigabyte tensor while it is being built.
+    sample = torch.zeros((total_target, feature_dim), dtype=torch.float32)
+    collected = 0
+    for bag, offsets in offsets_per_bag:
+        if collected >= total_target:
+            break
+        wanted = []
+        for base, stop in offsets:
+            rows = stop - base
+            if rows < 1:
+                continue
+            take = min(per_slide, rows, total_target - collected + len(wanted))
+            indices = torch.randperm(rows, generator=generator)[:take]
+            indices, _ = torch.sort(indices)
+            wanted.extend((base + int(index)) for index in indices)
+        if not wanted:
+            continue
+        room = total_target - collected
+        if len(wanted) > room:
+            wanted = wanted[:room]
+        selected = bag.read_rows(wanted)
+        if selected.shape[0] != len(wanted):
+            raise ValueError('The bag did not return the requested rows')
+        sample[collected:collected+selected.shape[0]] = selected
+        collected += selected.shape[0]
+    if collected < n_proto:
+        raise ValueError('Not enough training patch features to fit prototypes')
+    return sample[:collected].contiguous()
 
 def fit_prototypes(patch_features, n_proto=16, n_iter=50, feature_dim=None, seed=3):
     """Cluster pathology prototypes on training-fold patch features only.
@@ -237,4 +319,9 @@ class DIMAF2M(nn.Module):
                     'Prototypes are clustered on the training rows of the current fold only; the upstream prototype pickle is not used.',
                     'The upstream slide-embedding step runs over the protocol patch bags instead of the upstream H5 dataloader.',
                     'The survival objective is the shared patientwise discrete NLL; the upstream disentanglement loss is retained as an auxiliary objective.',
+                    'The prototype clustering sample is drawn with the upstream '
+                    'torch.randperm rule but with '
+                    f'{DIMAF_PROTOTYPE_PATCHES_PER_PROTO} rows per prototype instead of '
+                    'the upstream default of 100000, and the rows are read from the '
+                    'bags in bounded batches instead of one dense copy of every slide.',
                 ]}

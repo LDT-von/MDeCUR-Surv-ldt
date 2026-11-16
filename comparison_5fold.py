@@ -247,16 +247,22 @@ def build_model(model_id, plan, cohort, gene_names, pathway, deref, device):
                         bins=N_BINS, seed=SETTINGS['seed'])
         return model.to(device), model.adaptation_metadata()
     if model_id == 'dimaf_2m':
-        from comparison_dimaf import DIMAF2M, fit_prototypes
+        from comparison_dimaf import (DIMAF2M, DIMAF_PROTOTYPE_PATCHES_PER_PROTO,
+                                     fit_prototypes, sample_prototype_rows)
         model = DIMAF2M(path_dim=path_dim, rna_dim=rna_dim,
                         omic_indices=[item['indices'] for item in pathway['pathways']],
                         bins=N_BINS, n_proto=16, seed=SETTINGS['seed'])
-        features = []
-        for bag in cohort.train_bags:
-            features.append(read_bag_rows(bag))
-        stacked = torch.cat(features, dim=0)
-        prototypes = fit_prototypes(stacked, n_proto=16, n_iter=50,
+        # The upstream prototype step samples a bounded number of patch rows
+        # from the training slides and clusters those.  The rows are read from
+        # the bags in bounded blocks, because the complete training bags hold
+        # far more rows than this host can materialise at once.
+        sample = sample_prototype_rows(
+            cohort.train_bags, n_proto=16,
+            n_patches_per_proto=DIMAF_PROTOTYPE_PATCHES_PER_PROTO,
+            feature_dim=path_dim, seed=SETTINGS['seed'])
+        prototypes = fit_prototypes(sample, n_proto=16, n_iter=50,
                                      feature_dim=path_dim, seed=SETTINGS['seed'])
+        del sample
         model.attach_prototypes(prototypes)
         return model.to(device), model.adaptation_metadata()
     if model_id == 'camr_2m':
@@ -264,16 +270,6 @@ def build_model(model_id, plan, cohort, gene_names, pathway, deref, device):
         model = CAMR2M(path_dim, rna_dim, bins=N_BINS)
         return model.to(device), model.adaptation_metadata()
     raise ValueError(f'Unknown model {model_id}')
-
-
-def read_bag_rows(bag):
-    """Read every row of a raw patient bag, without a patch budget."""
-    arrays = [bag.read_block(block, ('features_reference',))[0]
-              for block in bag.blocks(bag.n_patches)]
-    patches = torch.cat(arrays) if arrays else torch.zeros((0, bag.feature_dim))
-    if not torch.isfinite(patches).all():
-        raise ValueError('Nonfinite patch features')
-    return patches
 
 
 def materialize_bag(bag, num_patches=NUM_PATCHES, chunk_size=NUM_PATCHES):

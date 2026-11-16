@@ -127,6 +127,59 @@ class FiveFoldComparisonTest(unittest.TestCase):
             bag.close()
 
     # ------------------------------------------------------- upstream integrity
+    def test_the_prototype_sampling_is_bounded_and_reproducible(self):
+        """The prototype sample must be bounded and drawn only from the bags.
+
+        The upstream prototype step samples a fixed number of rows from the
+        training slides.  The adaptation keeps that rule but must never
+        materialise a whole slide, and the draw must be reproducible from the
+        recorded seed.
+        """
+        from comparison_dimaf import sample_prototype_rows
+
+        class FakeBag:
+            """One slide of ``rows`` rows that records every read."""
+
+            feature_dim = 4
+
+            def __init__(self, rows, seed):
+                self.n_patches = rows
+                self._tensor = torch.randn(rows, 4, generator=torch.Generator().manual_seed(seed))
+                self.reads = 0
+
+            def blocks(self, chunk):
+                for start in range(0, self.n_patches, chunk):
+                    yield ('fake', start, min(start + chunk, self.n_patches))
+
+            def read_rows(self, rows):
+                self.reads += 1
+                index = torch.as_tensor(list(rows), dtype=torch.long)
+                return self._tensor.index_select(0, index)
+
+        bags = [FakeBag(500, 1), FakeBag(300, 2)]
+        sample = sample_prototype_rows(bags, n_proto=4, n_patches_per_proto=100,
+                                       feature_dim=4, seed=3)
+        self.assertEqual(sample.shape, (400, 4))
+        self.assertTrue(torch.isfinite(sample).all())
+        # Only the requested rows were read, never a whole slide copy.
+        for bag in bags:
+            self.assertLessEqual(bag.reads, 1)
+        # The draw is reproducible from the seed.
+        again = sample_prototype_rows(bags, n_proto=4, n_patches_per_proto=100,
+                                      feature_dim=4, seed=3)
+        self.assertTrue(torch.equal(sample, again))
+        # A different seed gives a different draw.
+        other = sample_prototype_rows(bags, n_proto=4, n_patches_per_proto=100,
+                                      feature_dim=4, seed=5)
+        self.assertFalse(torch.equal(sample, other))
+
+    def test_the_prototype_sampling_refuses_an_empty_cohort(self):
+        from comparison_dimaf import sample_prototype_rows
+
+        with self.assertRaises(ValueError):
+            sample_prototype_rows([], n_proto=4, n_patches_per_proto=10,
+                                  feature_dim=4, seed=3)
+
     def test_upstream_checkouts_are_byte_identical_and_stay_clean(self):
         """The third-party trees must not be edited, and importing them must
         not leave generated caches inside them."""
