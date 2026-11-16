@@ -11,7 +11,9 @@
     "selection": "maximum validation Harrell C per fold",
     "split_family": "5fold (dataset_splits_summary/uni), i.e. the UNI v1 split set",
     "train_val_only": true,
-    "outer_test_evaluated": false
+    "outer_test_evaluated": false,
+    "loss_version": "legacy_broadcast_discrete_nll (pre-fix, cross-patient broadcast present)",
+    "loss_version_note": "The archived numbers were produced before the discrete_nll cross-patient broadcast was fixed on 2026-11-16. The arms compared against this archive now use the patientwise likelihood, so these numbers are NOT the same objective function and must not be read as a like-for-like comparison."
   },
   "folds": [
     {"fold": 0, "c_index": 0.7266, "c_index_ipcw": 0.5235, "ibs": 0.2086, "iauc": 0.7937},
@@ -24,6 +26,7 @@
     "These are the reference implementation's own archived numbers, not a re-run under this repository's code.",
     "Each fold value is a validation-selected peak, so it is optimistically biased in the same way as the arms compared against it.",
     "The archived IBS/IAUC were produced under the historical metric time grid; the arms compared here are also reported under that grid, but the grid itself was audited as time-misaligned and must not be read as a calibrated error score.",
+    "The archived numbers were trained under the legacy discrete_nll with a cross-patient broadcast; the arms compared here use the patientwise likelihood fixed on 2026-11-16. These are different objectives, so the archive is a reference point, not a like-for-like baseline.",
     "The reference implementation's own outer-test five-fold numbers are a different evaluation protocol and are not comparable to this table."
   ]
 }

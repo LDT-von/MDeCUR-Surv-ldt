@@ -24,6 +24,7 @@ import numpy as np
 import torch
 
 import comparison_5fold as runner
+from cancer_parity import DISCRETE_NLL_VERSION
 
 
 class FiveFoldComparisonTest(unittest.TestCase):
@@ -218,7 +219,23 @@ class FiveFoldComparisonTest(unittest.TestCase):
         self.assertIsNotNone(row['mean'])
         self.assertIsNotNone(row['std'])
         self.assertFalse(result['dct_reference']['re_run'])
-        self.assertEqual(len(result['dct_reference']['limits']), 4)
+        self.assertEqual(len(result['dct_reference']['limits']), 5)
+
+    def test_the_dct_archive_declares_its_older_likelihood_version(self):
+        """The archive must declare that it used a different objective.
+
+        The archived DCT numbers were produced before the discrete_nll
+        cross-patient broadcast was fixed.  The arms compared against them
+        now use the patientwise likelihood, so the archive has to say so,
+        otherwise a reader could take it for a like-for-like baseline.
+        """
+        from comparison_baselines import load_dct_reference
+        archive = load_dct_reference()
+        protocol = archive['protocol']
+        self.assertIn('loss_version', protocol)
+        self.assertNotEqual(protocol['loss_version'], DISCRETE_NLL_VERSION)
+        self.assertTrue(any('broadcast' in limit or 'patientwise' in limit
+                            for limit in archive['limits']))
 
     # ---------------------------------------------------------------- summary
     def _fake_report(self, model, fold, c_index):
