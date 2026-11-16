@@ -22,7 +22,7 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 | MoHD | **未找到** | — | 无 | — | — | — |
 
 **已验证**：`python -m pytest test_comparison_5fold.py test_comparison_camr.py test_comparison_fold0.py test_cancer_parity.py test_cancer_parity_bag.py` → **61 passed**（纯 CPU 合成数据）。
-全仓库套件 `python -m pytest -q` → **315 passed, 3 skipped**（哈希随机化开启状态下验证）。
+全仓库套件 `python -m pytest -q` → **334 passed, 3 skipped**（含并行会话新增的 patientwise v3 检查；哈希随机化开启状态下验证）。
 
 **未验证**：本会话**没有任何真实患者 WSI+UNI 提取、没有 CUDA 运行、没有临床效果证据**。合成检查通过不等于患者效果。
 
@@ -64,11 +64,22 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 运行时版本，写成不可变 JSON。`run` 会**重新构建**该计划并逐字段比对，任何输入、代码、
 协议或运行时变化都会让训练**拒绝启动**。这保证"分数差异只能来自模型本身"。
 
-### 2.3 采样确定性（2026-11-16 修正）
+### 2.3 采样确定性（2026-11-16 修正，已验证机制）
 
 补丁抽样种子过去由 `hash((seed, patient_id))` 导出。`PYTHONHASHSEED` **只在解释器启动前**
 才生效，运行时设置环境变量不会关闭哈希随机化，因此该抽样**在不同进程间会变化**，
-而旧守卫读的是运行时环境变量，给出的是**假保证**。这曾表现为测试套件的偶发失败。
+而旧守卫读的是运行时环境变量，给出的是**假保证**。
+
+已实测确认（修复前的代码）：
+
+```
+pinned   (PYTHONHASHSEED=0) : -2016794486298492901
+randomized #1               : -7081455908770224197
+randomized #2               : -6997960154261401299
+```
+
+随机化进程之间**每次都不同**，所以由 `hash()` 派生的计划字段不可能跨进程稳定：
+在 A 进程生成的计划会被 B 进程的 `run` 以 "Plan no longer matches" 拒绝。
 
 修正：抽样种子改由 SHA-256 摘要导出（`cancer_parity._stable_seed`），**不再依赖 Python 哈希
 状态**，跨进程、跨机器、跨 Python 版本稳定。计划中记录 `hash_seed_state`
@@ -76,6 +87,11 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 报告不再声称它未真正拥有的确定性。
 
 `PYTHONHASHSEED=0` 仍建议保留（shell 脚本已导出），但它现在只是额外保险，**不再是正确性的前提**。
+
+回归测试：`test_the_plan_carries_no_hash_derived_field` 与
+`test_the_plan_is_byte_identical_across_interpreter_hash_seeds`。
+这两项**已验证在修复前的代码上失败、在当前代码上通过**（`test_cancer_parity.py` 的
+跨进程抽样稳定性测试同样如此）。
 
 ---
 
