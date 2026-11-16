@@ -7,6 +7,33 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 
 ---
 
+## 0. 交接状态：本地已就绪，服务器待跑
+
+**这台 PC 上没有患者数据，跑了也没有用**——所以本轮全部工作止于"代码与协议就绪、
+合成检查通过"。五折对照必须在有真实数据的服务器上执行（§4）。
+
+| 项目 | 状态 |
+|---|---|
+| 协议层、四个适配器、两个基线、五折 runner | **已实现** |
+| 防泄漏边界（分箱/RNA 标准化/原型/ridge alpha 仅用训练行） | **已实现**，有测试 |
+| 计划锁定（`plan` 冻结输入/源码/协议，`run` 逐字段比对） | **已实现**，跨进程稳定性已验证 |
+| 上游四个 checkout | **21 个文件 SHA256 全部一致**，四个均 clean、无 `__pycache__` |
+| CPU 合成回归 | 对比子套件 **72 passed**；全仓库 **334 passed, 3 skipped** |
+| CUDA 运行 | **未做** |
+| 真实患者五折分数 | **未做**（C-index/IBS/iAUC 全部为空） |
+
+**接手的运行窗口需要先确认的**（本地无法核实）：
+
+1. 服务器上五折输入是否齐备：每折 `manifest.csv`、`survival_reference.csv`、
+   `genes.txt`、`combine_signatures.gmt`、DeReF `csv/signatures.csv`；
+2. 服务器 `papers/comparators/` 四个 checkout 是否与本仓同 commit（`verify_upstream()` 会校验）；
+3. 目标环境的 torch 版本与 CUDA 可用性。
+
+**必须用修正后的代码重训**：离散 NLL 的跨患者广播已于 2026-11-16 修正（§2.4）。
+历史单折/归档数字是在旧似然下取得的，**不能**与新五折结果并列。
+
+---
+
 ## 1. 当前状态总览
 
 | 方法 | 官方源码 | 上游 commit | 适配器 | 上游创新模块是否执行 | CPU 合成回归 | 真实患者训练 |
@@ -21,7 +48,7 @@ MurreNet 与 MoHD **没有已验证的官方源码**，因此不提供占位模�
 | MurreNet | **未找到** | — | 无 | — | — | — |
 | MoHD | **未找到** | — | 无 | — | — | — |
 
-**已验证**：`python -m pytest test_comparison_5fold.py test_comparison_camr.py test_comparison_fold0.py test_cancer_parity.py test_cancer_parity_bag.py` → **61 passed**（纯 CPU 合成数据）。
+**已验证**：`python -m pytest test_comparison_5fold.py test_comparison_camr.py test_comparison_fold0.py test_cancer_parity.py test_cancer_parity_bag.py test_discrete_nll_patientwise.py` → **72 passed**（纯 CPU 合成数据）。
 全仓库套件 `python -m pytest -q` → **334 passed, 3 skipped**（含并行会话新增的 patientwise v3 检查；哈希随机化开启状态下验证）。
 
 **未验证**：本会话**没有任何真实患者 WSI+UNI 提取、没有 CUDA 运行、没有临床效果证据**。合成检查通过不等于患者效果。
