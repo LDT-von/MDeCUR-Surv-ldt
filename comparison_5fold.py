@@ -477,6 +477,11 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cuda', smoke=False,
         write_new(destination/'report.json', result)
         _save_predictions(destination/'val_predictions_best.csv',
                           cohort.val_ids, best_survival)
+        # The last-epoch predictions are saved as well, so the merged table can
+        # rank both the validation-selected and the final checkpoint of every
+        # arm with one shared scoring call.
+        _save_predictions(destination/'val_predictions_last.csv',
+                          cohort.val_ids, last_survival)
         return result
     finally:
         for bag in list(cohort.train_bags)+list(cohort.val_bags):
