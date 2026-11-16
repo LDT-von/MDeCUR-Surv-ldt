@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Five-fold BLCA decoupling comparison: PIBD, CAMR, DeReF, DIMAF, DCT reference,
-# RNA-only ridge and WSI-only under one shared protocol.
+# Five-fold BLCA multimodal comparison: PIBD, CAMR, DeReF and DIMAF.
+# DCT numbers are an archived historical reference, never a training arm.
 #
 # The script is deliberately conservative:
 #   * it never touches an existing run directory, log, plan or summary;
@@ -24,7 +24,7 @@ BATCH_OUT="${COMPARISON_BATCH_OUT:-$RUN_PARENT/fivefold_comparison_$(date -u +%Y
 DEVICE="${COMPARISON_DEVICE:-cuda:0}"
 EPOCHS="${COMPARISON_EPOCHS:-30}"
 FOLDS="${COMPARISON_FOLDS:-0 1 2 3 4}"
-MODELS="${COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m rna_ridge wsi_only}"
+MODELS="${COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m}"
 DEREF_SIGNATURES="${COMPARISON_DEREF_SIGNATURES:-/data1/dataset_csv/signatures/deref_signatures.csv}"
 
 for input in manifest.csv survival_reference.csv genes.txt combine_signatures.gmt; do

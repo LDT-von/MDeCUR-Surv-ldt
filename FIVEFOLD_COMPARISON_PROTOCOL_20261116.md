@@ -1,5 +1,7 @@
 # 五折统一对比协议与运行手册（2026-11-16）
 
+> 2026-11-16 文件精简：当前仅保留 PIBD/CAMR/DeReF/DIMAF 四个多模态对照，RNA-only 与 WSI-only 已删除。驱动版本为 `fivefold_comparison_v2_multimodal_only`，须重新生成plan；下方历史单模态说明不再是运行入口。DCT仍只作独立标注的历史归档。当前模型目录以 [README.md](README.md) 为准。
+
 本文件记录 **PIBD / CAMR / DeReF / DIMAF** 四个有官方源码的方法，与 **RNA-only 岭回归**、
 **WSI-only** 两个单模态基线，在**同一 BLCA DSS 生存预测协议**下的适配、训练复现与分数比较方案。
 
@@ -133,7 +135,7 @@ randomized #2               : -6997960154261401299
 - 改变一位患者的删失标签，其他每位患者的损失与梯度**逐位相同**；
 - 一个批次的均值等于其单患者运行之均值。
 
-**对本五折协议的影响**：六个臂（PIBD/CAMR/DeReF/DIMAF/RNA-ridge/WSI-only）都调用
+**对本五折协议的影响**：四个多模态臂（PIBD/CAMR/DeReF/DIMAF/RNA-ridge/WSI-only）都调用
 同一个共享 `cancer_parity.discrete_nll`，因此**自动继承该修正**，无需逐臂改动。
 
 **但历史分数不能当作修正后似然的结果**：旧权重是在广播版似然下训练出来的，
@@ -219,7 +221,7 @@ python comparison_5fold.py run \
   --out runs/fold0/pibd_2m
 ```
 
-`--model` 取值：`pibd_2m`、`camr_2m`、`deref_2m`、`dimaf_2m`、`rna_ridge`、`wsi_only`。
+`--model` 取值：`pibd_2m`、`camr_2m`、`deref_2m`、`dimaf_2m`。
 
 冒烟检查用 `--smoke`（只跑 1 epoch）。**summary 明确拒绝 smoke 运行**，所以冒烟结果不会
 污染最终表格。
@@ -230,7 +232,7 @@ python comparison_5fold.py run \
 for F in 0 1 2 3 4; do
   python comparison_5fold.py plan --fold $F ... --out runs/plan_fold$F.json
   SHA=$(python -c "import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())" runs/plan_fold$F.json)
-  for M in pibd_2m camr_2m deref_2m dimaf_2m rna_ridge wsi_only; do
+  for M in pibd_2m camr_2m deref_2m dimaf_2m; do
     python comparison_5fold.py run --plan runs/plan_fold$F.json --plan-sha256 "$SHA" \
       --model $M --device cuda --out runs/fold$F/$M
   done
@@ -247,7 +249,7 @@ DCT 臂的历史运行由 `comparison_fold0.py` 产生（协议 `blca_fold0_full
 不能直接并列。
 
 **特别注意似然版本**：历史 DCT 归档数字是在广播版 `discrete_nll` 下取得的，
-而本协议六个臂现在用的是患者级似然（§2.4）。两者**不是同一个目标函数**，
+而本协议四个多模态臂现在用的是患者级似然（§2.4）。两者**不是同一个目标函数**，
 因此归档数字与新五折臂**不能直接并列**，只能作为"参考实现的另一版目标"标注。
 `summary` 仍会把 DCT 参考放在同一张表上，但必须保留该限制声明。
 

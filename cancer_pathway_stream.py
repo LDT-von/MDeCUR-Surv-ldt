@@ -21,7 +21,7 @@ from cancer_model import piecewise_nll
 from cancer_pathway import PathwayLocalSurvival, pathway_correlation_loss
 from cancer_rna import fit_rna_scaler, rna_noise_view, transform_rna
 from cancer_stream import _local_from_patients, _merge_moments, _validate_stream_cohort
-from model import DegenerateCorrelation, correlation_loss, stability_weighted_common
+from decur_losses import DegenerateCorrelation, correlation_loss, stability_weighted_common
 
 
 @dataclass(frozen=True)

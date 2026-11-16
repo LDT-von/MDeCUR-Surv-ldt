@@ -6,7 +6,7 @@ import torch
 from cancer_model import CancerDeCUR, piecewise_nll
 from cancer_auxiliary import patient_balanced_local_correlation
 from cancer_rna import fit_rna_scaler, transform_rna, rna_noise_view
-from model import correlation_loss, stability_weighted_common, DegenerateCorrelation
+from decur_losses import correlation_loss, stability_weighted_common, DegenerateCorrelation
 
 
 @dataclass(frozen=True)

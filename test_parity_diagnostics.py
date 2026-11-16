@@ -15,7 +15,6 @@ import torch
 
 import diagnose_parity_interaction as interaction
 import diagnose_parity_modalities as modalities
-import diagnose_rna_only_baseline as ridge
 from cancer_pathway import PathwayLocalSurvival
 
 
@@ -46,16 +45,6 @@ class ParityDiagnosticsTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         torch.set_num_threads(cls.previous_threads)
-
-    def test_dual_ridge_equals_primal_without_gene_gram(self):
-        g = np.random.default_rng(31)
-        x, v, y = g.normal(size=(7, 13)), g.normal(size=(4, 13)), g.normal(size=(7, 3))
-        for alpha in (.1, 100., 1e8):
-            expected = v @ np.linalg.solve(x.T @ x+alpha*np.eye(13), x.T @ y)
-            observed = ridge.dual_ridge_logits(x, y, v, alpha)
-            np.testing.assert_allclose(observed, expected, atol=1e-10, rtol=1e-10)
-        self.assertFalse(ridge.RIDGE_SEMANTICS['censoring_aware_training'])
-        self.assertIn('No survival NLL', ridge.RIDGE_SEMANTICS['nll_semantics'])
 
     def test_contributions_use_current_strength_and_patient_spans(self):
         base = torch.tensor([[2., 3.], [4., 8.]])
@@ -103,15 +92,15 @@ class ParityDiagnosticsTests(unittest.TestCase):
         np.testing.assert_array_equal(permutation, modalities.full_rna_derangement(60, 0))
 
     def test_nullable_metrics_and_output_overwrite_refusal(self):
-        self.assertEqual(ridge.metric_text(None), 'NA')
-        self.assertEqual(ridge.metric_text(float('nan')), 'NA')
-        self.assertEqual(ridge.metric_text(.75), '0.7500')
+        self.assertEqual(interaction.metric_text(None), 'NA')
+        self.assertEqual(interaction.metric_text(float('nan')), 'NA')
+        self.assertEqual(interaction.metric_text(.75), '0.7500')
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory)/'report.json'
-            ridge.write_result(destination, {'metric': None})
+            interaction.write_result(destination, {'metric': None})
             before = destination.read_bytes()
             with self.assertRaises(FileExistsError):
-                ridge.write_result(destination, {'changed': True})
+                interaction.write_result(destination, {'changed': True})
             self.assertEqual(destination.read_bytes(), before)
             args = SimpleNamespace(out=str(destination))
             with patch.object(interaction.torch, 'load') as load:

@@ -21,7 +21,18 @@ from cancer_pathway import PathwayLocalSurvival, read_pathway_mapping
 from cancer_pathway_stream import pathway_stream_forward
 from cancer_rna import transform_rna
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
-from diagnose_rna_only_baseline import metric_text, write_result
+
+
+def metric_text(value):
+    return 'NA' if value is None or not np.isfinite(value) else f'{value:.4f}'
+
+
+def write_result(destination, result):
+    path = Path(destination)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open('x', encoding='utf-8') as handle:
+        json.dump(result, handle, indent=2, allow_nan=False)
+        handle.write('\n')
 
 
 def file_sha256(path):

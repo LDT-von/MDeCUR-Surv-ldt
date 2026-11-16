@@ -10,7 +10,7 @@ import torch
 from cancer_metrics import ipcw_brier
 from cancer_model import survival_at
 from cancer_survival_diagnostics import METRIC_CONVENTIONS, horizon_risk_audit
-from model import stability_weighted_common
+from decur_losses import stability_weighted_common
 
 
 def inverse_rate(rates):

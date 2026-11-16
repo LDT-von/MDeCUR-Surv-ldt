@@ -67,8 +67,9 @@ class FiveFoldShellSafetyTest(unittest.TestCase):
     def test_every_arm_of_the_comparison_is_in_the_default_model_list(self):
         self.assertRegex(
             self.source,
-            r'COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m '
-            r'rna_ridge wsi_only')
+            r'COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m}')
+        self.assertNotIn('rna_ridge', self.source)
+        self.assertNotIn('wsi_only', self.source)
         self.assertIn('COMPARISON_FOLDS:-0 1 2 3 4', self.source)
 
     def test_the_script_never_starts_itself_or_loops_in_the_background(self):

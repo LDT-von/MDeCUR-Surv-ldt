@@ -1,5 +1,11 @@
 # 癌症代码仓库的会话接续
 
+**2026-11-16 目录精简＋MorphID 的发布状态（本批已提交并推送）**：目录精简、共享损失 `decur_losses.py`、新增 `cancer_morphid_model.py` / `morphid_probe.py`、以及三个诊断脚本的源码哈希清单修正（删除 `model.py` 后 `'model'` → `'decur_losses'`，修复 10 项失败）已作为一个提交推送到 origin/main；本地 HEAD／origin/main／`git ls-remote` 三方一致时以实时 Git 为准。**本批只有本地 CPU 生成数据证据，没有患者数据、服务器、CUDA 或临床效果结论**。下一批工作前先读 `MORPHID_SURVIVAL_PROTOCOL_20261116.md` 与父目录 `WORKSPACE_LAYOUT.md`；在服务器上真正跑起来之前，必须先重新生成 plan（清理改变了源码路径与哈希），不得复用清理前的源码哈希。
+
+**MorphID 当前授权路线（2026-11-16）**：用户明确选择非线性核岭＋预测残差，以及先冻结无标签形态/探针表示。新增独立 `cancer_morphid_model.py` 和 `morphid_probe.py`，仅head用生存标签；不继承旧相关辅助，不改原Dense。读取 `MORPHID_SURVIVAL_PROTOCOL_20261116.md`，不要恢复原稿的硬投影/线性S1/低R²即独立等错误判据。只有CPU生成数据机制证据，无患者或服务器执行授权。
+
+**2026-11-16 目录精简**：先读 `README.md` 与父目录 `WORKSPACE_LAYOUT.md`。当前完整主方法依赖 `cancer_dense_model.py` → `cancer_pathway.py` → `cancer_model.py`；共享损失在 `decur_losses.py`。早期 `model.py/pipeline.py/synthetic_study.py`、RNA-only/WSI-only 独立基线及旧ridge入口已删除。原型专用测试已移除，仍需的损失数学检查在 `test_decur_losses.py`。四种官方对照仍位于父目录 `papers/comparators/`。旧原型/单模态描述仅作历史；不恢复已删除入口，不因目录整理自动训练或推送。
+
 **2026-11-16 逐患者 V3 接续修复**：当前交接入口为 `PATIENTWISE_V3_HANDOFF_20261116.md`。实际 `train_pathway_parity.main()` 已接通 `_configure` 与冻结重放，默认保留11＋4辅助，保存 controls/预算/chunk/loss版本/输入哈希，共同尾批进入实际批次；比较汇总拒绝旧/缺失协议及NLL版本、不同schedule或主更新步数。最终CPU回归334 passed、3 skipped（本地缺DCT参考仓库），19份源码/测试/脚本已冻结。三臂各30轮的最终生成数据结果及发布状态以 `results/patientwise_release_validation_20261116.json` 和实时Git为准。本线程仅本地修复/验证/普通push与交接，只BLCA fold0；下方五折手册为其他历史任务的代码能力，不构成本次五折/患者执行授权。
 
 2026-11-16 五折对照复核与两处真实缺陷修正：先读 `FIVEFOLD_COMPARISON_PROTOCOL_20261116.md` 与 `COMPARATOR_5FOLD_PROTOCOL_20261116.md`。四个适配器（PIBD/DeReF/DIMAF/CAMR）直接调用上游未修改类，磁盘上游文件一个字节未动（21个文件SHA256核验通过，四个checkout均clean且无`__pycache__`）。本批修正三项真实缺陷：①`comparison_sources`每次调用重新执行上游文件，导致`isinstance`比较的是不同类对象 → 改为进程内缓存同一模块集；②**补丁抽样种子依赖`hash()`，而`PYTHONHASHSEED`只在解释器启动前生效**，运行时设环境变量是假保证 → 改SHA-256派生，不再依赖哈希状态，计划中记录`hash_seed_state`真实状态；③`FIVEFOLD`文档§3.1对CAMR的描述过时（现已是执行上游类，非重实现融合与生存头）。**更正**：我当时称"旧实现4轮内必现失败"证据不足——实际只捕获过1次失败且从未拿到traceback；真实机制已在修复前的worktree上直接测得：`hash()`在随机化进程间每次不同，而旧计划写有`hash((3001,'comparison_sampler_signature'))`，故跨进程计划必然不匹配。新增两项计划锁回归测试，已验证在修复前代码上失败、当前代码上通过。对比子套件（加 `test_discrete_nll_patientwise.py`）**72 passed**；全仓库套件`python -m pytest -q`→**334 passed, 3 skipped**（并行会话另报 335，视其最新提交为准）。**仍无真实患者训练、无CUDA、无临床效果证据**；MurreNet/MoHD无可验证官方源码，不提供占位。**本机没有患者数据，五折只能上服务器跑**；交接状态见 `FIVEFOLD_COMPARISON_PROTOCOL_20261116.md` §0 与 §4。
@@ -40,7 +46,7 @@
 
 如果只复制／打开本子仓库而父目录文件不存在，至少先读 `CANCER_MODEL_README.md`、`START_UNI_VIEWS.md`、`uni_views/README.md`、`uni_views/VALIDATION.json`。这些文件不包含完整的DenseTwins讨论；需要取得整个工作区交接，不能假装已看过。
 
-- 当前主模型是 `cancer_model.py: CancerDeCUR`；`model.py`还保留旧原型类，但其中辅助损失仍被新模型复用。
+- 当前主模型是 `cancer_dense_model.py: DensePathwaySurvival`；它依赖 `cancer_pathway.py` 和 `cancer_model.py` 的基础组件，共享损失来自 `decur_losses.py`。
 - 已实现：同patch图像双视图的冻结UNI v1提取，及`--path-views cached_uni`缓存接入。此模式保留全部patch，要求同次提取的reference＋A/B。
 - 2026-11-09 后续已实现逐patch局部相关目标（`--lambda-local`，要求cached_uni）、预测与辅助投影分离（`--prediction-space encoder`）、病理／RNA独立within系数。完整公式、论文及开关见 `LOCAL_GLOBAL_IMPLEMENTATION.md`。默认保留历史投影预测、局部项关闭。
 - 后续已实现 `--training-backend stream`，包括lazy H5、患者小批量、checkpointed patch分块与完整局部中心矩。见 `STREAM_TRAINING.md`。固定患者batch下分块与完整计算在容差内一致；患者minibatch会改变相关统计覆盖范围，不能称与原全队列目标完全等价。

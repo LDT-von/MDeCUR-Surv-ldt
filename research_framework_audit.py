@@ -16,7 +16,7 @@ from torch.nn import functional as F
 from cancer_pathway import PathwayLocalSurvival, pathway_correlation_loss
 from cancer_pathway_stream import _feature_scores, _pool_summary
 from cancer_stability_candidates import scaled_difference_weights
-from model import stability_weighted_common
+from decur_losses import stability_weighted_common
 
 
 def correlation(a, b, eps=1e-4):

@@ -36,7 +36,7 @@ BATCH_COUNT = 3
 REPEATS = (11, 22)
 SOURCE_MODULES = ('pathway_gradient_audit', 'cancer_pathway_stream', 'cancer_pathway',
                   'cancer_model', 'cancer_rna', 'cancer_stream', 'cancer_stream_data',
-                  'cancer_single_view', 'cancer_auxiliary', 'model', 'uni_views.core',
+                  'cancer_single_view', 'cancer_auxiliary', 'decur_losses', 'uni_views.core',
                   'diagnose_fixed_r_decomposition', 'diagnose_pathway_query_permutation')
 
 

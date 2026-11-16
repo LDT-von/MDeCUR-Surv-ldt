@@ -7,8 +7,7 @@ the comparison trustworthy:
 * the plan is reproducible and refuses any input change;
 * every arm trains, scores and reports under the shared protocol;
 * the outer test partition is never opened;
-* the train-only fitting boundary holds (bins, RNA scaler, prototypes, ridge
-  alpha are fitted on training rows only);
+* the train-only fitting boundary holds (bins, RNA scaler, prototypes are fitted on training rows only);
 * the summary refuses incomplete, duplicated or mismatched folds.
 """
 import csv
@@ -176,21 +175,20 @@ class FiveFoldComparisonTest(unittest.TestCase):
         path, sha = self.make_plan()
         np.save(self.root/'g0.npy', np.zeros(12, dtype=np.float32))
         with self.assertRaisesRegex(ValueError, 'no longer matches'):
-            runner.run_model(path, sha, 'wsi_only', self.root/'bad', device='cpu')
+            runner.run_model(path, sha, 'camr_2m', self.root/'bad', device='cpu')
         self.assertFalse((self.root/'bad').exists())
 
-    def test_rna_ridge_selects_alpha_on_training_rows(self):
-        path, sha = self.make_plan()
-        with redirect_stdout(io.StringIO()):
-            result = runner.run_model(path, sha, 'rna_ridge', self.root/'ridge',
-                                      device='cpu', smoke=True)
-        metadata = result['metadata']
-        self.assertEqual(metadata['selected_alpha'], result['history'][0]['selected_alpha'])
-        self.assertIn('training rows', metadata['selection'])
+    def test_retired_single_modality_arms_refused_before_input_loading(self):
+        for model_id in ('rna_ridge', 'wsi_only'):
+            with self.subTest(model=model_id):
+                with self.assertRaisesRegex(ValueError, 'Unknown model'):
+                    runner.run_model(self.root/'DO_NOT_OPEN.json', 'unread', model_id,
+                                     self.root/model_id, device='cpu')
+                self.assertFalse((self.root/model_id).exists())
 
     # ---------------------------------------------------------- DCT reference
     def test_dct_reference_is_loaded_and_never_rerun(self):
-        from comparison_baselines import load_dct_reference
+        from comparison_5fold import load_dct_reference
         archive = load_dct_reference()
         self.assertFalse(archive['re_run'])
         self.assertTrue(archive['official_model_reproduction'])
@@ -198,7 +196,7 @@ class FiveFoldComparisonTest(unittest.TestCase):
         self.assertTrue(all(record['c_index'] is not None for record in archive['folds']))
 
     def test_dct_reference_rejects_an_incomplete_archive(self):
-        from comparison_baselines import load_dct_reference
+        from comparison_5fold import load_dct_reference
         partial = self.root/'partial_archive.json'
         partial.write_text(json.dumps({'folds': [{'fold': 0, 'c_index': .7}]}),
                            encoding='utf-8')
@@ -206,8 +204,8 @@ class FiveFoldComparisonTest(unittest.TestCase):
             load_dct_reference(partial)
 
     def test_summary_places_the_dct_reference_on_the_same_table(self):
-        from comparison_baselines import DCT_REFERENCE_ARCHIVE
-        runs = [self._fake_report('wsi_only', fold, .60) for fold in range(5)]
+        from comparison_5fold import DCT_REFERENCE_ARCHIVE
+        runs = [self._fake_report('camr_2m', fold, .60) for fold in range(5)]
         without = runner.summarize(runs, self.root/'summary_without_dct.json')
         self.assertNotIn('dct_reference', without['models'])
         result = runner.summarize(runs, self.root/'summary_with_dct.json',
@@ -229,7 +227,7 @@ class FiveFoldComparisonTest(unittest.TestCase):
         now use the patientwise likelihood, so the archive has to say so,
         otherwise a reader could take it for a like-for-like baseline.
         """
-        from comparison_baselines import load_dct_reference
+        from comparison_5fold import load_dct_reference
         archive = load_dct_reference()
         protocol = archive['protocol']
         self.assertIn('loss_version', protocol)
@@ -254,7 +252,7 @@ class FiveFoldComparisonTest(unittest.TestCase):
     def test_summary_reports_mean_and_std_over_five_folds(self):
         runs = []
         for fold in range(5):
-            runs.append(self._fake_report('wsi_only', fold, .60 + .01*fold))
+            runs.append(self._fake_report('camr_2m', fold, .60 + .01*fold))
         result = runner.summarize(runs, self.root/'summary.json')
         row = [r for r in result['rows'] if r['metric'] == 'c_index'][0]
         self.assertEqual(row['folds'], [0, 1, 2, 3, 4])
@@ -263,18 +261,18 @@ class FiveFoldComparisonTest(unittest.TestCase):
         self.assertEqual(len(row['per_fold']), 5)
 
     def test_summary_refuses_incomplete_and_duplicate_folds(self):
-        runs = [self._fake_report('wsi_only', fold, .6) for fold in range(4)]
+        runs = [self._fake_report('camr_2m', fold, .6) for fold in range(4)]
         with self.assertRaisesRegex(ValueError, 'does not cover folds'):
             runner.summarize(runs, self.root/'partial.json')
-        runs = [self._fake_report('wsi_only', fold, .6) for fold in range(5)]
-        runs.append(self._fake_report('wsi_only', 2, .6))
+        runs = [self._fake_report('camr_2m', fold, .6) for fold in range(5)]
+        runs.append(self._fake_report('camr_2m', 2, .6))
         with self.assertRaisesRegex(ValueError, 'Duplicate fold'):
             runner.summarize(runs, self.root/'dup.json')
 
     def test_summary_refuses_smoke_runs(self):
         runs = []
         for fold in range(5):
-            directory = self._fake_report('wsi_only', fold, .6)
+            directory = self._fake_report('camr_2m', fold, .6)
             report = json.loads((directory/'report.json').read_text(encoding='utf-8'))
             report['smoke_only'] = True
             (directory/'report.json').write_text(json.dumps(report), encoding='utf-8')

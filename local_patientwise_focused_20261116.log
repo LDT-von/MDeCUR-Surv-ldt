@@ -1,0 +1,96 @@
+test_changing_one_censor_label_cannot_change_another_patient_gradient (test_discrete_nll_patientwise.PatientwiseDiscreteNLLTest) ... ok
+test_invalid_labels_censoring_and_parameters_are_rejected (test_discrete_nll_patientwise.PatientwiseDiscreteNLLTest) ... ok
+test_mixed_censoring_matches_hand_calculation_and_shape (test_discrete_nll_patientwise.PatientwiseDiscreteNLLTest) ... ok
+test_partition_permutation_and_vector_column_invariance (test_discrete_nll_patientwise.PatientwiseDiscreteNLLTest) ... ok
+test_patient_event_and_censor_gradients_have_opposite_correct_signs (test_discrete_nll_patientwise.PatientwiseDiscreteNLLTest) ... ok
+test_single_patient_loop_matches_values_and_all_gradients (test_discrete_nll_patientwise.PatientwiseDiscreteNLLTest) ... ok
+test_censored_training_rows_are_excluded_from_the_edges (test_cancer_parity.BinEdgeTest) ... ok
+test_edges_are_train_only_quantiles_with_infinite_outer_edges (test_cancer_parity.BinEdgeTest) ... ok
+test_labels_cover_every_patient (test_cancer_parity.BinEdgeTest) ... ok
+test_too_few_uncensored_rows_is_rejected (test_cancer_parity.BinEdgeTest) ... ok
+test_alpha_zero_equals_the_plain_negative_log_likelihood (test_cancer_parity.DiscreteLikelihoodTest) ... ok
+test_censored_patients_contribute_only_the_survival_term (test_cancer_parity.DiscreteLikelihoodTest) ... ok
+test_shapes_are_validated (test_cancer_parity.DiscreteLikelihoodTest) ... ok
+test_survival_is_the_cumulative_hazard_product (test_cancer_parity.DiscreteLikelihoodTest) ... ok
+test_local_and_sksurv_c_index_agree (test_cancer_parity.ParityMetricTest) ... D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+ok
+test_metrics_are_reported_with_the_reference_conventions (test_cancer_parity.ParityMetricTest) ... D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+ok
+test_eval_rows_are_evenly_spaced (test_cancer_parity.PatchBudgetTest) ... ok
+test_invalid_arguments_are_rejected (test_cancer_parity.PatchBudgetTest) ... ok
+test_short_patient_reports_padding (test_cancer_parity.PatchBudgetTest) ... ok
+test_train_draw_depends_on_the_patient (test_cancer_parity.PatchBudgetTest) ... ok
+test_train_draw_is_reproducible (test_cancer_parity.PatchBudgetTest) ... ok
+test_train_rows_are_sorted_and_distinct (test_cancer_parity.PatchBudgetTest) ... ok
+test_grid_mixes_the_outcome_range_with_the_inner_edges (test_cancer_parity.RiskAndGridTest) ... ok
+test_grid_requires_matching_columns (test_cancer_parity.RiskAndGridTest) ... ok
+test_risk_is_the_negative_survival_sum (test_cancer_parity.RiskAndGridTest) ... ok
+test_blocks_cover_the_whole_budget (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_eval_rows_are_evenly_spaced_over_the_concatenated_bag (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_fully_zero_control_is_chunk_invariant (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_invalid_arguments_are_rejected (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_multi_slide_rows_are_resolved_to_the_right_slide (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_padding_only_chunks_have_exact_block_lengths (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_resample_changes_the_training_rows (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_short_bag_is_zero_padded_to_the_budget (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_the_source_bag_is_never_mutated (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_train_rows_are_a_subset_without_replacement (test_cancer_parity_bag.BudgetedBagTest) ... ok
+test_both_models_train_on_identical_sampling_and_save_best_last (test_comparison_fold0.Fold0ComparisonTest) ... D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+D:\python\lib\site-packages\sksurv\metrics.py:783: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  ibs_value = np.trapz(brier_scores, times) / (times[-1] - times[0])
+D:\python\lib\site-packages\sksurv\metrics.py:513: DeprecationWarning: `trapz` is deprecated. Use `trapezoid` instead, or one of the numerical integration functions in `scipy.integrate`.
+  scores[i] = np.trapz(tp_no_ties, fp_no_ties)
+ok
+test_cli_plan_and_separate_process_run_share_hash_seed (test_comparison_fold0.Fold0ComparisonTest) ... ok
+test_input_changes_and_unavailable_models_refused (test_comparison_fold0.Fold0ComparisonTest) ... ok
+test_plan_uses_completed_reference_and_exact_train_bins (test_comparison_fold0.Fold0ComparisonTest) ... ok
+test_report_mismatch_and_reference_label_mismatch_refused (test_comparison_fold0.Fold0ComparisonTest) ... FAIL
+test_second_training_load_must_still_match_locked_plan (test_comparison_fold0.Fold0ComparisonTest) ... ok
+test_summary_reports_both_selections_and_does_not_choose_per_metric_peak (test_comparison_fold0.Fold0ComparisonTest) ... ok
+test_test_rows_rejected_before_opening_missing_feature (test_comparison_fold0.Fold0ComparisonTest) ... ok
+
+======================================================================
+FAIL: test_report_mismatch_and_reference_label_mismatch_refused (test_comparison_fold0.Fold0ComparisonTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\����\Desktop\DeCUR-main\Conditional_DeCUR_Surv\test_comparison_fold0.py", line 150, in test_report_mismatch_and_reference_label_mismatch_refused
+    with self.assertRaisesRegex(ValueError, 'labels differ'):
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 43 tests in 50.675s
+
+FAILED (failures=1)

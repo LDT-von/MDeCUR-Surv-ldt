@@ -1,5 +1,7 @@
 # 五折解耦方法对照协议（2026-11-16）
 
+> 2026-11-16 文件精简：当前仅保留 PIBD/CAMR/DeReF/DIMAF 四个多模态对照，RNA-only 与 WSI-only 已删除。驱动版本为 `fivefold_comparison_v2_multimodal_only`，须重新生成plan；下方历史单模态说明不再是运行入口。DCT仍只作独立标注的历史归档。当前模型目录以 [README.md](README.md) 为准。
+
 本文件说明 **PIBD / CAMR / DeReF / DIMAF** 四个解耦方法在 **BLCA 生存预测**上
 与 **DCT 参考、RNA-only 岭回归、WSI-only** 的五折对照：源码拉取、协议对齐、
 模型适配、训练复现、分数比较的完整做法，以及**防泄漏边界**和**结果解读限制**。
@@ -48,7 +50,7 @@
 
 ---
 
-## 2. 协议对齐（一个协议对象，六个臂）
+## 2. 协议对齐（一个协议对象，四个多模态臂）
 
 所有臂共用 `comparison_protocol.py` + `comparison_5fold.py`：
 

@@ -1,0 +1,180 @@
+{
+  "audit_version": "morphid_frozen_probe_known_answers_v1",
+  "scope": "CPU generated mathematical mechanism audits only; no patient/survival training or prognosis claim.",
+  "status": "passed",
+  "seed": 20261116,
+  "threads": 1,
+  "source_sha256": {
+    "morphid_probe.py": "668e4f43e862b869400fda9758f1efd511cf8f1c36b08284657ea4355983f409",
+    "scripts/check_morphid_synthetic.py": "4ee5393c52ad4ab211266fce7b46e1326939d72adfccf41afd970684317d59af"
+  },
+  "sources_unchanged_during_audit": true,
+  "runtime": {
+    "python": "3.10.11",
+    "numpy": "2.2.6",
+    "torch": "2.6.0+cu124",
+    "device": "cpu"
+  },
+  "cases": [
+    {
+      "scenario": "S1_nonlinear_conditional_mean",
+      "truth": "p=h^2-4/3, h uniform[-2,2]; deterministic dependence with zero population linear covariance.",
+      "generated_patients": {
+        "train": 160,
+        "fresh": 2048
+      },
+      "data_sha256": "86c5f33a1ae1e3f5422f58ba35699f7bf23bb92adbf53716f53f647d5ea41f44",
+      "fit": {
+        "settings": {
+          "alpha": 0.001,
+          "bandwidth": null,
+          "pca_dim": null
+        },
+        "folds": 4,
+        "heldout_fold_sizes": [
+          40,
+          40,
+          40,
+          40
+        ],
+        "oof_r2": 0.9957079930415759,
+        "in_sample_r2": 0.9962607790572391,
+        "fresh_prediction_rule": "mean of the four held-out-fold models",
+        "finite_sample_caution": "OOF rows each use one held-out model; new rows use the fold ensemble."
+      },
+      "training_linear_correlation": 9.891210997892747e-17,
+      "linear_fresh_r2": -0.0001413487750776543,
+      "nonlinear_fresh_r2": 0.9963917419587826,
+      "checks": {
+        "symmetric_training_linear_correlation_zero": true,
+        "linear_fresh_r2_below_0p05": true,
+        "nonlinear_oof_r2_above_0p80": true,
+        "nonlinear_fresh_r2_above_0p90": true
+      },
+      "interpretation": "A nonlinear predictor can find this conditional-mean relation; a linear probe cannot.",
+      "passed": true
+    },
+    {
+      "scenario": "S2_shared_and_unpredictable_signal_overlap",
+      "truth": "p=h+epsilon, epsilon independent; both contributions occupy the same scalar coordinate.",
+      "generated_patients": {
+        "train": 256,
+        "fresh": 2048
+      },
+      "data_sha256": "7d91176208d49769a3e26d0a9df0566e269b78d3375a572ad471b57610cd340d",
+      "fit": {
+        "settings": {
+          "alpha": 0.01,
+          "bandwidth": null,
+          "pca_dim": null
+        },
+        "folds": 4,
+        "heldout_fold_sizes": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "oof_r2": 0.6892052751032448,
+        "in_sample_r2": 0.7009286325640448,
+        "fresh_prediction_rule": "mean of the four held-out-fold models",
+        "finite_sample_caution": "OOF rows each use one held-out model; new rows use the fold ensemble."
+      },
+      "residual_to_true_epsilon_correlation": 0.9828755228866533,
+      "residual_variance": 0.5106083668213959,
+      "true_epsilon_variance": 0.4942729091780774,
+      "hard_span_residual_variance": 0.0,
+      "checks": {
+        "prediction_residual_preserves_epsilon_corr_above_0p85": true,
+        "prediction_residual_variance_above_0p25": true,
+        "hard_span_projection_erases_everything": true
+      },
+      "interpretation": "Subtract the predicted value, not the entire feature direction that contains it.",
+      "passed": true
+    },
+    {
+      "scenario": "S3_high_dimensional_independent_noise",
+      "truth": "RNA and pathology targets are generated independently; the weak ridge is deliberately allowed to overfit.",
+      "generated_patients": {
+        "train": 64,
+        "fresh": 1024
+      },
+      "rna_dimensions": 96,
+      "data_sha256": "a336dccb4d67998e753f38f6ba4b9fba76a869df6f6ac3c7c0e2f208dd7a0d3b",
+      "fit": {
+        "settings": {
+          "alpha": 1e-10,
+          "bandwidth": null,
+          "pca_dim": null
+        },
+        "folds": 4,
+        "heldout_fold_sizes": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "oof_r2": -0.6812080648473626,
+        "in_sample_r2": 0.9999999999999991,
+        "fresh_prediction_rule": "mean of the four held-out-fold models",
+        "finite_sample_caution": "OOF rows each use one held-out model; new rows use the fold ensemble."
+      },
+      "fresh_r2": -0.28992514507321343,
+      "known_negative_r2": -9.0,
+      "checks": {
+        "kernel_can_fit_training_noise": true,
+        "oof_does_not_support_predictability": true,
+        "fresh_test_does_not_support_predictability": true,
+        "negative_r2_is_preserved": true
+      },
+      "interpretation": "In-sample fit is not an identification criterion. Low held-out R2 is not a proof of independence.",
+      "passed": true
+    },
+    {
+      "scenario": "S4_conditional_variance_limit",
+      "truth": "p=h*epsilon, E[epsilon]=0; E[p|h]=0 but Var(p|h)=h^2.",
+      "generated_patients": {
+        "train": 160,
+        "fresh": 4096
+      },
+      "data_sha256": "80767f3e775f8cf6eb224295d50bd8ea11087cc0d785b8c3e6e747536168131e",
+      "fit": {
+        "settings": {
+          "alpha": 0.01,
+          "bandwidth": null,
+          "pca_dim": null
+        },
+        "folds": 4,
+        "heldout_fold_sizes": [
+          40,
+          40,
+          40,
+          40
+        ],
+        "oof_r2": -0.07553901574975308,
+        "in_sample_r2": 2.220446049250313e-16,
+        "fresh_prediction_rule": "mean of the four held-out-fold models",
+        "finite_sample_caution": "OOF rows each use one held-out model; new rows use the fold ensemble."
+      },
+      "full_fit_fresh_r2": -0.0005382762322485579,
+      "fold_ensemble_fresh_r2": -0.000779590461313262,
+      "squared_residual_to_squared_rna_correlation": 0.42850699869508485,
+      "independence_established": false,
+      "checks": {
+        "full_fit_conditional_mean_near_zero": true,
+        "mean_probe_fresh_r2_near_zero": true,
+        "residual_variance_still_depends_on_rna": true
+      },
+      "interpretation": "The mean probe does not identify conditional-variance dependence. This is an explicit limitation, not a claimed detection mechanism.",
+      "passed": true
+    }
+  ],
+  "independence_established": false,
+  "limits": [
+    "Frozen probe inputs are supplied as generated coordinates, not patient RNA or image features.",
+    "No threshold on R2 is used to label a residual biologically unique.",
+    "Fresh generated samples validate these constructed cases, not patient generalization.",
+    "The conditional-variance example demonstrates a mean-probe limitation.",
+    "Cross-fit training rows and new-row fold ensembles have different finite-sample prediction rules."
+  ]
+}

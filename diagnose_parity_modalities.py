@@ -11,8 +11,8 @@ import numpy as np
 import torch
 
 from cancer_pathway_stream import pathway_stream_forward
-from diagnose_parity_interaction import common_parser, loaded_legacy_inputs, score_output
-from diagnose_rna_only_baseline import metric_text, write_result
+from diagnose_parity_interaction import (common_parser, loaded_legacy_inputs, score_output,
+                                         metric_text, write_result)
 
 
 class ZeroInputBag:

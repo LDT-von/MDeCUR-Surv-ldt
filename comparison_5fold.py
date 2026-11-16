@@ -1,9 +1,9 @@
 """Five-fold BLCA comparison runner: plan, run and summary.
 
-Every arm (PIBD, CAMR, DeReF, DIMAF, DCT reference, RNA-only ridge,
-WSI-only) is trained and scored through this one driver so that a difference
-in the reported numbers can only come from the model, never from a different
-data preparation, a different binning, or a different metric call.
+The four multimodal adapters (PIBD, CAMR, DeReF and DIMAF) share this
+driver's data preparation, binning and metric calls. Archived DCT numbers
+remain a separately labelled historical reference, never a re-run. The
+retired RNA-only and WSI-only baselines are no longer runnable arms.
 
 The driver has three commands:
 
@@ -21,7 +21,7 @@ The driver has three commands:
 
 Leakage boundary
 ----------------
-* Bin edges, RNA standardization, DIMAF prototypes and the ridge alpha are
+* Bin edges, RNA standardization and DIMAF prototypes are
   fitted on the training rows of the current fold only.
 * The outer test partition is rejected before any file is opened.
 * The manifest is authoritative and is never rewritten.
@@ -53,16 +53,15 @@ from comparison_protocol import (ALPHA_SURV, ENDPOINT, FOLDS, N_BINS, NUM_PATCHE
                                  logits_to_survival, sha256_file)
 
 
-PROTOCOL_VERSION = 'fivefold_comparison_v1'
-SOURCE_MODULES = ('comparison_sources', 'comparison_protocol', 'comparison_camr',
+PROTOCOL_VERSION = 'fivefold_comparison_v2_multimodal_only'
+SOURCE_MODULES = ('comparison_5fold', 'comparison_sources', 'comparison_protocol', 'comparison_camr',
                   'comparison_pibd', 'comparison_deref', 'comparison_dimaf',
-                  'comparison_baselines', 'cancer_parity', 'cancer_parity_audit',
+                  'decur_losses', 'cancer_parity', 'cancer_parity_audit',
                   'cancer_parity_bag', 'cancer_pathway', 'cancer_rna',
                   'cancer_stream_data', 'cancer_single_view', 'cancer_metrics')
 
 MULTIMODAL_MODELS = ('pibd_2m', 'camr_2m', 'deref_2m', 'dimaf_2m')
-BASELINE_MODELS = ('rna_ridge', 'wsi_only')
-MODELS = MULTIMODAL_MODELS + BASELINE_MODELS
+MODELS = MULTIMODAL_MODELS
 DEFAULT_MODEL = 'mdecur_dense'
 
 SETTINGS = dict(
@@ -217,7 +216,6 @@ def make_plan(fold, manifest, survival_reference, genes_path, gmt_path,
                 'bin_edges': 'train uncensored times only',
                 'rna_scaler': 'train rows only',
                 'dimaf_prototypes': 'train-fold patch features only',
-                'ridge_alpha': 'train rows only',
                 'validation_rows': 'scored only',
                 'outer_test': 'never opened',
             },
@@ -265,14 +263,6 @@ def build_model(model_id, plan, cohort, gene_names, pathway, deref, device):
         from comparison_camr import CAMR2M
         model = CAMR2M(path_dim, rna_dim, bins=N_BINS)
         return model.to(device), model.adaptation_metadata()
-    if model_id == 'wsi_only':
-        from comparison_baselines import WSIOnlyMIL
-        model = WSIOnlyMIL(path_dim=path_dim, bins=N_BINS)
-        return model.to(device), model.adaptation_metadata()
-    if model_id == 'rna_ridge':
-        from comparison_baselines import RNAOnlyRidge
-        model = RNAOnlyRidge(bins=N_BINS)
-        return model, model.adaptation_metadata()
     raise ValueError(f'Unknown model {model_id}')
 
 
@@ -310,13 +300,9 @@ def forward_arm(model_id, model, bags, rna, indices, device, labels=None, censor
     ``rna`` already contains exactly the rows of ``indices``; ``bags`` is the
     full bag list and ``indices`` selects the matching patients.
     """
-    if model_id == 'rna_ridge':
-        return {'logits': torch.as_tensor(model.predict_logits(rna))}
     patches = _batch_patches(bags, indices)
     if model_id == 'pibd_2m':
         return model(patches, rna, labels, censorship)
-    if model_id == 'wsi_only':
-        return model(patches)
     if model_id in ('camr_2m', 'deref_2m', 'dimaf_2m'):
         return model(patches, rna)
     raise ValueError(f'Unknown model {model_id}')
@@ -391,94 +377,83 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cuda', smoke=False,
         val_bags = [BudgetedPatientBag(b, NUM_PATCHES, 'eval', SETTINGS['seed'])
                     for b in cohort.val_bags]
 
-        if model_id == 'rna_ridge':
-            model.fit(cohort.train_rna, cohort.train_labels, cohort.train_event)
-            metadata = model.adaptation_metadata()
-            metrics, survival, logits = evaluate_arm(model_id, model, cohort, torch_device,
-                                                     val_bags)
-            history.append({'epoch': 0, 'closed_form_fit': True,
-                            'selected_alpha': model.selected_alpha,
-                            'train_nll': model.train_loss, **metrics})
-            best_metrics, best_survival, best_epoch = metrics, survival, 0
-            last_metrics, last_survival = metrics, survival
-        else:
-            main_parameters = (list(model.main_parameters())
-                               if hasattr(model, 'main_parameters') else list(model.parameters()))
-            discriminator_parameters = (list(model.discriminator_parameters())
-                                        if hasattr(model, 'discriminator_parameters') else [])
-            parameters = main_parameters+discriminator_parameters
-            optimizer = torch.optim.AdamW(main_parameters, lr=SETTINGS['lr'],
-                                          weight_decay=SETTINGS['weight_decay'])
-            discriminator_optimizer = (torch.optim.AdamW(discriminator_parameters,
-                                                          lr=SETTINGS['lr'],
-                                                          weight_decay=SETTINGS['weight_decay'])
-                                       if discriminator_parameters else None)
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=count_epochs)
-            generator = torch.Generator().manual_seed(SETTINGS['seed'])
-            for epoch in range(1, count_epochs+1):
-                model.train()
-                for bag in train_bags:
-                    bag.resample(3000+epoch)
-                order = torch.randperm(len(train_bags), generator=generator)
-                losses, n = {}, 0
-                for start in range(0, len(order), SETTINGS['patient_batch_size']):
-                    indices = order[start:start+SETTINGS['patient_batch_size']].tolist()
-                    selected = torch.as_tensor(indices)
-                    rna_batch = cohort.train_rna[selected].to(torch_device)
-                    label_batch = labels[selected].to(torch_device)
-                    censor_batch = (1-events[selected]).to(torch_device)
-                    output = forward_arm(model_id, model, train_bags, rna_batch,
-                                         indices, torch_device, label_batch, censor_batch)
-                    survival_loss = discrete_nll(output['logits'].double(), label_batch,
-                                                 censor_batch.double(), alpha=ALPHA_SURV)
-                    loss = survival_loss
-                    components = {'survival': survival_loss}
-                    if discriminator_optimizer is not None:
-                        # The D-only step runs first and detaches the encoders, so
-                        # the adversarial term cannot move the shared encoders.
-                        discriminator_optimizer.zero_grad(set_to_none=True)
-                        discriminator_loss = model.discriminator_loss(output)
-                        if not torch.isfinite(discriminator_loss):
-                            raise FloatingPointError('Nonfinite discriminator objective')
-                        discriminator_loss.backward()
-                        if any(p.grad is not None and not torch.isfinite(p.grad).all()
-                               for p in discriminator_parameters):
-                            raise FloatingPointError('Nonfinite discriminator gradient')
-                        discriminator_optimizer.step()
-                        discriminator_optimizer.zero_grad(set_to_none=True)
-                        components['discriminator'] = discriminator_loss
-                    auxiliary = model.auxiliary_losses(output) if hasattr(model, 'auxiliary_losses') else {}
-                    for name, value in auxiliary.items():
-                        weight = getattr(model, 'auxiliary_weights', {}).get(name, 1.0)
-                        loss = loss + weight*value
-                        components[name] = value
-                    if not torch.isfinite(loss):
-                        raise FloatingPointError('Nonfinite training objective')
-                    optimizer.zero_grad(set_to_none=True)
-                    loss.backward()
+        main_parameters = (list(model.main_parameters())
+                           if hasattr(model, 'main_parameters') else list(model.parameters()))
+        discriminator_parameters = (list(model.discriminator_parameters())
+                                    if hasattr(model, 'discriminator_parameters') else [])
+        parameters = main_parameters+discriminator_parameters
+        optimizer = torch.optim.AdamW(main_parameters, lr=SETTINGS['lr'],
+                                      weight_decay=SETTINGS['weight_decay'])
+        discriminator_optimizer = (torch.optim.AdamW(discriminator_parameters,
+                                                      lr=SETTINGS['lr'],
+                                                      weight_decay=SETTINGS['weight_decay'])
+                                   if discriminator_parameters else None)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=count_epochs)
+        generator = torch.Generator().manual_seed(SETTINGS['seed'])
+        for epoch in range(1, count_epochs+1):
+            model.train()
+            for bag in train_bags:
+                bag.resample(3000+epoch)
+            order = torch.randperm(len(train_bags), generator=generator)
+            losses, n = {}, 0
+            for start in range(0, len(order), SETTINGS['patient_batch_size']):
+                indices = order[start:start+SETTINGS['patient_batch_size']].tolist()
+                selected = torch.as_tensor(indices)
+                rna_batch = cohort.train_rna[selected].to(torch_device)
+                label_batch = labels[selected].to(torch_device)
+                censor_batch = (1-events[selected]).to(torch_device)
+                output = forward_arm(model_id, model, train_bags, rna_batch,
+                                     indices, torch_device, label_batch, censor_batch)
+                survival_loss = discrete_nll(output['logits'].double(), label_batch,
+                                             censor_batch.double(), alpha=ALPHA_SURV)
+                loss = survival_loss
+                components = {'survival': survival_loss}
+                if discriminator_optimizer is not None:
+                    # The D-only step runs first and detaches the encoders, so
+                    # the adversarial term cannot move the shared encoders.
+                    discriminator_optimizer.zero_grad(set_to_none=True)
+                    discriminator_loss = model.discriminator_loss(output)
+                    if not torch.isfinite(discriminator_loss):
+                        raise FloatingPointError('Nonfinite discriminator objective')
+                    discriminator_loss.backward()
                     if any(p.grad is not None and not torch.isfinite(p.grad).all()
-                           for p in main_parameters):
-                        raise FloatingPointError('Nonfinite parameter gradient')
-                    optimizer.step()
-                    for name, value in components.items():
-                        losses[name] = losses.get(name, 0.)+len(indices)*float(
-                            value.detach() if torch.is_tensor(value) else value)
-                    n += len(indices)
-                scheduler.step()
-                metrics, survival, _ = evaluate_arm(model_id, model, cohort,
-                                                    torch_device, val_bags)
-                history.append({'epoch': epoch,
-                                'train_terms': {k: v/n for k, v in losses.items()},
-                                'learning_rate_after_step': scheduler.get_last_lr()[0],
-                                **metrics})
-                print(json.dumps({'fold': plan['fold'], 'model': model_id,
-                                  'epoch': epoch, 'c_index': metrics['c_index'],
-                                  'ibs': metrics['ibs'], 'iauc': metrics['iauc']},
-                                 allow_nan=False), flush=True)
-                if best_metrics is None or metrics['c_index'] > best_metrics['c_index']:
-                    best_metrics, best_survival, best_epoch = metrics, survival.copy(), epoch
-                last_metrics, last_survival = metrics, survival
+                           for p in discriminator_parameters):
+                        raise FloatingPointError('Nonfinite discriminator gradient')
+                    discriminator_optimizer.step()
+                    discriminator_optimizer.zero_grad(set_to_none=True)
+                    components['discriminator'] = discriminator_loss
+                auxiliary = model.auxiliary_losses(output) if hasattr(model, 'auxiliary_losses') else {}
+                for name, value in auxiliary.items():
+                    weight = getattr(model, 'auxiliary_weights', {}).get(name, 1.0)
+                    loss = loss + weight*value
+                    components[name] = value
+                if not torch.isfinite(loss):
+                    raise FloatingPointError('Nonfinite training objective')
+                optimizer.zero_grad(set_to_none=True)
+                loss.backward()
+                if any(p.grad is not None and not torch.isfinite(p.grad).all()
+                       for p in main_parameters):
+                    raise FloatingPointError('Nonfinite parameter gradient')
+                optimizer.step()
+                for name, value in components.items():
+                    losses[name] = losses.get(name, 0.)+len(indices)*float(
+                        value.detach() if torch.is_tensor(value) else value)
+                n += len(indices)
+            scheduler.step()
+            metrics, survival, _ = evaluate_arm(model_id, model, cohort,
+                                                torch_device, val_bags)
+            history.append({'epoch': epoch,
+                            'train_terms': {k: v/n for k, v in losses.items()},
+                            'learning_rate_after_step': scheduler.get_last_lr()[0],
+                            **metrics})
+            print(json.dumps({'fold': plan['fold'], 'model': model_id,
+                              'epoch': epoch, 'c_index': metrics['c_index'],
+                              'ibs': metrics['ibs'], 'iauc': metrics['iauc']},
+                             allow_nan=False), flush=True)
+            if best_metrics is None or metrics['c_index'] > best_metrics['c_index']:
+                best_metrics, best_survival, best_epoch = metrics, survival.copy(), epoch
+            last_metrics, last_survival = metrics, survival
 
         result = {
             'protocol': PROTOCOL, 'protocol_version': PROTOCOL_VERSION,
@@ -522,6 +497,48 @@ def _save_predictions(path, ids, survival):
 
 
 # -------------------------------------------------------------------- summary
+
+DCT_REFERENCE_ARCHIVE = Path(__file__).resolve().parent / 'reference' / 'dct_5fold_archive.json'
+
+
+def load_dct_reference(path=None):
+    """Load the archived DCT five-fold reference numbers.
+
+    The reference implementation is not re-run here.  Its numbers are read
+    from a committed archive so that the summary can place every arm on the
+    same table, and they are aggregated with the same mean/std rule.
+
+    Returns a dict with the per-fold records and a provenance block.  The
+    loader refuses an archive that does not cover exactly the five protocol
+    folds, so a partial archive can never masquerade as a complete one.
+    """
+    from comparison_protocol import FOLDS
+
+    target = Path(path) if path else DCT_REFERENCE_ARCHIVE
+    if not target.is_file():
+        raise FileNotFoundError(f'Missing DCT reference archive: {target}')
+    payload = json.loads(target.read_text(encoding='utf-8'))
+    folds = payload.get('folds')
+    if not isinstance(folds, list) or not folds:
+        raise ValueError('DCT reference archive has no folds')
+    by_fold = {}
+    for record in folds:
+        fold = int(record['fold'])
+        if fold in by_fold:
+            raise ValueError(f'Duplicate fold {fold} in the DCT reference archive')
+        by_fold[fold] = record
+    if set(by_fold) != set(FOLDS):
+        raise ValueError(f'DCT reference archive must cover folds {FOLDS}, got {sorted(by_fold)}')
+    ordered = [by_fold[fold] for fold in FOLDS]
+    return {'archive_id': payload.get('archive_id'),
+            'archive_path': str(target.resolve()),
+            'protocol': payload.get('protocol'),
+            'source': payload.get('source'),
+            'limits': payload.get('limits', []),
+            'official_model_reproduction': True,
+            're_run': False,
+            'folds': ordered}
+
 
 def _metric_rows(model_id, folds, metrics_by_fold):
     """Mean/std rows for one arm from its per-fold metric dicts.
@@ -571,7 +588,6 @@ def summarize(run_dirs, out, dct_reference=None):
                                  {int(r['fold']): r['best_validation'] for r in ordered}))
     reference_block = None
     if dct_reference is not None:
-        from comparison_baselines import load_dct_reference
         archive = load_dct_reference(dct_reference)
         folds = [int(record['fold']) for record in archive['folds']]
         rows.extend(_metric_rows('dct_reference', folds,

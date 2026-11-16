@@ -1,63 +1,61 @@
-# Conditional DeCUR-Surv：面向病理—组学生存预测的研究原型
+# MDeCUR-Surv：病理 WSI＋RNA 生存预测
 
-最新：已新增可执行[病理局部—RNA通路共同/独有生存框架](PATHWAY_LOCAL_FRAMEWORK.md)，包含Reactome通路编码、patch—通路软匹配交互、独立病理锚点及条件匹配的局部共同/独有损失、原全局DeCUR和病理局部项。支持现有单视图的明确特征扰动，也支持未来真实UNI图像D4缓存；两者不能混称。首次目标机完整训练尚待执行。
+**新增候选方法 MorphID-Surv（2026-11-16）**：用户已选定冻结无标签形态表示与非线性核岭预测残差。独立实现为 `cancer_morphid_model.py`，探针工具为 `morphid_probe.py`。它不改变原Dense默认入口，尚无患者结果；定义、API和固定反例见 [MORPHID_SURVIVAL_PROTOCOL_20261116.md](MORPHID_SURVIVAL_PROTOCOL_20261116.md)。当前模型定义文件共8个：原框架3个依赖模块＋MorphID1个＋外部适配器4个。
 
-最新：用户转发fold0单视图mask基线完整完成（19轮、NLL最优第4轮，验证C-index=0.6307，非测试）。新增显式 `--modality both|pathology|rna` 同队列生存基线对照，跳过未使用编码分支，旧both路径兼容，见 [单模态对照](MODALITY_CONTROLS.md)。
+当前主方法是完整 dense-token 框架，默认保留原 11 项辅助目标和 4 项 dense 辅助目标。
+主训练入口是 [train_pathway_parity.py](train_pathway_parity.py)，单折比较入口是 [comparison_fold0.py](comparison_fold0.py)。
 
-2026-11-10：用户已转发5090单视图244训练/60验证、两轮CUDA成功记录（验证NLL=2.2319，非独立测试）。后续已补可选训练集低方差RNA屏蔽、保存/复用mask和尺度诊断，以及fold0完整训练说明，见 [RNA预处理](RNA_PREPROCESSING.md)。这项工程修正不证明上游RNA预处理来源或方法效果。
+## 现在保留的模型文件
 
-**状态：候选方案和可运行的核心原型；未经患者数据验证，创新性和性能均未确立。** 四轮合成压力测试中，最后一轮在存在真实乘积项时，当前完整模型的平均留出 NLL 高于加性基线，尚未通过核心机制检验；详细负面结果见 `results/RESULTS.md`。本目录独立于原始 DeCUR，不修改原仓库。设计依据仅使用本文件夹内的 DeCUR 和下列公开文献，不使用其他项目的方法或代码。
+原Dense与外部对照保留 **7 个模型定义文件**：原框架3个依赖模块＋4个对照适配器；本次新增MorphID一个主模型文件，共8个。
+原框架对应1个方法，MorphID为新增的1个冻结机制候选；另有4个外部对照。底层模块不应当作三个独立方法重复计数。
 
-面向癌症患者的新实现和使用说明见 `CANCER_MODEL_README.md`。稳定性加权相关项已接入新的癌症模型训练流程，但合成对照尚未支持它优于等权或随机权重；下面的文档描述更早的交互原型，不能将两者的结果混淆。
+| 文件 | 作用 |
+|---|---|
+| [cancer_morphid_model.py](cancer_morphid_model.py) | 新增 MorphIDSurvival：冻结形态、交叉拟合预测残差与独立生存头 |
+| [cancer_dense_model.py](cancer_dense_model.py) | 当前完整主模型 DensePathwaySurvival，包含 token 预测分支和 dense 目标 |
+| [cancer_pathway.py](cancer_pathway.py) | 主模型使用的通路编码、局部匹配和融合基础层 |
+| [cancer_model.py](cancer_model.py) | 上层实际复用的病理 MIL、RNA 编码和生存头基础层 |
+| [comparison_camr.py](comparison_camr.py) | CAMR 双模态适配 |
+| [comparison_pibd.py](comparison_pibd.py) | PIBD 双模态适配 |
+| [comparison_deref.py](comparison_deref.py) | DeReF 双模态适配 |
+| [comparison_dimaf.py](comparison_dimaf.py) | DIMAF 双模态适配 |
 
-2026-11-09 已实现病理局部一致性、预测／辅助投影分离和病理／RNA模态内系数独立控制。论文阅读清单、公式、开关与 A—E 对照见 [当前局部／全局实现](LOCAL_GLOBAL_IMPLEMENTATION.md)；本轮51项合成／回归检查通过，仍无患者效果证据。
+[decur_losses.py](decur_losses.py) 只存共享辅助损失，不定义独立生存模型。
+RNA-only、WSI-only、早期 masked-mean 原型及其训练流水线已按用户要求删除。
+当前主模型保留的编码器组件、辅助损失、checkpoint 冻结输入诊断属于完整框架，不是另立的单模态基线。
 
-同日后续完成 [stream训练后端](STREAM_TRAINING.md)：lazy H5、患者小批量与checkpointed patch分块。最新一次完整70项合成检查通过，并实测合成输入下的CPU峰值内存／耗时。默认旧后端保留，真实队列与GPU尚未验证。
+## 下载的官方对照源码
 
-2026-11-10 新增 [单视图全patch流式基线](SINGLE_VIEW_TRAINING.md)：`single_view`安全mmap现有PT，不推断编码器来源、不伪造A/B；`--validation-only`只加载训练/验证输入并跳过测试评估。最新完整85项合成/回归检查通过，仍无本项目真实患者或CUDA训练证据。5090侧数据/基础kernel信息来自用户转发报告。
+以本仓库目录为起点，源码统一在父目录：
+- `../papers/comparators/CAMR/`
+- `../papers/comparators/PIBD/`
+- `../papers/comparators/DeReF/`
+- `../papers/comparators/DIMAF/`
 
-新增独立的 [UNI 同 patch 双视图工具](uni_views/README.md)：从 WSI＋已有坐标读取完整 patch，在图像上旋转/镜像后用冻结 UNI v1 分批提取两份特征；新癌症训练接口 `--path-views cached_uni` 不再随机删除 patch。未增强 reference 为可选提取项，但严格训练接入要求它，以避免将未经核实的旧特征与新视图混用。仅经合成接口检查，真实 WSI/UNI 和患者效果尚未验证。给有数据电脑的接入说明见 [HANDOFF](uni_views/HANDOFF.md)。
+路径与固定文件哈希见 [comparison_sources.json](comparison_sources.json)。
+四种方法的原仓库保持原路径，适配器仍使用这些上游源码。上游 checkout 附带的数据类文件不等于本工程的训练输入；本次清理没有加载其内容，也没有将整个上游目录加入本仓库发布。
+MurreNet/MoHD 没有可验证的本地实现，不列为已下载模型。
 
-## 1. 问题与核心思路
+## 当前可用入口
 
-一个患者有配对的 WSI patch 特征、组学特征及生存随访。仅在表征空间压低跨模态相关性，并不能判断被压低的信息是否有预后价值；联合预测分数提高，也不能单独证明两种模态存在生物学协同。我们希望检验：**在固定数据和模型容量的条件下，学习到的配对交互是否能提高独立患者的删失感知预测表现，以及 DeCUR 式约束是否有助于这一过程？**
+- `train_pathway_parity.py`：完整主模型默认入口。
+- `comparison_fold0.py`：full dense、同架构 aux-off、CAMR 的共同单折计划；aux-off 是同一架构消融。
+- `comparison_5fold.py`：四个多模态对照适配器的共享驱动；可按指定 fold 单独计划/执行。RNA-only、WSI-only 已移除。
+- `uni_views/`：冻结 UNI 特征提取和缓存接口。
+- `diagnose_parity_*.py`：已有检查点的输入控制和交互诊断；不训练独立的 RNA/WSI 基线。
 
-候选方案有三部分：
+旧的 `model.py` 共享损失已迁入 `decur_losses.py`；旧 `pipeline.py`、`synthetic_study.py` 和原型专用测试已删除，仍在使用的损失数学回归保留在 `test_decur_losses.py`。
 
-1. **保留 DeCUR 的共同/独特表征学习思路**：两个独立编码器分别输出向量，前一部分作跨模态共同相关约束，后一部分作跨模态零相关约束；两个模态各自的两种视图使用一致性约束。与 DeCUR 相同，这些是有限样本的二阶相关约束，不能保证独立、唯一信息或预后有用信息。组学增强和病理 patch 子采样需要预先定义并检验其合理性。
-2. **加性预测 + 有界容量的配对交互**：离散时间危险度 logits 为 `b + h_P(p) + h_G(g) + W[(A p) ⊙ (B g)]`。其中 `p,g` 是完整编码，交互项是低秩双线性函数，可设置秩控制容量。相对于编码空间零向量的四项混合差等于交互项；这一恒等式是模型结构性质，零向量不一定对应真实患者，交互项也不是生物学因果效应或 PID 协同信息。由于输入相关，主效应与交互的统计归因不唯一。
-3. **困难患者的交叉拟合加权（探索性）**：在训练折内部用相同输入的加性教师交叉拟合，获得每个患者未参与该教师拟合的删失感知逐例 NLL `ell_i`。训练完整模型时使用 `w_i = 1 + alpha sigmoid(ell_i)`，优化 `sum(w_i * ell_full_i)/sum(w_i)`，权重截断在 `[1, 1+alpha]` 并停止梯度。教师误差大不代表多模态有额外价值，也可能代表删失、噪声或模型失配；这是一项**有风险的优化假设**，不是条件信息增益估计。`alpha=0` 是关键对照，必须检验校准与弱势亚组退化。此分支只在训练时需要教师和标签，测试时不使用。
+## 运行与证据边界
 
-完整目标 `L = L_weighted_NLL + lambda_w L_within + lambda_c L_common + lambda_u L_unique`。超参数只在训练/验证流程选择。关闭权重、交互、DeCUR 约束即可形成清楚对照；`model.py` 提供的是模块和损失而非完整训练流水线。
+单折路径与命令见 [PATIENTWISE_V3_HANDOFF_20261116.md](PATIENTWISE_V3_HANDOFF_20261116.md)。
+四种对照的接口说明见 [COMPARATOR_5FOLD_PROTOCOL_20261116.md](COMPARATOR_5FOLD_PROTOCOL_20261116.md)。
 
-## 2. 相对 DeCUR 和已有文献的定位
+清理改变了源码清单和模块路径，因此需要重新生成 plan；旧 plan 的源码哈希守卫会拒绝直接复用。
+离散目标仍为 `patientwise_clamped_discrete_v1`，模型计算和 15 项默认辅助系数未调整。
+旧广播漏洞训练出的权重不能靠重评分修复；验证选轮分数不属于独立测试。
+token 交互不等于严格 PID synergy，bulk RNA 与 patch 的软匹配不是实测空间表达对应。
 
-原始 [DeCUR](https://arxiv.org/abs/2309.05300) 是多模态自监督预训练，原代码在遥感与 RGB-D 等场景实现模态内一致性及跨模态共同/独特相关约束，并不自带生存目标。这里增加患者级 WSI 汇聚、组学编码、删失感知危险度、加性/交互分支与交叉拟合加权。**这些组件单独都不应宣称首创**。例如 [SurvPath](https://openaccess.thecvf.com/content/CVPR2024/papers/Jaume_Modeling_Dense_Multimodal_Interactions_Between_Biological_Pathways_and_Histology_for_CVPR_2024_paper.pdf) 已研究病理—通路交互；[MoHD](https://pubmed.ncbi.nlm.nih.gov/42176461/) 已研究病理—组学的共同/特异分解；[DIMAF](https://papers.miccai.org/miccai-2025/paper/4457_paper.pdf) 也研究该方向的解耦；[TTA](https://y-research-sbu.github.io/TTA/) 已针对共同预后结构和模态特异信息设计训练。加性/双线性交互及困难样本加权均有广泛先例。
-
-潜在贡献只能表述为：**将 DeCUR 式表征约束、可审计的加性—交互危险度模型和训练折内交叉拟合的困难病例加权组合，用预先规定的配对破坏与加性对照检验额外预测价值**。本次检索不是穷尽式查新，尚未证明这一组合此前不存在；如后续发现高度相似工作，应进一步调整或放弃创新性主张。
-
-## 3. 输入与运行
-
-- `patches`：`[B,N,Dp]` 预提取 patch 特征；`mask` 为 `[B,N]` 布尔值，至少一块有效 patch。原型使用 masked mean pooling，未实现 WSI 提取或数据加载。
-- `omics`：`[B,Dg]`；必须与 WSI 按患者正确配对。缺失值处理、归一化、基因选择只用训练折拟合。
-- `interval`：`[B]`，从 0 开始；`event=1` 表示该区间发生事件。`event=0` 按**在该区间末仍存活**处理；如果原始删失时间位于区间内部，不能不加说明地按该规则编码，应预先制定离散化方案或使用支持精确时间的模型。分箱边界只根据训练数据确定，并约定边界相等时的归属。所有患者的随访时间定义、终点、截尾规则应一致。
-- `decur_auxiliary` 接受两个视图的编码，batch 至少 2，实际相关估计通常需要更大有效 batch；缺少方差维度时数值虽有限但约束可能失效。辅助项按维度求和，需记录维度和权重。不能把一次随机视图结果当成稳定估计。
-- 仅训练期间使用的 `teacher_additive_nll` 必须是每个训练患者来自**未见该患者**的模型的逐例 NLL。交叉拟合的每个子折应重新拟合预处理和教师；超参数选择也须局限于子折训练数据，避免验证或测试泄漏。该数组不能使用教师在拟合患者上的训练 NLL 替代。
-
-运行合成单元检查：在此目录执行 `python -m unittest -v test_prototype.py test_pipeline.py`。检查覆盖损失、掩码、梯度、交互恒等式、交叉拟合的训练与留出分离、子折标准化以及标签泄漏；不代表可用于临床或真实数据。
-
-`pipeline.py` 现提供全批次的核心训练函数、训练折内交叉拟合和可选的内部验证选轮。`fit_outer_train` 使用固定轮数；`select_and_fit` 把给定训练集再分为内部训练和验证，内部训练单独交叉拟合教师并拟合组学标准化，根据验证 NLL 选择轮数，最后使用该轮数在全部外层训练集重新交叉拟合和训练。外层训练归一化随模型返回，测试或推理必须复用。这里仅选择轮数，学习率、结构、分箱、超参数等必须事先固定或在训练数据中另行嵌套选择，不能使用外层测试结果。输入必须已经按患者聚合和划分、完成明确约定的区间标签；该接口并非临床数据加载器。`synthetic_study.py` **只生成合成数据**，不加载外部患者数据。复现方式和数值见 `results/RESULTS.md`。
-
-## 4. 可复现实验计划（尚未执行）
-
-患者为分组单位，确保同一患者的全部切片只处于同一分区；预先登记队列、终点、删失与入排、基因集、切片和 patch 策略、时间分箱。保留独立测试集或外部测试集；验证集只用于选参和选 epoch。无独立测试时只称交叉验证结果，不称独立测试。
-
-主要比较（共享输入、训练预算、种子和评估）：病理单模态、组学单模态、简单拼接、加性头、加性+交互、DeCUR+加性、DeCUR+加性+交互、完整模型（再加入交叉拟合加权）。对 DeCUR 项、交互秩、权重强度做预先限定的消融，并报告参数量；加入容量匹配的普通融合以及公开方法的可复现结果。训练策略与调参预算应同等，允许某项无收益或负收益。
-
-评估建议包括预定的 C-index、时间依赖 Brier / IBS 和校准，并在固定时间点报告风险分层与样本数。估计删失分布须避免测试标签参与模型调参；报告其假设与各时间点风险集人数。患者级配对 bootstrap 评估完整模型相对加性模型的差异和区间，跨多个预先指定随机种子报告波动，不把不同种子当独立患者；多队列与多重比较需预先规定汇总和校正。
-
-机制检验：固定训练后的模型，在测试集上按预先指定方式打乱跨患者配对并重复，比较配对破坏对损失和交互项分布的影响；也报告单模态遮蔽和合理特征扰动。跨患者错配会改变联合分布，结果仅说明模型对这种破坏敏感，不能证明生物学相互作用或因果关系。用合成数据分别构造纯加性、无信号、真实乘积项和相关但无乘积项，并检验是否能控制虚假交互；配对优势缺失或交叉拟合加权退化时须如实保留。外部队列的机构、测序平台、切片和治疗差异需要单独分析。
-
-## 5. 已知缺口
-
-当前尚无真实数据适配器、可扩展的小批量 WSI 训练、完整嵌套超参数选择、临床评估和外部验证；需要先实现并核对上面的数据与嵌套划分协议，不能直接用此原型宣称完整实验。方法未评估缺失模态、临床效用或预测公平性。加权损失可能损害校准，DeCUR 式相关约束也可能删除有用信号。这里没有训练或推理任何患者数据。
+本次只是本地文件整理与接口检查，没有启动患者训练、服务器任务或五折运行。
+更完整的目录索引、删除项目和恢复备份位置见父目录 [WORKSPACE_LAYOUT.md](../WORKSPACE_LAYOUT.md)。

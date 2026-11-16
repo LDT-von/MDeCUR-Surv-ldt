@@ -123,7 +123,7 @@ class Fold0ComparisonTest(unittest.TestCase):
         self.assertEqual(len({r['training_sampling_sha256'] for r in reports}), 1)
         self.assertEqual(len({r['training_schedule_sha256'] for r in reports}), 1)
         self.assertEqual({r['optimizer_steps'] for r in reports}, {1})
-        self.assertEqual([r['discriminator_optimizer_steps'] for r in reports], [0, 0, 0, 1])
+        self.assertEqual([r['discriminator_optimizer_steps'] for r in reports], [0, 0, 1])
         self.assertIn('adversarial', reports[-1]['history'][0]['train_terms'])
         self.assertTrue(reports[-1]['metadata']['fake_CNA_used'] is False)
         self.assertEqual(len(reports[0]['history'][0]['train_terms']), 16)
@@ -133,6 +133,10 @@ class Fold0ComparisonTest(unittest.TestCase):
             compare.summarize([self.root/m for m in compare.MODELS], self.root/'summary.json')
 
     def test_input_changes_and_unavailable_models_refused(self):
+        with self.assertRaisesRegex(ValueError, 'Unknown model'):
+            compare.run_model(self.root/'DO_NOT_OPEN.json', 'unread', 'mdecur_aux_off',
+                              self.root/'retired_legacy')
+        self.assertFalse((self.root/'retired_legacy').exists())
         path, sha = self.plan()
         for model_id in ('murrenet', 'mohd'):
             with self.assertRaisesRegex(ValueError, 'implementation'):
@@ -180,12 +184,12 @@ class Fold0ComparisonTest(unittest.TestCase):
 
         with patch.object(compare, 'load_inputs', side_effect=change_between_reads):
             with self.assertRaisesRegex(ValueError, 'between plan verification'):
-                compare.run_model(path, sha, 'mdecur_aux_off', self.root/'raced')
+                compare.run_model(path, sha, 'mdecur_dense_aux_off', self.root/'raced')
         self.assertFalse((self.root/'raced').exists())
 
     def test_summary_reports_both_selections_and_does_not_choose_per_metric_peak(self):
         runs = []
-        for model, best_c, last_c in [('mdecur_aux_off', .73, .70), ('camr_2m', .72, .71)]:
+        for model, best_c, last_c in [('mdecur_dense_aux_off', .73, .70), ('camr_2m', .72, .71)]:
             out = self.root/model
             out.mkdir()
             metric = lambda c: {'c_index': c, 'c_index_ipcw': .51, 'validation_nll': .9,
@@ -199,8 +203,8 @@ class Fold0ComparisonTest(unittest.TestCase):
                 'best_epoch': 20, 'last_epoch': 30, 'best_validation': metric(best_c), 'last_validation': metric(last_c)})
             runs.append(out)
         result = compare.summarize(runs, self.root/'summary.json')
-        self.assertEqual(result['Harrell_C_rankings']['best'], ['mdecur_aux_off', 'camr_2m'])
-        self.assertEqual(result['Harrell_C_rankings']['last'], ['camr_2m', 'mdecur_aux_off'])
+        self.assertEqual(result['Harrell_C_rankings']['best'], ['mdecur_dense_aux_off', 'camr_2m'])
+        self.assertEqual(result['Harrell_C_rankings']['last'], ['camr_2m', 'mdecur_dense_aux_off'])
         self.assertEqual([r['epoch'] for r in result['rows']], [20, 30, 20, 30])
         with self.assertRaises(FileExistsError):
             compare.summarize(runs, self.root/'summary.json')

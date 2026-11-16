@@ -1,0 +1,94 @@
+{
+  "validation_version": "morphid_frozen_validation_v1",
+  "created_utc": "2026-11-16T09:51:58.274934+00:00",
+  "scope": "Local CPU generated data only. No patient data, remote server, CUDA, patient training or fivefold execution.",
+  "model_version": "morphid_frozen_conditional_residual_v1",
+  "repository_head": "a32af42bba76009eb12cc03d47cb7cde00c0453f",
+  "working_tree": "Uncommitted MorphID additions alongside previously authorized cleanup edits; HEAD does not include these additions.",
+  "pytest": {
+    "command": "python -m pytest -q --disable-warnings --junitxml=results/morphid_frozen_validation_20261116.xml test_cancer_morphid.py test_morphid_probe.py test_discrete_nll_patientwise.py",
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "reported_seconds": 4.4,
+    "junit_reported_seconds": 4.399,
+    "log": "results\\morphid_frozen_validation_20261116.log",
+    "log_sha256": "02b13066b30b17b744599aa6f4772700ae1e30616aeb0c4a144cc809a1a2a2be",
+    "junit": "results\\morphid_frozen_validation_20261116.xml",
+    "junit_sha256": "80ab08cacde0282cb75636376ac2806c71418bd737260ef31122e4cdddf56782"
+  },
+  "source_sha256": {
+    "cancer_morphid_model.py": "18716ba708d63c3e99d8b56a065ce67a339c2830a98bb1b65717ff6e5bc71df8",
+    "morphid_probe.py": "668e4f43e862b869400fda9758f1efd511cf8f1c36b08284657ea4355983f409",
+    "scripts/check_morphid_synthetic.py": "4ee5393c52ad4ab211266fce7b46e1326939d72adfccf41afd970684317d59af",
+    "test_cancer_morphid.py": "846bc78fe340da917b6a19492927ab868ae49ce35e7f549b87222ff2e162dda3",
+    "test_morphid_probe.py": "812b4af93c850d2659094bd2e402748198b99d340aea818116bdd37838a3d394",
+    "cancer_parity.py": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3",
+    "test_discrete_nll_patientwise.py": "1a7ce15322808b2666964ce348e16af44c0243834957196e02631c5a45d27e8a"
+  },
+  "known_answer_audit": {
+    "path": "results\\morphid_probe_mechanism_final_20261116.json",
+    "sha256": "071eb7e3d847f03a4176784b0f242ccdd006c7d1e53bf0330322bf94db6713c7",
+    "cases": [
+      "S1_nonlinear_conditional_mean",
+      "S2_shared_and_unpredictable_signal_overlap",
+      "S3_high_dimensional_independent_noise",
+      "S4_conditional_variance_limit"
+    ],
+    "all_four_passed": true,
+    "source_hashes_match_current": true,
+    "independence_established": false
+  },
+  "preserved_model_files": {
+    "cancer_dense_model.py": {
+      "sha256": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+      "unchanged_from_cleanup_backup": true
+    },
+    "cancer_pathway.py": {
+      "sha256": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+      "unchanged_from_cleanup_backup": true
+    },
+    "cancer_model.py": {
+      "sha256": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+      "unchanged_from_cleanup_backup": true
+    },
+    "comparison_camr.py": {
+      "sha256": "04f73e022cbd3733f96cc82476105fecefa66d90c5182c4ad12e49b9761a3f02",
+      "unchanged_from_cleanup_backup": true
+    },
+    "comparison_pibd.py": {
+      "sha256": "735faea1c1aa02920171e05f12aba83a6dc8e20fcccc43300a05bc144a4ddfdf",
+      "unchanged_from_cleanup_backup": true
+    },
+    "comparison_deref.py": {
+      "sha256": "4e93e42321a33f4a211f6c34e3f80dc3f2a0c80b635e74a56eb2c07b3ea0f370",
+      "unchanged_from_cleanup_backup": true
+    },
+    "comparison_dimaf.py": {
+      "sha256": "85e1e260f36a88f4671868f177fd33937ffacb920931dc3d5fdf519a7aba1022",
+      "unchanged_from_cleanup_backup": true
+    }
+  },
+  "checks": [
+    "Independent kernel ridge closed-form comparison",
+    "Nonlinear mean and overlapping signal counterexamples",
+    "OOF own-target and preprocessing isolation",
+    "Patient ID, masking, streaming chunks and rare cluster handling",
+    "Only survival head optimized; frozen tensor digest identical",
+    "Exact fresh checkpoint prediction replay",
+    "Partial fit failure cannot reuse stale probes",
+    "Nonlinear RNA-derived predictable morphology block retained"
+  ],
+  "limits": [
+    "Morphology backend is frozen feature PCA/k-means, not HPL/Leiden replication.",
+    "Prediction residual is not proof of RNA independence or biological uniqueness.",
+    "OOF single-fold training estimates and fresh fold ensemble have a finite-sample distribution difference.",
+    "No patient prognosis improvement, morphology semantics or novelty conclusion follows from these tests.",
+    "Deployment checkpoints retain fitted kernel supports and probe state; main OOF head-training feature cache is not included."
+  ]
+}

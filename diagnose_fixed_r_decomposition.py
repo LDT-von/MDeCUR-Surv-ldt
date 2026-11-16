@@ -233,7 +233,7 @@ def run(manifest, run_dir, expected_sha256, device, count=5, seed=20261110):
         source_names = ('diagnose_fixed_r_decomposition', 'diagnose_pathway_query_permutation', 'cancer_pathway',
                         'cancer_pathway_stream', 'cancer_model', 'cancer_metrics', 'cancer_survival_diagnostics',
                         'cancer_rna', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream',
-                        'cancer_auxiliary', 'model', 'uni_views.core')
+                        'cancer_auxiliary', 'decur_losses', 'uni_views.core')
         return {'diagnostic': 'fixed_R_validation_decomposition_v1', 'test_loaded': False, 'training_performed': False,
                 'seed': seed, 'permutations': permutations, 'validation_patients': len(val),
                 'validation_order_sha256': hashlib.sha256(json.dumps(cohort['val']['ids'], separators=(',', ':'), ensure_ascii=False).encode()).hexdigest(),

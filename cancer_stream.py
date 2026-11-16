@@ -13,7 +13,7 @@ from torch.utils.checkpoint import checkpoint
 from cancer_model import CancerDeCUR, piecewise_nll
 from cancer_train import effective_loss_weights, validate_modality_config
 from cancer_rna import fit_rna_scaler, transform_rna, rna_noise_view
-from model import correlation_loss, stability_weighted_common, DegenerateCorrelation
+from decur_losses import correlation_loss, stability_weighted_common, DegenerateCorrelation
 
 
 def _merge_moments(left, right, fraction):

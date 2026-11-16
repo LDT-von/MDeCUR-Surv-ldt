@@ -236,7 +236,7 @@ def run(manifest, run_dir, expected_sha256, device, count, seed):
                                   ('cancer_metrics', 'cancer_model', 'cancer_pathway',
                                    'cancer_pathway_stream', 'cancer_rna', 'cancer_stream_data',
                                    'cancer_single_view', 'cancer_stream', 'cancer_auxiliary',
-                                   'model', 'uni_views.core')}},
+                                   'decur_losses', 'uni_views.core')}},
                 'runtime': {'torch': str(torch.__version__), 'numpy': np.__version__,
                             'permutation_rng': 'numpy default_rng (PCG64)', 'device': str(device)},
                 'limits': ['Only query scores change; original patient pathology, global RNA, and RNA pathway value tokens are retained.',

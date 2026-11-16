@@ -18,7 +18,7 @@ from cancer_auxiliary import patient_balanced_local_correlation
 from cancer_data import load_manifest
 from cancer_model import CancerDeCUR, piecewise_nll, survival_at
 from cancer_train import CancerConfig, effective_loss_weights, predict, train_cancer_model
-from model import correlation_loss, decur_auxiliary
+from decur_losses import correlation_loss, decur_auxiliary
 from test_cancer_model import cohort
 from test_uni_views import create_cache, write_csv
 

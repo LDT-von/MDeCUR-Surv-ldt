@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from cancer_model import piecewise_nll, survival_at
 from cancer_train import CancerConfig, train_cancer_model, predict, view_batch
-from model import stability_weighted_common, DegenerateCorrelation
+from decur_losses import stability_weighted_common, DegenerateCorrelation
 
 
 def generate(seed, scenario, n=360, patches=12):

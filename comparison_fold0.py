@@ -22,7 +22,6 @@ import torch
 from cancer_parity import (_json_float, dct_bin_edges, discretize_labels, discrete_nll,
                            discrete_survival, dct_risk, parity_metrics, DISCRETE_NLL_VERSION)
 from cancer_parity_bag import BudgetedPatientBag
-from cancer_pathway import PathwayLocalSurvival
 from cancer_pathway_stream import (PathwayConfig, pathway_stream_forward, patient_batches,
                                    minimum_batch_size, validate_config, effective_weights)
 from cancer_dense_model import (DensePathwaySurvival, DensePathwayConfig, DENSE_LOSS_NAMES,
@@ -33,7 +32,7 @@ from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 
 
 DEFAULT_MODEL = 'mdecur_full_dense'
-MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'mdecur_aux_off', 'camr_2m')
+MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off', 'camr_2m')
 DENSE_MODELS = (DEFAULT_MODEL, 'mdecur_dense_aux_off')
 UNAVAILABLE = {'murrenet': 'Verified author implementation not available; no placeholder model.',
                'mohd': 'Verified author implementation and hierarchical input contract not available.'}
@@ -49,7 +48,7 @@ SETTINGS = dict(fold=0, endpoint='DSS', time_unit='months', seed=3, epochs=30,
                 batching='same epoch order and merged tail for all arms; minimum B=hidden+1')
 SOURCE_MODULES = ('comparison_fold0', 'comparison_camr', 'cancer_parity', 'cancer_parity_bag',
                   'cancer_pathway', 'cancer_pathway_stream', 'cancer_model', 'cancer_rna',
-                  'cancer_metrics', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream', 'model',
+                  'cancer_metrics', 'cancer_stream_data', 'cancer_single_view', 'cancer_stream', 'decur_losses',
                   'cancer_dense_model', 'cancer_dense_tokens', 'cancer_parity_audit')
 
 
@@ -217,7 +216,7 @@ def materialize(bags, indices, device):
 
 
 def forward(model_id, model, bags, rna, indices, device):
-    if model_id == 'mdecur_aux_off' or model_id in DENSE_MODELS:
+    if model_id in DENSE_MODELS:
         output = pathway_stream_forward(model, [bags[i] for i in indices], rna.to(device),
                                         chunk_size=4096, view_source='feature_noise', checkpoint_chunks=True)
         return {'logits': output['log_rates']}
@@ -301,12 +300,6 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                         'auxiliary_weights': {**effective_weights(cfg), **dense_weights(cfg, 5)},
                         'auxiliary_config': asdict(cfg),
                         'ablation': model_id == 'mdecur_dense_aux_off'}
-            main_parameters = list(model.parameters())
-            d_optimizer = None
-        elif model_id == 'mdecur_aux_off':
-            model = PathwayLocalSurvival(**original_report['model_kwargs']).to(device)
-            metadata = {'label': 'MDeCUR-aux-off-common-plan', 'auxiliary_weights': {},
-                        'adaptations': ['New run under fixed common PYTHONHASHSEED; historical score is not silently reused.']}
             main_parameters = list(model.parameters())
             d_optimizer = None
         else:

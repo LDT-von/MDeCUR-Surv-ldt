@@ -11,7 +11,7 @@ from cancer_auxiliary import patient_balanced_local_correlation
 from cancer_model import CancerDeCUR, piecewise_nll
 from cancer_train import CancerConfig
 from cancer_stream import stream_forward, train_stream_model, predict_stream
-from model import correlation_loss
+from decur_losses import correlation_loss
 
 
 class MemoryBag:

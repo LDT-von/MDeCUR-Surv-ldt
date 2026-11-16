@@ -17,7 +17,7 @@ import torch
 from cancer_auxiliary import patient_balanced_local_correlation
 from cancer_model import CancerDeCUR, piecewise_nll
 from cancer_stream import stream_forward
-from model import correlation_loss
+from decur_losses import correlation_loss
 
 
 class GeneratedBag:

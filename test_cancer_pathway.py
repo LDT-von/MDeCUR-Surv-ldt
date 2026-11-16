@@ -26,7 +26,7 @@ from cancer_pathway_stream import (PathwayConfig, _feature_scores, effective_wei
                                    train_pathway_model, validate_config)
 from cancer_stream_data import load_stream_manifest, stream_cohort_fingerprint
 from cancer_single_view import PTPatientBag
-from model import correlation_loss
+from decur_losses import correlation_loss
 from test_uni_views import create_cache, write_csv
 
 
