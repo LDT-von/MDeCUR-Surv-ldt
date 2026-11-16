@@ -321,6 +321,8 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
         generator = torch.Generator().manual_seed(3)
         history, best, best_survival, best_metrics, best_epoch = [], None, None, None, None
         sample_hash = hashlib.sha256()
+        schedule_hash = hashlib.sha256()
+        total_optimizer_steps = total_discriminator_steps = 0
         count_epochs = 1 if smoke else 30
         for epoch in range(1, count_epochs+1):
             model.train()
@@ -328,8 +330,11 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                 bag.resample(3000+epoch)
                 sample_hash.update(json_hash(bag._rows).encode())
             order = torch.randperm(len(bags['train']), generator=generator)
+            batches = patient_batches(order, SETTINGS['patient_batch_size'], minimum)
+            schedule_hash.update(json_hash([epoch, [b.tolist() for b in batches]]).encode())
             losses, n, batch_stats, gradient_records = {}, 0, [], []
-            for number, selected in enumerate(patient_batches(order, SETTINGS['patient_batch_size'], minimum)):
+            epoch_optimizer_steps = epoch_discriminator_steps = 0
+            for number, selected in enumerate(batches):
                 indices = selected.tolist()
                 if model_id in DENSE_MODELS:
                     batch = {'bags': [bags['train'][i] for i in indices],
@@ -364,6 +369,7 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                            for p in model.discriminator_parameters()):
                         raise FloatingPointError('Nonfinite discriminator gradient')
                     d_optimizer.step()
+                    epoch_discriminator_steps += 1
                     d_optimizer.zero_grad(set_to_none=True)
                     auxiliary = model.auxiliary_losses(output)
                     components.update(auxiliary)
@@ -382,16 +388,22 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                          ('decomposition_head', model.decomposition_head),
                          ('token_cooperation', model.token_cooperation))})
                 optimizer.step()
+                epoch_optimizer_steps += 1
                 for name, value in components.items():
                     losses[name] = losses.get(name, 0.)+len(indices)*float(value.detach())
                 n += len(indices)
+            total_optimizer_steps += epoch_optimizer_steps
+            total_discriminator_steps += epoch_discriminator_steps
             scheduler.step()
             if d_scheduler:
                 d_scheduler.step()
             metrics, survival = evaluate(model_id, model, cohort['val'], bags['val'], normalized['val'],
                                           labels['val'], reference, edges, device)
             history.append({'epoch': epoch, 'train_terms': {k: v/n for k, v in losses.items()},
-                            'patient_batches': [len(x) for x in patient_batches(order, SETTINGS['patient_batch_size'], minimum)],
+                            'patient_batches': [len(x) for x in batches],
+                            'patient_order_sha256': json_hash(order.tolist()),
+                            'optimizer_steps': epoch_optimizer_steps,
+                            'discriminator_optimizer_steps': epoch_discriminator_steps,
                             'auxiliary_batches': batch_stats, 'gradient_norms': gradient_records,
                             'learning_rate_after_step': scheduler.get_last_lr()[0], **metrics})
             print(json.dumps({'model': model_id, **history[-1]}, allow_nan=False), flush=True)
@@ -418,6 +430,9 @@ def run_model(plan_path, plan_sha256, model_id, out, device='cpu', smoke=False):
                   'patients': plan['inputs']['patients'], 'events': plan['inputs']['events'],
                   'source_sha256': plan['source_sha256'], 'epochs_completed': count_epochs,
                   'training_sampling_sha256': sample_hash.hexdigest(), 'best_epoch': best_epoch,
+                  'training_schedule_sha256': schedule_hash.hexdigest(),
+                  'optimizer_steps': total_optimizer_steps,
+                  'discriminator_optimizer_steps': total_discriminator_steps,
                   'last_epoch': count_epochs, 'best_validation': best_metrics, 'last_validation': metrics,
                   'parameters': sum(p.numel() for p in model.parameters()), 'history': history,
                   'wall_seconds': time.perf_counter()-started,
@@ -435,11 +450,20 @@ def summarize(run_dirs, out):
     records = [json.loads((Path(d)/'report.json').read_text(encoding='utf-8')) for d in run_dirs]
     if not records or len({r['plan_sha256'] for r in records}) != 1:
         raise ValueError('Every compared model must use exactly the same input/protocol plan')
+    if any(r.get('protocol') != PROTOCOL
+           or r.get('loss_version') != DISCRETE_NLL_VERSION
+           or not isinstance(r.get('settings'), dict)
+           or r['settings'].get('loss_version') != DISCRETE_NLL_VERSION for r in records):
+        raise ValueError('Refuse missing or different protocol/loss versions; current patientwise V3 reports required')
     if (any(r['smoke_only'] or r['epochs_completed'] != 30 or r['test_evaluated'] for r in records)
             or any(r['model_id'] not in MODELS or r['last_epoch'] != 30
                    or not 1 <= r['best_epoch'] <= 30 for r in records)
             or len({r['model_id'] for r in records}) != len(records)
             or len({r['training_sampling_sha256'] for r in records}) != 1
+            or any(not r.get('training_schedule_sha256') for r in records)
+            or len({r['training_schedule_sha256'] for r in records}) != 1
+            or any(type(r.get('optimizer_steps')) is not int or r['optimizer_steps'] < 1 for r in records)
+            or len({r['optimizer_steps'] for r in records}) != 1
             or len({json_hash(r.get('runtime')) for r in records}) != 1):
         raise ValueError('Refuse incomplete/smoke/test/duplicate/different-sampling runs')
     rows = []

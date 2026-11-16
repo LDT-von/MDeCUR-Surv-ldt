@@ -1,0 +1,26 @@
+{
+  "scope": "final local source freeze before final CPU regression and generated-data replay",
+  "created_at": "2026-11-16T16:00:32.473793+08:00",
+  "git_base": "8bb60fad60a5cef7fc170b2c979873418e34f537",
+  "source_sha256": {
+    "train_pathway_parity.py": "cff6b3bcad9441c621b6b156df2525ca32e59b2b3ade0d71a31e9b8f4563a132",
+    "parity_checkpoint_controls.py": "560d5ad56ad30e87182f9c5d0d6aca525d22c169c8ea29323ff5d23d3c285649",
+    "diagnose_parity_interaction.py": "ef72be3224bff206ac487e4fedb7a2f0f6c73061bb1a51c40f4fa37b0e696e4b",
+    "diagnose_parity_modalities.py": "ad9d24318fa4b7be1b0ba5139e82c71634c41b4c87ab9690ff70c248d0aba566",
+    "diagnose_rna_only_baseline.py": "38805d2ad46d7f0022e5a5172142ba3ca10191612c0d737a0e2eb1f636d3af34",
+    "cancer_parity.py": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3",
+    "cancer_parity_bag.py": "3fdf0f13813c606ea6a433306c5c849918fd040b11ac6a912aa7c678582b9ccb",
+    "comparison_fold0.py": "1cbf08e2a12fd96e1bc534cadf192f91b125e7428c61d31a1d09068af32585cb",
+    "cancer_dense_model.py": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+    "cancer_pathway_stream.py": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+    "test_cancer_parity.py": "8951333b90b6dab9d791d3fbf1c3f83902340b10e15dff73e0522b9938d6e24a",
+    "test_comparison_fold0.py": "384265b1f69d2c99a136ff6b8d848ee9705403446b4aa9385ca58411e50bf7b0",
+    "test_parity_diagnostics.py": "4892b2baaf2473a22eaaa7a75d9d75e67512b417fc04ef638104a150f096ccf8",
+    "test_parity_checkpoint_controls.py": "6e95c0430bde7405e5b5b4f12904025975a97b06a38df80e412180f8099ca082",
+    "test_parity_entrypoint_controls.py": "0868bb6b606be07d3683cdbfb9965c120d5cc0c57f836bbfcb347120fdcc85aa",
+    "test_discrete_nll_patientwise.py": "1a7ce15322808b2666964ce348e16af44c0243834957196e02631c5a45d27e8a",
+    "scripts/run_aux_comparison.sh": "37384d340e3e4181a8a343da0948b5632460ac70f41c66976edffcf8efb29c7e",
+    "scripts/run_parity_controls.sh": "ec91f6ef1a48fa82b45ebfe75e942d37360f305684a60aa329b23f64d128717d",
+    "scripts/validate_patientwise_comparison_synthetic.py": "733d78f89de91cba510e2fa64378f3cbb8c816d591ae46a72e2b59c4aaf0ecce"
+  }
+}

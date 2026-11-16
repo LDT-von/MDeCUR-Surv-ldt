@@ -1,0 +1,796 @@
+{
+  "scope": "CPU generated data only; not patient/CUDA/prognostic evidence",
+  "protocol": "blca_fold0_full_dense_patientwise_v3",
+  "loss_version": "patientwise_clamped_discrete_v1",
+  "source_sha256": {
+    "comparison_fold0": "1cbf08e2a12fd96e1bc534cadf192f91b125e7428c61d31a1d09068af32585cb",
+    "comparison_camr": "04f73e022cbd3733f96cc82476105fecefa66d90c5182c4ad12e49b9761a3f02",
+    "cancer_parity": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3",
+    "cancer_parity_bag": "3fdf0f13813c606ea6a433306c5c849918fd040b11ac6a912aa7c678582b9ccb",
+    "cancer_pathway": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+    "cancer_model": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_rna": "a336a3973023b412fea390744d0fcfa318eaa306e3d3dfda17256ab009b25c6a",
+    "cancer_metrics": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_stream_data": "ac750fb1ef865df4252596cfa47a23465a9bb6796d4ea061d31fcb4129ccb3a2",
+    "cancer_single_view": "57a643af68316d7ad0732217ca6bdbb80a4198cfd3f86489714f9b1a0941a6f1",
+    "cancer_stream": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "model": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "cancer_dense_model": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+    "cancer_dense_tokens": "677c37e353215c5327aa4479596a926ea1569f0454d9352a2b24cab73633e396",
+    "cancer_parity_audit": "ec57a670ba717e7752858e89aeaa6c2151d415220e0f235cfec9c09ffe891294"
+  },
+  "run_model_function_sha256": "3875aad1e03eb3b352dc39b1ee8872ebd91e63be9036938356e0d5dd34bc5ca1",
+  "plan_sha256": "cc48e0800dbd01127a15e5febef63dcf11265d30141d568148455e8968e172fc",
+  "all_arms_same_plan": true,
+  "generated_root": "C:\\Users\\栋栋\\Desktop\\DeCUR-main\\Conditional_DeCUR_Surv\\results\\patientwise_three_arm_validation_20261116_generated",
+  "progress_log": "C:\\Users\\栋栋\\Desktop\\DeCUR-main\\Conditional_DeCUR_Surv\\results\\patientwise_three_arm_validation_20261116.log",
+  "generated_patients": {
+    "train": 20,
+    "val": 4
+  },
+  "generated_events": {
+    "train": 13,
+    "val": 3
+  },
+  "epochs_per_arm": 30,
+  "arms": [
+    "mdecur_full_dense",
+    "mdecur_dense_aux_off",
+    "camr_2m"
+  ],
+  "training_sampling_sha256": "855fedba24f81a4ae69052313bd55ed393a487ee8ee32d11751088245af9d00b",
+  "training_schedule_sha256": "c15397e258e813d10c5df7baf4524294095b83e33fa232803ce03c57a3f41259",
+  "optimizer_steps_per_arm": {
+    "mdecur_full_dense": 30,
+    "mdecur_dense_aux_off": 30,
+    "camr_2m": 30
+  },
+  "discriminator_steps_per_arm": {
+    "mdecur_full_dense": 0,
+    "mdecur_dense_aux_off": 0,
+    "camr_2m": 30
+  },
+  "best_last_replay": [
+    {
+      "arm": "mdecur_full_dense",
+      "selection": "best",
+      "epoch": 1,
+      "prediction_max_abs_error": 0.0,
+      "complete_metric_dict_equal": true
+    },
+    {
+      "arm": "mdecur_full_dense",
+      "selection": "last",
+      "epoch": 30,
+      "prediction_max_abs_error": 0.0,
+      "complete_metric_dict_equal": true
+    },
+    {
+      "arm": "mdecur_dense_aux_off",
+      "selection": "best",
+      "epoch": 1,
+      "prediction_max_abs_error": 0.0,
+      "complete_metric_dict_equal": true
+    },
+    {
+      "arm": "mdecur_dense_aux_off",
+      "selection": "last",
+      "epoch": 30,
+      "prediction_max_abs_error": 0.0,
+      "complete_metric_dict_equal": true
+    },
+    {
+      "arm": "camr_2m",
+      "selection": "best",
+      "epoch": 4,
+      "prediction_max_abs_error": 0.0,
+      "complete_metric_dict_equal": true
+    },
+    {
+      "arm": "camr_2m",
+      "selection": "last",
+      "epoch": 30,
+      "prediction_max_abs_error": 0.0,
+      "complete_metric_dict_equal": true
+    }
+  ],
+  "best_last_state_checks": [
+    {
+      "arm": "mdecur_full_dense",
+      "best_epoch": 1,
+      "last_epoch": 30,
+      "different_tensor_count": 78,
+      "different_state": true
+    },
+    {
+      "arm": "mdecur_dense_aux_off",
+      "best_epoch": 1,
+      "last_epoch": 30,
+      "different_tensor_count": 73,
+      "different_state": true
+    },
+    {
+      "arm": "camr_2m",
+      "best_epoch": 4,
+      "last_epoch": 30,
+      "different_tensor_count": 69,
+      "different_state": true
+    }
+  ],
+  "synthetic_validation_rows": [
+    {
+      "model": "mdecur_full_dense",
+      "selection": "best",
+      "epoch": 1,
+      "Harrell_C": 0.25,
+      "IPCW_C": 0.21814011751250076,
+      "NLL": 1.6219489574432373,
+      "Brier": [
+        0.3794911387035782,
+        0.5444245818232367,
+        0.5412825193048532,
+        0.442207013607424
+      ],
+      "IBS_legacy_grid": 0.5012006801272839,
+      "AUC_legacy_times": 0.5323116219667944,
+      "metric_times": [
+        2.5001,
+        6.0,
+        11.0,
+        18.4999
+      ],
+      "errors": [],
+      "finite_edge_audit": {
+        "protocol": "corrected/time_semantic_audit",
+        "legacy_results_overwritten": false,
+        "risk_definition": "minus the summed survival over every original discrete bin",
+        "ipcw_tau": null,
+        "c_index": 0.25,
+        "c_index_ipcw": 0.21814011751250076,
+        "brier": [
+          0.4000616303559608,
+          0.3934000295047585,
+          0.3233468564269902
+        ],
+        "ibs": 0.37968310239058845,
+        "iauc": 0.0,
+        "auc_by_time": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "metric_times": [
+          6.0,
+          11.0,
+          15.0
+        ],
+        "survival_column_indices": [
+          0,
+          1,
+          2
+        ],
+        "evaluation_event_ties_at_metric_times": [
+          0,
+          0,
+          0
+        ],
+        "errors": [],
+        "comparable_pairs": 4,
+        "harrell_counts": {
+          "concordant": 1,
+          "discordant": 3,
+          "tied_risk": 0,
+          "tied_time": 0,
+          "comparable_pairs": 4
+        },
+        "legacy_comparable_pairs": 4,
+        "legacy_harrell_c": 0.25,
+        "pair_count_difference_sksurv_minus_legacy": 0,
+        "time_mapping": "S[:, j] is evaluated at finite internal training edge bins[j+1]",
+        "grid_rule": "Training edges only, restricted to shared follow-up range and positive training G.",
+        "time_dependent_scope": "Finite internal boundaries only; no open-bin endpoint or interpolation.",
+        "boundary_caution": "Discrete bin-boundary approximation; exact event/edge ties follow sksurv scoring.",
+        "selection_caution": "This rescore does not undo validation-based checkpoint or model selection.",
+        "censoring_audit": {
+          "reference": "training outcomes only",
+          "tau": null,
+          "status": "defined",
+          "n_evaluation_events": 3,
+          "n_events_with_comparable_pairs": 2,
+          "n_events_without_comparable_pairs": 1,
+          "training_max_time": 20.0,
+          "training_g_at_last_observation": 0.26417112299465234,
+          "g_at_event_times": {
+            "count": 3,
+            "min": 0.5283422459893047,
+            "median": 0.7547746371275782,
+            "max": 0.95
+          },
+          "unsupported_event_times": 0,
+          "zero_g_event_times": 0,
+          "ipcw_squared_event_weights": {
+            "count": 3,
+            "min": 1.1080332409972298,
+            "median": 1.7553567916209087,
+            "max": 3.5823607992263455
+          },
+          "contributing_event_weights": {
+            "count": 2,
+            "min": 1.1080332409972298,
+            "median": 1.4316950163090691,
+            "max": 1.7553567916209087
+          },
+          "weighted_pair_denominator": 5.079456514612598,
+          "largest_event_pair_weight_fraction": 0.6544203525375023,
+          "contribution_concentration_effective_event_count": 1.8258460874656894,
+          "concentration_caution": "Descriptive concentration only; comparable pairs share patients."
+        }
+      }
+    },
+    {
+      "model": "mdecur_full_dense",
+      "selection": "last",
+      "epoch": 30,
+      "Harrell_C": 0.25,
+      "IPCW_C": 0.21814011751250076,
+      "NLL": 1.5401856899261475,
+      "Brier": [
+        0.3433699357603229,
+        0.5021432326152248,
+        0.5254184163155076,
+        0.4378722974894439
+      ],
+      "IBS_legacy_grid": 0.4788061040487067,
+      "AUC_legacy_times": 0.5323116219667944,
+      "metric_times": [
+        2.5001,
+        6.0,
+        11.0,
+        18.4999
+      ],
+      "errors": [],
+      "finite_edge_audit": {
+        "protocol": "corrected/time_semantic_audit",
+        "legacy_results_overwritten": false,
+        "risk_definition": "minus the summed survival over every original discrete bin",
+        "ipcw_tau": null,
+        "c_index": 0.25,
+        "c_index_ipcw": 0.21814011751250076,
+        "brier": [
+          0.36091916600055746,
+          0.36535633636613296,
+          0.31499807329693297
+        ],
+        "ibs": 0.35293306391587315,
+        "iauc": 0.0,
+        "auc_by_time": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "metric_times": [
+          6.0,
+          11.0,
+          15.0
+        ],
+        "survival_column_indices": [
+          0,
+          1,
+          2
+        ],
+        "evaluation_event_ties_at_metric_times": [
+          0,
+          0,
+          0
+        ],
+        "errors": [],
+        "comparable_pairs": 4,
+        "harrell_counts": {
+          "concordant": 1,
+          "discordant": 3,
+          "tied_risk": 0,
+          "tied_time": 0,
+          "comparable_pairs": 4
+        },
+        "legacy_comparable_pairs": 4,
+        "legacy_harrell_c": 0.25,
+        "pair_count_difference_sksurv_minus_legacy": 0,
+        "time_mapping": "S[:, j] is evaluated at finite internal training edge bins[j+1]",
+        "grid_rule": "Training edges only, restricted to shared follow-up range and positive training G.",
+        "time_dependent_scope": "Finite internal boundaries only; no open-bin endpoint or interpolation.",
+        "boundary_caution": "Discrete bin-boundary approximation; exact event/edge ties follow sksurv scoring.",
+        "selection_caution": "This rescore does not undo validation-based checkpoint or model selection.",
+        "censoring_audit": {
+          "reference": "training outcomes only",
+          "tau": null,
+          "status": "defined",
+          "n_evaluation_events": 3,
+          "n_events_with_comparable_pairs": 2,
+          "n_events_without_comparable_pairs": 1,
+          "training_max_time": 20.0,
+          "training_g_at_last_observation": 0.26417112299465234,
+          "g_at_event_times": {
+            "count": 3,
+            "min": 0.5283422459893047,
+            "median": 0.7547746371275782,
+            "max": 0.95
+          },
+          "unsupported_event_times": 0,
+          "zero_g_event_times": 0,
+          "ipcw_squared_event_weights": {
+            "count": 3,
+            "min": 1.1080332409972298,
+            "median": 1.7553567916209087,
+            "max": 3.5823607992263455
+          },
+          "contributing_event_weights": {
+            "count": 2,
+            "min": 1.1080332409972298,
+            "median": 1.4316950163090691,
+            "max": 1.7553567916209087
+          },
+          "weighted_pair_denominator": 5.079456514612598,
+          "largest_event_pair_weight_fraction": 0.6544203525375023,
+          "contribution_concentration_effective_event_count": 1.8258460874656894,
+          "concentration_caution": "Descriptive concentration only; comparable pairs share patients."
+        }
+      }
+    },
+    {
+      "model": "mdecur_dense_aux_off",
+      "selection": "best",
+      "epoch": 1,
+      "Harrell_C": 0.25,
+      "IPCW_C": 0.21814011751250076,
+      "NLL": 1.6219241619110107,
+      "Brier": [
+        0.37950534703962885,
+        0.544414441090553,
+        0.5412703009134248,
+        0.4422071407267621
+      ],
+      "IBS_legacy_grid": 0.5011947974679043,
+      "AUC_legacy_times": 0.5323116219667944,
+      "metric_times": [
+        2.5001,
+        6.0,
+        11.0,
+        18.4999
+      ],
+      "errors": [],
+      "finite_edge_audit": {
+        "protocol": "corrected/time_semantic_audit",
+        "legacy_results_overwritten": false,
+        "risk_definition": "minus the summed survival over every original discrete bin",
+        "ipcw_tau": null,
+        "c_index": 0.25,
+        "c_index_ipcw": 0.21814011751250076,
+        "brier": [
+          0.40007584918460026,
+          0.393382914117921,
+          0.32334073433123545
+        ],
+        "ibs": 0.3796771339060684,
+        "iauc": 0.0,
+        "auc_by_time": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "metric_times": [
+          6.0,
+          11.0,
+          15.0
+        ],
+        "survival_column_indices": [
+          0,
+          1,
+          2
+        ],
+        "evaluation_event_ties_at_metric_times": [
+          0,
+          0,
+          0
+        ],
+        "errors": [],
+        "comparable_pairs": 4,
+        "harrell_counts": {
+          "concordant": 1,
+          "discordant": 3,
+          "tied_risk": 0,
+          "tied_time": 0,
+          "comparable_pairs": 4
+        },
+        "legacy_comparable_pairs": 4,
+        "legacy_harrell_c": 0.25,
+        "pair_count_difference_sksurv_minus_legacy": 0,
+        "time_mapping": "S[:, j] is evaluated at finite internal training edge bins[j+1]",
+        "grid_rule": "Training edges only, restricted to shared follow-up range and positive training G.",
+        "time_dependent_scope": "Finite internal boundaries only; no open-bin endpoint or interpolation.",
+        "boundary_caution": "Discrete bin-boundary approximation; exact event/edge ties follow sksurv scoring.",
+        "selection_caution": "This rescore does not undo validation-based checkpoint or model selection.",
+        "censoring_audit": {
+          "reference": "training outcomes only",
+          "tau": null,
+          "status": "defined",
+          "n_evaluation_events": 3,
+          "n_events_with_comparable_pairs": 2,
+          "n_events_without_comparable_pairs": 1,
+          "training_max_time": 20.0,
+          "training_g_at_last_observation": 0.26417112299465234,
+          "g_at_event_times": {
+            "count": 3,
+            "min": 0.5283422459893047,
+            "median": 0.7547746371275782,
+            "max": 0.95
+          },
+          "unsupported_event_times": 0,
+          "zero_g_event_times": 0,
+          "ipcw_squared_event_weights": {
+            "count": 3,
+            "min": 1.1080332409972298,
+            "median": 1.7553567916209087,
+            "max": 3.5823607992263455
+          },
+          "contributing_event_weights": {
+            "count": 2,
+            "min": 1.1080332409972298,
+            "median": 1.4316950163090691,
+            "max": 1.7553567916209087
+          },
+          "weighted_pair_denominator": 5.079456514612598,
+          "largest_event_pair_weight_fraction": 0.6544203525375023,
+          "contribution_concentration_effective_event_count": 1.8258460874656894,
+          "concentration_caution": "Descriptive concentration only; comparable pairs share patients."
+        }
+      }
+    },
+    {
+      "model": "mdecur_dense_aux_off",
+      "selection": "last",
+      "epoch": 30,
+      "Harrell_C": 0.25,
+      "IPCW_C": 0.21814011751250076,
+      "NLL": 1.5402541160583496,
+      "Brier": [
+        0.34376587368804784,
+        0.5019855779407566,
+        0.5253622624847183,
+        0.4378496322861493
+      ],
+      "IBS_legacy_grid": 0.4787802846684039,
+      "AUC_legacy_times": 0.5323116219667944,
+      "metric_times": [
+        2.5001,
+        6.0,
+        11.0,
+        18.4999
+      ],
+      "errors": [],
+      "finite_edge_audit": {
+        "protocol": "corrected/time_semantic_audit",
+        "legacy_results_overwritten": false,
+        "risk_definition": "minus the summed survival over every original discrete bin",
+        "ipcw_tau": null,
+        "c_index": 0.25,
+        "c_index_ipcw": 0.21814011751250076,
+        "brier": [
+          0.3613237664825746,
+          0.3651400678877238,
+          0.31495383802970195
+        ],
+        "ibs": 0.3529274886400664,
+        "iauc": 0.0,
+        "auc_by_time": [
+          0.0,
+          1.0,
+          0.0
+        ],
+        "metric_times": [
+          6.0,
+          11.0,
+          15.0
+        ],
+        "survival_column_indices": [
+          0,
+          1,
+          2
+        ],
+        "evaluation_event_ties_at_metric_times": [
+          0,
+          0,
+          0
+        ],
+        "errors": [],
+        "comparable_pairs": 4,
+        "harrell_counts": {
+          "concordant": 1,
+          "discordant": 3,
+          "tied_risk": 0,
+          "tied_time": 0,
+          "comparable_pairs": 4
+        },
+        "legacy_comparable_pairs": 4,
+        "legacy_harrell_c": 0.25,
+        "pair_count_difference_sksurv_minus_legacy": 0,
+        "time_mapping": "S[:, j] is evaluated at finite internal training edge bins[j+1]",
+        "grid_rule": "Training edges only, restricted to shared follow-up range and positive training G.",
+        "time_dependent_scope": "Finite internal boundaries only; no open-bin endpoint or interpolation.",
+        "boundary_caution": "Discrete bin-boundary approximation; exact event/edge ties follow sksurv scoring.",
+        "selection_caution": "This rescore does not undo validation-based checkpoint or model selection.",
+        "censoring_audit": {
+          "reference": "training outcomes only",
+          "tau": null,
+          "status": "defined",
+          "n_evaluation_events": 3,
+          "n_events_with_comparable_pairs": 2,
+          "n_events_without_comparable_pairs": 1,
+          "training_max_time": 20.0,
+          "training_g_at_last_observation": 0.26417112299465234,
+          "g_at_event_times": {
+            "count": 3,
+            "min": 0.5283422459893047,
+            "median": 0.7547746371275782,
+            "max": 0.95
+          },
+          "unsupported_event_times": 0,
+          "zero_g_event_times": 0,
+          "ipcw_squared_event_weights": {
+            "count": 3,
+            "min": 1.1080332409972298,
+            "median": 1.7553567916209087,
+            "max": 3.5823607992263455
+          },
+          "contributing_event_weights": {
+            "count": 2,
+            "min": 1.1080332409972298,
+            "median": 1.4316950163090691,
+            "max": 1.7553567916209087
+          },
+          "weighted_pair_denominator": 5.079456514612598,
+          "largest_event_pair_weight_fraction": 0.6544203525375023,
+          "contribution_concentration_effective_event_count": 1.8258460874656894,
+          "concentration_caution": "Descriptive concentration only; comparable pairs share patients."
+        }
+      }
+    },
+    {
+      "model": "camr_2m",
+      "selection": "best",
+      "epoch": 4,
+      "Harrell_C": 0.25,
+      "IPCW_C": 0.21814011751250076,
+      "NLL": 1.5428953170776367,
+      "Brier": [
+        0.23225593628121494,
+        0.4748238008430288,
+        0.5055064817252972,
+        0.42205253241984764
+      ],
+      "IBS_legacy_grid": 0.44791058747577916,
+      "AUC_legacy_times": 0.13333333333333336,
+      "metric_times": [
+        2.5001,
+        6.0,
+        11.0,
+        18.4999
+      ],
+      "errors": [],
+      "finite_edge_audit": {
+        "protocol": "corrected/time_semantic_audit",
+        "legacy_results_overwritten": false,
+        "risk_definition": "minus the summed survival over every original discrete bin",
+        "ipcw_tau": null,
+        "c_index": 0.25,
+        "c_index_ipcw": 0.21814011751250076,
+        "brier": [
+          0.2414133428819475,
+          0.3786860040497815,
+          0.29688101055443816
+        ],
+        "ibs": 0.32237582183752905,
+        "iauc": 0.0,
+        "auc_by_time": [
+          0.0,
+          0.5,
+          0.0
+        ],
+        "metric_times": [
+          6.0,
+          11.0,
+          15.0
+        ],
+        "survival_column_indices": [
+          0,
+          1,
+          2
+        ],
+        "evaluation_event_ties_at_metric_times": [
+          0,
+          0,
+          0
+        ],
+        "errors": [],
+        "comparable_pairs": 4,
+        "harrell_counts": {
+          "concordant": 1,
+          "discordant": 3,
+          "tied_risk": 0,
+          "tied_time": 0,
+          "comparable_pairs": 4
+        },
+        "legacy_comparable_pairs": 4,
+        "legacy_harrell_c": 0.25,
+        "pair_count_difference_sksurv_minus_legacy": 0,
+        "time_mapping": "S[:, j] is evaluated at finite internal training edge bins[j+1]",
+        "grid_rule": "Training edges only, restricted to shared follow-up range and positive training G.",
+        "time_dependent_scope": "Finite internal boundaries only; no open-bin endpoint or interpolation.",
+        "boundary_caution": "Discrete bin-boundary approximation; exact event/edge ties follow sksurv scoring.",
+        "selection_caution": "This rescore does not undo validation-based checkpoint or model selection.",
+        "censoring_audit": {
+          "reference": "training outcomes only",
+          "tau": null,
+          "status": "defined",
+          "n_evaluation_events": 3,
+          "n_events_with_comparable_pairs": 2,
+          "n_events_without_comparable_pairs": 1,
+          "training_max_time": 20.0,
+          "training_g_at_last_observation": 0.26417112299465234,
+          "g_at_event_times": {
+            "count": 3,
+            "min": 0.5283422459893047,
+            "median": 0.7547746371275782,
+            "max": 0.95
+          },
+          "unsupported_event_times": 0,
+          "zero_g_event_times": 0,
+          "ipcw_squared_event_weights": {
+            "count": 3,
+            "min": 1.1080332409972298,
+            "median": 1.7553567916209087,
+            "max": 3.5823607992263455
+          },
+          "contributing_event_weights": {
+            "count": 2,
+            "min": 1.1080332409972298,
+            "median": 1.4316950163090691,
+            "max": 1.7553567916209087
+          },
+          "weighted_pair_denominator": 5.079456514612598,
+          "largest_event_pair_weight_fraction": 0.6544203525375023,
+          "contribution_concentration_effective_event_count": 1.8258460874656894,
+          "concentration_caution": "Descriptive concentration only; comparable pairs share patients."
+        }
+      }
+    },
+    {
+      "model": "camr_2m",
+      "selection": "last",
+      "epoch": 30,
+      "Harrell_C": 0.25,
+      "IPCW_C": 0.21814011751250076,
+      "NLL": 1.393434762954712,
+      "Brier": [
+        0.22291603725112866,
+        0.23962611915458934,
+        0.31171523215419883,
+        0.36131831539643794
+      ],
+      "IBS_legacy_grid": 0.2944800045320358,
+      "AUC_legacy_times": 0.13333333333333336,
+      "metric_times": [
+        2.5001,
+        6.0,
+        11.0,
+        18.4999
+      ],
+      "errors": [],
+      "finite_edge_audit": {
+        "protocol": "corrected/time_semantic_audit",
+        "legacy_results_overwritten": false,
+        "risk_definition": "minus the summed survival over every original discrete bin",
+        "ipcw_tau": null,
+        "c_index": 0.25,
+        "c_index_ipcw": 0.21814011751250076,
+        "brier": [
+          0.22387858921903944,
+          0.21598008398103563,
+          0.27065394474827936
+        ],
+        "ibs": 0.23032386005097974,
+        "iauc": 0.13333333333333336,
+        "auc_by_time": [
+          0.33333333333333337,
+          0.5,
+          0.0
+        ],
+        "metric_times": [
+          6.0,
+          11.0,
+          15.0
+        ],
+        "survival_column_indices": [
+          0,
+          1,
+          2
+        ],
+        "evaluation_event_ties_at_metric_times": [
+          0,
+          0,
+          0
+        ],
+        "errors": [],
+        "comparable_pairs": 4,
+        "harrell_counts": {
+          "concordant": 1,
+          "discordant": 3,
+          "tied_risk": 0,
+          "tied_time": 0,
+          "comparable_pairs": 4
+        },
+        "legacy_comparable_pairs": 4,
+        "legacy_harrell_c": 0.25,
+        "pair_count_difference_sksurv_minus_legacy": 0,
+        "time_mapping": "S[:, j] is evaluated at finite internal training edge bins[j+1]",
+        "grid_rule": "Training edges only, restricted to shared follow-up range and positive training G.",
+        "time_dependent_scope": "Finite internal boundaries only; no open-bin endpoint or interpolation.",
+        "boundary_caution": "Discrete bin-boundary approximation; exact event/edge ties follow sksurv scoring.",
+        "selection_caution": "This rescore does not undo validation-based checkpoint or model selection.",
+        "censoring_audit": {
+          "reference": "training outcomes only",
+          "tau": null,
+          "status": "defined",
+          "n_evaluation_events": 3,
+          "n_events_with_comparable_pairs": 2,
+          "n_events_without_comparable_pairs": 1,
+          "training_max_time": 20.0,
+          "training_g_at_last_observation": 0.26417112299465234,
+          "g_at_event_times": {
+            "count": 3,
+            "min": 0.5283422459893047,
+            "median": 0.7547746371275782,
+            "max": 0.95
+          },
+          "unsupported_event_times": 0,
+          "zero_g_event_times": 0,
+          "ipcw_squared_event_weights": {
+            "count": 3,
+            "min": 1.1080332409972298,
+            "median": 1.7553567916209087,
+            "max": 3.5823607992263455
+          },
+          "contributing_event_weights": {
+            "count": 2,
+            "min": 1.1080332409972298,
+            "median": 1.4316950163090691,
+            "max": 1.7553567916209087
+          },
+          "weighted_pair_denominator": 5.079456514612598,
+          "largest_event_pair_weight_fraction": 0.6544203525375023,
+          "contribution_concentration_effective_event_count": 1.8258460874656894,
+          "concentration_caution": "Descriptive concentration only; comparable pairs share patients."
+        }
+      }
+    }
+  ],
+  "main_full_auxiliary_terms": [
+    "survival",
+    "global_path_within",
+    "global_rna_within",
+    "global_unique",
+    "global_common",
+    "patch_within",
+    "pathway_path_within",
+    "pathway_rna_within",
+    "pathway_common",
+    "pathway_unique",
+    "matched_common",
+    "matched_unique",
+    "dense_path_within",
+    "dense_rna_within",
+    "dense_common",
+    "dense_unique"
+  ],
+  "test_evaluated": false
+}

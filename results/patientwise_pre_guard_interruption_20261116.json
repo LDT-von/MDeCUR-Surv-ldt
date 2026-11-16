@@ -1,0 +1,42 @@
+{
+  "scope": "CPU generated data only; interrupted pre-summary-guard engineering run, separate from final one-plan receipt",
+  "unified_exec_session": 71786,
+  "exit_code": 1,
+  "returned_stdout_stderr": "empty; no traceback emitted",
+  "cause": "not established",
+  "completed_arm": "mdecur_full_dense",
+  "completed_epochs": 30,
+  "best_epoch": 1,
+  "last_epoch": 30,
+  "optimizer_steps": 30,
+  "unfinished_arms": {
+    "mdecur_dense_aux_off": "directory reserved; no completed report",
+    "camr_2m": "not started"
+  },
+  "preserved_artifacts": "C:\\Users\\栋栋\\Desktop\\DeCUR-main\\Conditional_DeCUR_Surv\\results\\patientwise_generated_pre_summary_guard_20261116",
+  "source_modules_verified_against_original_plan": 16,
+  "source_sha256": {
+    "comparison_fold0": "f9aa4547c16363a2b572a52ef2011b47e79861c0ef58c2f7ae1c673ff1d78233",
+    "comparison_camr": "04f73e022cbd3733f96cc82476105fecefa66d90c5182c4ad12e49b9761a3f02",
+    "cancer_parity": "e566cca287cf38e06dfb5818046ab0308be09c8d26e2a40e313a9b727a4e89c3",
+    "cancer_parity_bag": "3fdf0f13813c606ea6a433306c5c849918fd040b11ac6a912aa7c678582b9ccb",
+    "cancer_pathway": "704065c9ec1838a28de0dc3cd787ea08d7d508fb1d51a374c31526fad9267314",
+    "cancer_pathway_stream": "5b3259e418b0bc5eff609f3768eebaff523c2e474ba34cbb870fb53ff7ab6add",
+    "cancer_model": "6b39f2660a6fcf1dababeb4c54ec64d03d5fbe0d426fe4d4d4634295234073ab",
+    "cancer_rna": "a336a3973023b412fea390744d0fcfa318eaa306e3d3dfda17256ab009b25c6a",
+    "cancer_metrics": "1f1651b7477da4decca1c7c9f2d8105ad2a860131d07ec3bdb522acf813f2b8c",
+    "cancer_stream_data": "ac750fb1ef865df4252596cfa47a23465a9bb6796d4ea061d31fcb4129ccb3a2",
+    "cancer_single_view": "57a643af68316d7ad0732217ca6bdbb80a4198cfd3f86489714f9b1a0941a6f1",
+    "cancer_stream": "6d32bbd10dcaec3d6d3583f7af89ca8a8c4e19660c95301b003883ad7512b321",
+    "model": "c4a514417636dd5c0c2c96a3021d3dd77187bb80b1ff0fbe1e1af42e38ca013c",
+    "cancer_dense_model": "58d144f6e3fa031350c888212f4e54e67aabbf7d94f8acc9dcbe3abb59d912a8",
+    "cancer_dense_tokens": "677c37e353215c5327aa4479596a926ea1569f0454d9352a2b24cab73633e396",
+    "cancer_parity_audit": "ec57a670ba717e7752858e89aeaa6c2151d415220e0f235cfec9c09ffe891294"
+  },
+  "run_model_function_sha256": "3875aad1e03eb3b352dc39b1ee8872ebd91e63be9036938356e0d5dd34bc5ca1",
+  "checkpoints_sha256": {
+    "best": "73b8bff7cb1f75a7d854672fda7632c3cdf7b97f3e49b34dd469a151752c1b6c",
+    "last": "620c1b05a6b1ad539473049c62fe77b747813e4ba8f1d098d273bef9d6e030c5"
+  },
+  "test_evaluated": false
+}

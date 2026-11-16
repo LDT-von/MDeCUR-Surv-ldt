@@ -230,6 +230,57 @@ class ParityDiagnosticsTests(unittest.TestCase):
                     with interaction.loaded_legacy_inputs(args):
                         pass
 
+    def test_real_file_replay_and_strength_decomposition_for_each_saved_control(self):
+        """Reload real synthetic inputs and weights through the diagnostic boundary."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args, checkpoint, _ = self.fixture(root)
+            rows = ['patient_id,split,wsi_pt,rna_npy,time,event']
+            raw_rna = np.array([[5., 8., 11.], [3., 5., 7.]], dtype=np.float32)
+            generator = torch.Generator().manual_seed(53)
+            for split, ids, times in (('train', ['t0', 't1'], [1, 2]),
+                                      ('val', ['v0', 'v1'], [3, 4])):
+                for index, (identity, time) in enumerate(zip(ids, times)):
+                    torch.save(torch.randn(5, 3, generator=generator), root/f'{identity}.pt')
+                    np.save(root/f'{identity}.npy', raw_rna[index])
+                    rows.append(f'{identity},{split},{identity}.pt,{identity}.npy,{time},{1-index}')
+            Path(args.manifest).write_text('\n'.join(rows)+'\n', encoding='utf-8')
+            checkpoint['manifest_sha256'] = interaction.file_sha256(args.manifest)
+            cohort = interaction.load_stream_manifest(args.manifest, path_views='single_view', include_test=False)
+            try:
+                checkpoint['cohort_input_sha256'] = interaction.stream_cohort_fingerprint(cohort, path_views='single_view')
+            finally:
+                for data in cohort.values():
+                    for bag in data['bags']:
+                        bag.close()
+            expected_rna = torch.tensor([[2., 2., 2.], [1., 1., 1.]])
+            for frozen in ('none', 'rna', 'pathology'):
+                with self.subTest(frozen=frozen):
+                    checkpoint['controls']['frozen_modality'] = frozen
+                    torch.save(checkpoint, args.checkpoint)
+                    with interaction.loaded_legacy_inputs(args) as (model, bags, rna, _, _, evidence):
+                        self.assertEqual(evidence['input_verification'], 'saved_input_contracts_verified')
+                        self.assertEqual(evidence['controls_replay']['frozen_modality'], frozen)
+                        torch.testing.assert_close(rna, torch.zeros_like(expected_rna) if frozen == 'rna' else expected_rna)
+                        if frozen == 'pathology':
+                            for bag in bags:
+                                chunks = [bag.read_block(token, ('features_reference',))[0]
+                                          for token in bag.blocks(args.patch_chunk_size)]
+                                self.assertEqual([len(chunk) for chunk in chunks], [2, 2, 1])
+                                self.assertTrue(torch.equal(torch.cat(chunks), torch.zeros(5, 3)))
+                        original_strength = model.interaction_strength
+                        base = interaction.predict_at_strength(model, bags, rna, args.patch_chunk_size, 0.)
+                        for strength in (.2, 1.):
+                            output = interaction.predict_at_strength(model, bags, rna, args.patch_chunk_size, strength)
+                            torch.testing.assert_close(output['interaction_logits'], base['interaction_logits'])
+                            recovered = output['log_rates']-strength*output['interaction_logits']
+                            torch.testing.assert_close(recovered, base['log_rates'], rtol=1e-6, atol=1e-7)
+                            decomposition = interaction.decompose_output(output, strength)
+                            self.assertAlmostEqual(decomposition['base_abs_mean'],
+                                                   float(base['log_rates'].double().abs().mean()), places=6)
+                            self.assertEqual(model.interaction_strength, original_strength)
+                    self.assertTrue(evidence['model_and_input_guards_passed'])
+
 
 if __name__ == '__main__':
     unittest.main()

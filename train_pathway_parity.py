@@ -91,9 +91,8 @@ def make_parser():
     parser.add_argument('--time-unit', required=True)
     parser.add_argument('--split-name', required=True, help='Name of the split, for the report')
     parser.add_argument('--auxiliary-weight', action='append', default=[], metavar='NAME=VALUE',
-                        help='Override one auxiliary loss weight; repeatable.  Every override '
-                             'switches the auxiliary path on, so the run no longer matches the '
-                             'auxiliary-disabled control unless the same override is given there.')
+                        help='Explicit auxiliary tuning/ablation; repeatable. Zero disables the '
+                             'named term, and the run is recorded as a non-full reference.')
     parser.add_argument('--common-mode', choices=['off', 'uniform', 'stability', 'shuffled'],
                         default=None,
                         help='How the global common subspace is estimated; the default keeps the '
@@ -243,6 +242,7 @@ def main():
         raise ValueError('A positive patch budget and at least two survival bins are required')
     if not 0 <= args.alpha_surv <= 1:
         raise ValueError('alpha_surv must lie in [0, 1]')
+    cfg, controls, minimum, tail_minimum = _configure(args)
     device = torch.device(args.device)
     if device.type == 'cuda' and not torch.cuda.is_available():
         raise ValueError('The requested CUDA device is unavailable in this environment')
@@ -276,9 +276,8 @@ def main():
     censorship = {split: 1-values for split, values in (('train', train_event),
                                                         ('val', val_event))}
 
-    # The null control permutes the training labels only.  The validation
-    # labels stay untouched, so a model that still reaches a high validation
-    # C-index would be reading something other than the training outcome.
+    # The null control permutes training labels only. Validation selection and
+    # finite-sample variation can yield a non-chance C-index under this null.
     if args.shuffle_train_labels:
         generator = np.random.default_rng(args.seed)
         permutation = generator.permutation(len(train_time))
@@ -295,47 +294,14 @@ def main():
     train = _budget(cohort['train'], args.num_patches, 'train', args.seed)
     validation = _budget(cohort['val'], args.num_patches, 'eval', args.seed)
 
-    config_class = PathwayConfig if args.legacy_architecture else DensePathwayConfig
-    cfg = config_class(epochs=args.epochs, patience=args.epochs+1, lr=args.lr,
-                        weight_decay=args.weight_decay, seed=args.seed,
-                        rna_scale_policy=args.rna_scale_policy)
-    overrides = _parse_auxiliary_overrides(args.auxiliary_weight)
-    if args.disable_auxiliary and overrides:
-        raise ValueError('--disable-auxiliary and --auxiliary-weight contradict each other')
-    if args.disable_auxiliary:
-        from cancer_pathway_stream import LOSS_NAMES
-        cfg = config_class(**{**asdict(cfg),
-                               **{name: 0. for name in LOSS_NAMES},
-                               **({name: 0. for name in DENSE_LOSS_NAMES} if not args.legacy_architecture else {}),
-                               'common_mode': 'off'})
-    elif overrides:
-        # Only the named terms change; every other term keeps the configured
-        # weight, so an explicit override of every term reproduces the defaults.
-        cfg = config_class(**{**asdict(cfg), **overrides})
-        if not args.legacy_architecture:
-            # An explicit override is an intentional deviation from the full
-            # reference: it must still leave every other coefficient positive.
-            if any(w <= 0 for w in (*effective_weights(cfg).values(),
-                                    *dense_weights(cfg).values())):
-                raise ValueError('Explicit overrides must keep every legacy and dense '
-                                 'auxiliary coefficient > 0')
-    elif not args.legacy_architecture:
-        require_full_auxiliary(cfg)
-    if args.common_mode is not None:
-        cfg = config_class(**{**asdict(cfg), 'common_mode': args.common_mode})
-    minimum = validate_config(cfg, 'feature_noise', args.patient_batch_size, args.patch_chunk_size)
     scaler = fit_rna_scaler(train['rna'], cfg.rna_scale_policy, cfg.rna_min_std)
     normalized = transform_rna(train['rna'], scaler)
     validation_normalized = transform_rna(validation['rna'], scaler)
-
-    # The modality control removes one input from both the training batches and
-    # the evaluation, so the remaining modality is the only source of signal.
-    if args.freeze_modality == 'rna':
-        normalized = torch.zeros_like(normalized)
-        validation_normalized = torch.zeros_like(validation_normalized)
-    if args.freeze_modality == 'pathology':
-        train['bags'] = _freeze_bags(train['bags'], args.num_patches)
-        validation['bags'] = _freeze_bags(validation['bags'], args.num_patches)
+    input_contract = {'controls': controls, 'num_patches': args.num_patches,
+                      'patch_chunk_size': args.patch_chunk_size, 'loss_version': DISCRETE_NLL_VERSION}
+    train['bags'], normalized, replay = apply_checkpoint_controls(input_contract, train['bags'], normalized)
+    validation['bags'], validation_normalized, _ = apply_checkpoint_controls(
+        input_contract, validation['bags'], validation_normalized)
 
     dimension = train['bags'][0].feature_dim
     model_kwargs = dict(path_dim=dimension, rna_dim=train['rna'].shape[1],
@@ -355,6 +321,7 @@ def main():
                             batch['censorship'].to(device), alpha=args.alpha_surv)
 
     order_generator = torch.Generator().manual_seed(args.seed)
+    sampling_hash = hashlib.sha256()
     history = []
     best, best_cindex, best_epoch = None, -np.inf, 0
     for epoch in range(1, args.epochs+1):
@@ -363,12 +330,19 @@ def main():
         # The reference redraws the training patch subset at every epoch.
         for bag in train['bags']:
             bag.resample(args.seed*1000+epoch)
+            budget_bag = getattr(bag, '_budget', bag)
+            sampling_hash.update(json.dumps([bag.patient_id, getattr(budget_bag, '_rows', None)],
+                                             separators=(',', ':')).encode('utf-8'))
         order = torch.randperm(len(train['ids']), generator=order_generator)
+        batches = patient_batches(order, args.patient_batch_size, tail_minimum)
+        for indices in batches:
+            sampling_hash.update(json.dumps([train['ids'][i] for i in indices.tolist()],
+                                             separators=(',', ':')).encode('utf-8'))
         total, patients, skipped, auxiliary_batches = 0.0, 0, 0, []
         term_sums = {}
         term_counts = {}
         diagnostic_sums = {}
-        for indices in patient_batches(order, args.patient_batch_size, minimum):
+        for indices in batches:
             if len(indices) < 1:
                 continue
             optimizer.zero_grad(set_to_none=True)
@@ -387,7 +361,7 @@ def main():
                 loss, stats = dense_pathway_objective(model, batch, cfg, args.patch_chunk_size,
                                                       args.seed*1000+epoch, epoch,
                                                       survival_loss=survival_loss)
-                if not args.disable_auxiliary and stats['common_skipped']:
+                if controls['is_full_reference'] and stats['common_skipped']:
                     raise FloatingPointError('Full common auxiliary degenerated; refuse silent loss disabling')
                 auxiliary_batches.append(stats)
             loss.backward()
@@ -416,6 +390,9 @@ def main():
                                        args.n_bins, train_time, train_event, val_time,
                                        val_event, args.alpha_surv)
         record = {'epoch': epoch, 'train_nll': total/max(1, patients),
+                  'patient_batches': [len(indices) for indices in batches],
+                  'optimizer_steps': len(batches),
+                  'training_sampling_sha256': sampling_hash.hexdigest(),
                   'auxiliary_batches': auxiliary_batches,
                   'common_skipped_batches': skipped,
                   'seconds': time.perf_counter()-epoch_start, **validation_metrics}
@@ -449,6 +426,7 @@ def main():
     destination.mkdir(parents=True, exist_ok=False)
     architecture = 'PathwayLocalSurvival' if args.legacy_architecture else 'DensePathwaySurvival'
     checkpoint = {'architecture': architecture, 'model_state': model.state_dict(),
+                **input_contract,
                 'survival_reference_sha256': sha256_file(args.survival_reference),
                 'model_kwargs': model_kwargs, 'pathway_mapping': pathway_mapping,
                 'rna_mean': scaler['rna_mean'], 'rna_scale': scaler['rna_scale'],
@@ -480,17 +458,11 @@ def main():
                                                               labels['val'].numpy(), last_survival))
     report = {
         'status': 'research_only',
-        'controls': {
-            'shuffled_train_labels': bool(args.shuffle_train_labels),
-            'frozen_modality': args.freeze_modality,
-            'auxiliary_weight_overrides': overrides,
-            'common_mode': cfg.common_mode,
-            'note': ('a shuffled-label run is a null control: the validation score must '
-                     'collapse to chance.  A frozen-modality run removes one input '
-                     'from both the training and the evaluation.  An auxiliary-weight '
-                     'override switches the auxiliary path on; the term means and the '
-                     'pathway diagnostics are recorded per epoch.'),
-        },
+        'controls': controls,
+        'input_replay': replay,
+        'loss_version': DISCRETE_NLL_VERSION,
+        'training_sampling_sha256': sampling_hash.hexdigest(),
+        'optimizer_steps': sum(row['optimizer_steps'] for row in history),
         'protocol': parity_report_protocol(edges, args.num_patches, args.endpoint,
                                             args.split_name, args.n_bins),
         'architecture': architecture,
@@ -508,6 +480,8 @@ def main():
         'effective_loss_weights': {**effective_weights(cfg),
                                   **(dense_weights(cfg, cfg.dense_warmup_epochs) if not args.legacy_architecture else {})},
         'minimum_patient_batch': minimum,
+        'batch_tail_minimum': tail_minimum,
+        'patient_batch_size': args.patient_batch_size, 'patch_chunk_size': args.patch_chunk_size,
         'alpha_surv': args.alpha_surv, 'n_bins': args.n_bins, 'num_patches': args.num_patches,
         'bin_edges': [_json_float(x) for x in edges],
         'patients': {'train': len(train['ids']), 'val': len(validation['ids'])},

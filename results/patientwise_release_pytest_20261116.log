@@ -1,0 +1,9 @@
+........................................................................ [ 21%]
+........................sss............................................. [ 43%]
+........................................................................ [ 64%]
+........................................................................ [ 86%]
+..............................................                           [100%]
+- generated xml file: C:\Users\����\Desktop\DeCUR-main\Conditional_DeCUR_Surv\results\patientwise_release_junit_20261116.xml -
+=========================== short test summary info ===========================
+SKIPPED [3] D:\python\lib\site-packages\_pytest\unittest.py:385: The reference repository is not available
+331 passed, 3 skipped, 464 warnings in 549.08s (0:09:09)

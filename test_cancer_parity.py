@@ -127,9 +127,9 @@ class DiscreteLikelihoodTest(unittest.TestCase):
         censored = discrete_nll(logits, labels, torch.tensor([1.]), alpha=0.5)
         uncensored = discrete_nll(logits, labels, torch.tensor([0.]), alpha=0.5)
         survival = discrete_survival(logits)[0]
-        # The reference likelihood weights the uncensored term by alpha and
-        # the censored term by 1-alpha, so the censored loss is half of the
-        # plain negative log survival term.
+        # Combining the main and event-only terms leaves event weight 1 and
+        # censored weight 1-alpha, so this censored loss is half of the plain
+        # negative log survival term.
         expected_censored = .5*(-torch.log(survival[1]))
         self.assertAlmostEqual(float(censored), float(expected_censored), places=5)
         self.assertNotAlmostEqual(float(censored), float(uncensored), places=4)

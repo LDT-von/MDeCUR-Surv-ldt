@@ -1,5 +1,7 @@
 # DCT 对齐协议（DCT Parity Protocol）
 
+> 当前修复版的入口接线、验证回执和仅 BLCA fold0 的 V3 运行命令见 [PATIENTWISE_V3_HANDOFF_20261116.md](PATIENTWISE_V3_HANDOFF_20261116.md)。旧协议命令不作为本次重跑指令。
+
 > **2026-11-16：历史离散 NLL 存在跨患者广播漏洞，以下旧数字保留为历史记录。**
 > 旧实现将形状为 `[B]` 的删失权重与 `[B, 1]` 的逐患者损失相乘，得到 `[B, B]`，
 > 导致权重跨患者混合。**本仓库所有使用该旧离散 NLL、且包含混合事件/删失患者批次的历史训练均受影响**；
@@ -54,8 +56,9 @@
 - 在**训练集**的未删失 DSS 时间上用 `pd.qcut(q=4, labels=False, duplicates='drop')`
   拟合 4 个分箱边界，外侧边界替换为 `-inf` / `+inf`
 - 标签离散化：时间落在哪个箱 → 该箱为 1（one-hot）
-- 损失：**离散 NLL**（negative log-likelihood of the discrete survival），
-  与参考实现的 `nll_loss` 一致；删失样本按删失位置累计权重
+- 损失：**逐患者离散 NLL**（negative log-likelihood of the discrete survival），
+  采用本仓库 `patientwise_clamped_discrete_v1`；事件权重为 1，删失权重为 `1-alpha`。
+  原参考训练器是否存在同类广播问题尚未核实，不能由旧指标一致推断训练目标等价。
 
 分箱边界在 BLCA fold0 上的取值（双精度）：
 
