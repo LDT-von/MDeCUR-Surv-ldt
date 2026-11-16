@@ -79,6 +79,7 @@ UPSTREAM = {
             'src/survival/losses.py': '497d991442b45f73ddd0c654a7340be162602574fa7db7222bdb3f3fa5ae8001',
             'src/survival/metrics.py': '77f8eb9093778ab47400b73aad5d25839f8849b688ae0605f77a608bbdeef5e6',
             'src/data/data_files/hallmarks_signatures.csv': '851c61997590be3dd001e54d75cc1d40ccc09dc8be03f58fa3392be6bf9e5db9',
+            'src/embeddings/prototype.py': 'bb6fccc275b3b3b06ef999863c38966383d462b093db5feef8c4e734a6453e73',
         },
     },
 }

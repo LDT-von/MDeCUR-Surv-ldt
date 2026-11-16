@@ -30,7 +30,7 @@ DEVICE="${COMPARISON_DEVICE:-cuda:0}"
 EPOCHS="${COMPARISON_EPOCHS:-30}"
 FOLDS="${COMPARISON_FOLDS:-0}"
 MODELS="${COMPARISON_MODELS:-pibd_2m camr_2m deref_2m dimaf_2m}"
-DEREF_SIGNATURES="${COMPARISON_DEREF_SIGNATURES:-/data1/dataset_csv/signatures/deref_signatures.csv}"
+DEREF_SIGNATURES="${COMPARISON_DEREF_SIGNATURES:-/data1/papers/comparators/DeReF/csv/signatures.csv}"
 
 for input in manifest.csv survival_reference.csv genes.txt combine_signatures.gmt; do
   if [[ ! -f "$INPUTS/$input" ]]; then

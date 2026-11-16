@@ -185,8 +185,8 @@ class MergeTest(unittest.TestCase):
         self.assertTrue(out.is_file())
         models = {row['arm'] for row in result['rows']}
         self.assertIn('camr_2m', models)
-        self.assertIn('camr_2m [five-fold runner]', models)
-        self.assertIn('pibd_2m [five-fold runner]', models)
+        self.assertIn('camr_2m [upstream runner]', models)
+        self.assertIn('pibd_2m [upstream runner]', models)
         # Every row carries a metric that was recomputed here.
         for row in result['rows']:
             self.assertIsNotNone(row['Harrell_C'])
@@ -211,7 +211,7 @@ class MergeTest(unittest.TestCase):
         self.assertIn('upstream_Harrell_C', bridge['best'])
 
     def test_the_shared_nll_is_not_the_runner_native_nll(self):
-        """The five-fold runner scores its NLL from log(1-S); the shared NLL is
+        """The upstream runner scores its NLL from log(1-S); the shared NLL is
         recomputed from the hazard logits, so the two must be told apart."""
         fold0_path, fold0_sha = self.make_fold0_plan()
         fivefold_path, fivefold_sha = self.make_fivefold_plan()
