@@ -29,6 +29,21 @@ that the merged table inherits.
 
 The merge refuses to publish when the two plans do not describe the same
 patients, the same labels or the same bins.
+
+Selection-free columns
+----------------------
+The published score of an arm is the **maximum** validation Harrell C over its
+training epochs, and that maximum is selected on the same patients that are
+scored.  Every row therefore also carries the arm's **epoch mean** over the
+same epochs, which is the selection-free summary of the same trajectory, and
+the **selection inflation** (maximum minus mean) that the choice of the
+maximum adds on top of it.
+
+The table also carries the **pure-noise null** of the protocol: random risk
+vectors scored with the same metric call on the same cohort over the same
+number of epochs.  A protocol with no signal at all does not sit at 0.5 here,
+so a published maximum has to be read against the null's ``epoch_max`` p99,
+and an epoch mean against its ``epoch_mean`` p99.
 """
 import argparse
 import csv
@@ -44,6 +59,7 @@ from cancer_parity import (discrete_nll, discretize_labels, dct_bin_edges,
                            parity_metrics, DISCRETE_NLL_VERSION)
 from comparison_5fold import PROTOCOL as FIVEFOLD_PROTOCOL
 from comparison_5fold import PROTOCOL_VERSION as FIVEFOLD_PROTOCOL_VERSION
+from comparison_epoch_stats import epoch_statistics, noise_null
 from comparison_fold0 import PROTOCOL as FOLD0_PROTOCOL
 
 FOLD0_RUNS = ('mdecur_full_dense', 'mdecur_dense_aux_off', 'camr_2m',
@@ -277,6 +293,10 @@ def collect_arm(directory, group, reference, edges, train_ids):
     if report.get('loss_version') != DISCRETE_NLL_VERSION:
         raise ValueError(f'Refuse a run under another likelihood version: {directory}')
     model_id = report['model_id']
+    # The epoch mean and the selection inflation are read from the runner's
+    # own epoch history, so they describe the trajectory that produced the
+    # saved predictions instead of a separate re-evaluation.
+    statistics = epoch_statistics(report.get('history'))
     rows = []
     for selection in ('best', 'last'):
         predictions = directory/f'val_predictions_{selection}.csv'
@@ -304,12 +324,17 @@ def collect_arm(directory, group, reference, edges, train_ids):
                      'runner_metric_mismatch': problems,
                      'parameters': report.get('parameters'),
                      'wall_seconds': report.get('wall_seconds'),
-                     'evaluation_patients': len(ids)})
+                     'evaluation_patients': len(ids),
+                     'epoch_mean_c_index': (statistics or {}).get('mean_c_index'),
+                     'epoch_sd_c_index': (statistics or {}).get('sd_c_index'),
+                     'epoch_max_c_index': (statistics or {}).get('max_c_index'),
+                     'selection_inflation': (statistics or {}).get('selection_inflation')})
     return rows
 
 
 def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
-          survival_reference_path, out, required_epochs=30):
+          survival_reference_path, out, required_epochs=30, null_trials=1000,
+          null_seed=20261117):
     """Build the merged ranking table."""
     fold0_plan = read_json(fold0_plan_path)
     fivefold_plan = read_json(fivefold_plan_path)
@@ -357,6 +382,39 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
                   and row['Harrell_C'] is not None]
         rankings[selection] = [row['arm'] for row in
                                 sorted(subset, key=lambda r: -float(r['Harrell_C']))]
+    # The selection-free ranking uses the epoch mean of each arm's own
+    # trajectory, so it is not chosen on the validation set the way the
+    # published maximum is.
+    epoch_mean_rows = [row for row in rows if row['selection'] == 'best'
+                        and row['epoch_mean_c_index'] is not None]
+    epoch_mean_ranking = [row['arm'] for row in
+                          sorted(epoch_mean_rows,
+                                 key=lambda r: -float(r['epoch_mean_c_index']))]
+    # The pure-noise null of the whole protocol: random risk, the same metric
+    # call, the same cohort and the same number of epochs.
+    validation_ids = sorted(p for p, value in reference.items() if value[0] == 'val')
+    null = None
+    if validation_ids and null_trials:
+        null = noise_null(len(validation_ids),
+                          [reference[p][2] > .5 for p in validation_ids],
+                          [reference[p][1] for p in validation_ids],
+                          trials=null_trials, epochs=required_epochs, seed=null_seed)
+    null_reference = None
+    if null:
+        null_reference = {
+            'epoch_mean_p99': null['epoch_mean']['p99'],
+            'epoch_max_p99': null['epoch_max']['p99'],
+            'note': ('A published maximum has to be read against the epoch_max '
+                     'p99 and an epoch mean against the epoch_mean p99 of this '
+                     'null. The null is the protocol with no signal at all, so '
+                     'a score inside it is not evidence of signal.'),
+        }
+    for row in rows:
+        if row['epoch_mean_c_index'] is not None and null:
+            row['epoch_mean_above_null_p99'] = bool(
+                float(row['epoch_mean_c_index']) > float(null['epoch_mean']['p99']))
+            row['epoch_max_above_null_p99'] = bool(
+                float(row['epoch_max_c_index']) > float(null['epoch_max']['p99']))
     bridge = _bridge_offsets(rows)
     result = {
         'merged_table_version': 'fold0_plus_upstream_merged_v1',
@@ -372,6 +430,9 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
         'identity': identity,
         'rows': rows,
         'Harrell_C_rankings': rankings,
+        'epoch_mean_rankings': epoch_mean_ranking,
+        'pure_noise_null': null,
+        'null_reference': null_reference,
         'bridge_arm': bridge,
         'metric_directions': {'Harrell_C': 'higher', 'IPCW_C': 'higher',
                               'AUC_legacy_times': 'higher', 'NLL': 'lower',
@@ -387,6 +448,16 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
             'camr_2m was run by both runners on the same patients, so the two '
             'rows of that arm measure the runner-to-runner offset that every '
             'cross-group comparison inherits.'),
+        'selection_free_note': (
+            'The published score of an arm is the maximum validation Harrell C '
+            'over its epochs, and that maximum is selected on the same '
+            'patients that are scored. Every row therefore also carries the '
+            'epoch mean of the same trajectory, which is not chosen by the '
+            'validation set, and the selection inflation that the maximum '
+            'adds on top of it. The epoch-mean ranking is the selection-free '
+            'ordering of the table. The pure-noise null states what the same '
+            'protocol produces with no signal at all, so a published maximum '
+            'can be read against a real null instead of against 0.5.'),
         'comparability_limits': [
             'The two runners share the endpoint, unit, binning function, patch '
             'budget, resampling seed, training seed, likelihood version and '
@@ -396,6 +467,13 @@ def merge(fold0_plan_path, fold0_runs, fivefold_plan_path, fivefold_runs,
             'arms take one optimizer step more per epoch than the fold0 arms.',
             'Every number is a validation-selected point estimate on one fold '
             'with no significance test and no claim of superiority.',
+            'The epoch mean removes the selection bias of the maximum but does '
+            'not add statistical resolution: the validation partition still '
+            'holds 77 patients, so a bootstrap interval over them stays far '
+            'wider than the gap between the leading arms.',
+            'The pure-noise null is the protocol with no signal. It bounds '
+            'what an arm can score without evidence, and it does not say that '
+            'an arm above the null is clinically useful.',
             'Adapted comparator arms are not reproductions of their original '
             'papers, and no arm score may be compared with a published table.',
             'The archived DCT five-fold reference is not part of this table: '
@@ -446,15 +524,21 @@ def main():
     parser.add_argument('--out', required=True)
     parser.add_argument('--required-epochs', type=int, default=30,
                         help='Every merged arm must have completed this many epochs')
+    parser.add_argument('--null-trials', type=int, default=1000,
+                        help='Trials of the pure-noise null; 0 disables the null')
+    parser.add_argument('--null-seed', type=int, default=20261117,
+                        help='Seed of the pure-noise null')
     args = parser.parse_args()
     if Path(args.out).exists():
         raise FileExistsError(args.out)
     result = merge(args.fold0_plan, args.fold0_runs, args.fivefold_plan,
                    args.fivefold_runs, args.survival_reference, args.out,
-                   args.required_epochs)
+                   args.required_epochs, args.null_trials, args.null_seed)
     print(json.dumps({'out': args.out,
                       'arms': len({row['model'] for row in result['rows']}),
-                      'rankings_best': result['Harrell_C_rankings']['best']},
+                      'rankings_best': result['Harrell_C_rankings']['best'],
+                      'rankings_epoch_mean': result['epoch_mean_rankings'],
+                      'null_reference': result['null_reference']},
                      ensure_ascii=False, indent=2))
 
 

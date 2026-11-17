@@ -42,6 +42,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import comparison_merge as merge
 import comparison_sources as sources
 from cancer_parity import dct_bin_edges, dct_risk
+from comparison_epoch_stats import epoch_statistics as _epoch_statistics
+from comparison_epoch_stats import noise_null as _noise_null
 
 
 def read_reference(path):
@@ -93,57 +95,17 @@ def noise_null(n_patients, events, times, trials=1000, epochs=30, seed=20261117)
     """The null of the whole protocol: random risk, the same metric, the same
     number of validation-selected epochs.
 
-    Two statistics are reported, because the published table uses the second
-    one and the first one is the honest summary of the run:
-
-    * ``epoch_mean``: the mean Harrell C over the epochs.  A model that
-      carries no signal sits at the chance level here.
-    * ``epoch_max``: the maximum over the epochs, which is what the
-      validation-selected score is.  Even a pure random risk reaches a high
-      maximum, because the maximum of 30 noisy draws is biased upwards.
+    The implementation lives in ``comparison_epoch_stats`` so that the audit
+    and the merged table cannot drift apart: the null printed beside the
+    ranking is the null the ranking was read against.
     """
-    from sksurv.metrics import concordance_index_censored
-
-    generator = np.random.default_rng(seed)
-    means, maxes = [], []
-    for _ in range(trials):
-        scores = []
-        for _ in range(epochs):
-            risk = generator.random(n_patients)
-            try:
-                scores.append(float(concordance_index_censored(events, times, risk,
-                                                                tied_tol=1e-8)[0]))
-            except Exception:
-                continue
-        if not scores:
-            continue
-        means.append(statistics.fmean(scores))
-        maxes.append(max(scores))
-    if not means:
-        return None
-    means = np.asarray(means)
-    maxes = np.asarray(maxes)
-    return {'trials': len(means), 'epochs': epochs,
-            'epoch_mean': {'mean': float(means.mean()), 'sd': float(means.std()),
-                           'p95': float(np.percentile(means, 95)),
-                           'p99': float(np.percentile(means, 99))},
-            'epoch_max': {'mean': float(maxes.mean()), 'sd': float(maxes.std()),
-                          'p95': float(np.percentile(maxes, 95)),
-                          'p99': float(np.percentile(maxes, 99))}}
+    return _noise_null(n_patients, events, times, trials=trials, epochs=epochs,
+                       seed=seed)
 
 
 def epoch_statistics(history):
     """The epoch mean, spread and maximum of one arm's validation C-index."""
-    values = [entry.get('c_index') for entry in history or []
-              if entry.get('c_index') is not None]
-    if len(values) < 2:
-        return None
-    mean = statistics.fmean(values)
-    return {'epochs': len(values), 'mean_c_index': mean,
-            'sd_c_index': statistics.pstdev(values),
-            'min_c_index': min(values), 'max_c_index': max(values),
-            'last_c_index': values[-1],
-            'selection_inflation': max(values) - mean}
+    return _epoch_statistics(history)
 
 
 def reproducibility(batch, arms, reference, edges, train_ids):

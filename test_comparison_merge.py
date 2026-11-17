@@ -267,6 +267,104 @@ class MergeTest(unittest.TestCase):
         recovered = discrete_survival(logits).numpy()
         np.testing.assert_allclose(recovered, survival, atol=1e-6)
 
+    # ------------------------------------------------- selection-free columns
+    def test_every_row_carries_the_epoch_statistics(self):
+        """The published maximum is selected on the scored patients, so every
+        row also carries the selection-free epoch mean of the same run."""
+        fold0_path, fold0_sha = self.make_fold0_plan()
+        fivefold_path, fivefold_sha = self.make_fivefold_plan()
+        fold0_runs = self.run_fold0_arms(fold0_path, fold0_sha)
+        fivefold_runs = self.run_fivefold_arms(fivefold_path, fivefold_sha)
+        result = merge.merge(fold0_path, fold0_runs, fivefold_path, fivefold_runs,
+                             self.reference, self.root/'merged.json',
+                             required_epochs=TEST_EPOCHS)
+        self.assertTrue(result['rows'])
+        for row in result['rows']:
+            self.assertIsNotNone(row['epoch_mean_c_index'])
+            self.assertIsNotNone(row['epoch_max_c_index'])
+            self.assertIsNotNone(row['selection_inflation'])
+            # The published maximum cannot be below the mean it was chosen from.
+            self.assertGreaterEqual(row['epoch_max_c_index'] + 1e-12,
+                                    row['epoch_mean_c_index'])
+            self.assertAlmostEqual(
+                row['selection_inflation'],
+                row['epoch_max_c_index'] - row['epoch_mean_c_index'], places=9)
+
+    def test_the_epoch_mean_ranking_is_published(self):
+        fold0_path, fold0_sha = self.make_fold0_plan()
+        fivefold_path, fivefold_sha = self.make_fivefold_plan()
+        fold0_runs = self.run_fold0_arms(fold0_path, fold0_sha)
+        fivefold_runs = self.run_fivefold_arms(fivefold_path, fivefold_sha)
+        result = merge.merge(fold0_path, fold0_runs, fivefold_path, fivefold_runs,
+                             self.reference, self.root/'merged.json',
+                             required_epochs=TEST_EPOCHS)
+        ranking = result['epoch_mean_rankings']
+        self.assertTrue(ranking)
+        arms = {row['arm'] for row in result['rows'] if row['selection'] == 'best'}
+        for arm in ranking:
+            self.assertIn(arm, arms)
+        # The ordering follows the epoch means, not the published maxima.
+        means = {row['arm']: row['epoch_mean_c_index'] for row in result['rows']
+                 if row['selection'] == 'best'}
+        ordered = [means[arm] for arm in ranking]
+        self.assertEqual(ordered, sorted(ordered, reverse=True))
+
+    def test_the_pure_noise_null_is_published_and_bounds_the_scores(self):
+        """A protocol with no signal does not score 0.5 here, so the null is
+        what a published maximum has to be read against."""
+        fold0_path, fold0_sha = self.make_fold0_plan()
+        fivefold_path, fivefold_sha = self.make_fivefold_plan()
+        fold0_runs = self.run_fold0_arms(fold0_path, fold0_sha)
+        fivefold_runs = self.run_fivefold_arms(fivefold_path, fivefold_sha)
+        result = merge.merge(fold0_path, fold0_runs, fivefold_path, fivefold_runs,
+                             self.reference, self.root/'merged.json',
+                             required_epochs=TEST_EPOCHS, null_trials=50)
+        null = result['pure_noise_null']
+        self.assertIsNotNone(null)
+        self.assertEqual(null['epochs'], TEST_EPOCHS)
+        # The epoch maximum of a pure-noise protocol is biased upwards.
+        self.assertGreater(null['epoch_max']['p99'], null['epoch_mean']['p99'])
+        reference = result['null_reference']
+        self.assertIsNotNone(reference)
+        self.assertAlmostEqual(reference['epoch_mean_p99'], null['epoch_mean']['p99'])
+        self.assertAlmostEqual(reference['epoch_max_p99'], null['epoch_max']['p99'])
+        for row in result['rows']:
+            self.assertIn('epoch_mean_above_null_p99', row)
+            self.assertIn('epoch_max_above_null_p99', row)
+
+    def test_the_null_can_be_disabled_without_breaking_the_merge(self):
+        fold0_path, fold0_sha = self.make_fold0_plan()
+        fivefold_path, fivefold_sha = self.make_fivefold_plan()
+        fold0_runs = self.run_fold0_arms(fold0_path, fold0_sha)
+        fivefold_runs = self.run_fivefold_arms(fivefold_path, fivefold_sha)
+        result = merge.merge(fold0_path, fold0_runs, fivefold_path, fivefold_runs,
+                             self.reference, self.root/'merged.json',
+                             required_epochs=TEST_EPOCHS, null_trials=0)
+        self.assertIsNone(result['pure_noise_null'])
+        self.assertIsNone(result['null_reference'])
+        # The epoch statistics are independent of the null and stay published.
+        self.assertTrue(result['epoch_mean_rankings'])
+        for row in result['rows']:
+            self.assertNotIn('epoch_mean_above_null_p99', row)
+
+    def test_a_short_history_yields_no_epoch_statistics(self):
+        """A mean over fewer than two epochs is not a trajectory summary and
+        must not be printed as one."""
+        from comparison_epoch_stats import epoch_statistics
+        self.assertIsNone(epoch_statistics(None))
+        self.assertIsNone(epoch_statistics([]))
+        self.assertIsNone(epoch_statistics([{'c_index': 0.6}]))
+        self.assertIsNone(epoch_statistics([{'c_index': 0.6}, {'other': 1}]))
+        statistics = epoch_statistics([{'c_index': 0.4}, {'c_index': 0.6}])
+        self.assertIsNotNone(statistics)
+        self.assertAlmostEqual(statistics['mean_c_index'], 0.5)
+        self.assertAlmostEqual(statistics['selection_inflation'], 0.1)
+
+    def test_the_noise_null_needs_one_value_per_patient(self):
+        from comparison_epoch_stats import noise_null
+        with self.assertRaises(ValueError):
+            noise_null(3, [True, False], [1.0, 2.0], trials=2, epochs=2)
+
 
 if __name__ == '__main__':
     unittest.main()
