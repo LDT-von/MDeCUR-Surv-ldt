@@ -44,6 +44,43 @@
       "p99": 0.6997068145800317
     }
   },
+  "fold_event_profile": {
+    "fold_0": {
+      "validation_patients": 77,
+      "events": 27,
+      "event_rate": 0.35064935064935066,
+      "median_dss_months": 16.27379426,
+      "events_beyond_60_months": 2
+    },
+    "fold_1": {
+      "validation_patients": 76,
+      "events": 27,
+      "event_rate": 0.35526315789473684,
+      "median_dss_months": 17.98336457,
+      "events_beyond_60_months": 1
+    },
+    "fold_2": {
+      "validation_patients": 76,
+      "events": 27,
+      "event_rate": 0.35526315789473684,
+      "median_dss_months": 18.854587895,
+      "events_beyond_60_months": 1
+    },
+    "fold_3": {
+      "validation_patients": 76,
+      "events": 23,
+      "event_rate": 0.3026315789473684,
+      "median_dss_months": 16.35598514,
+      "events_beyond_60_months": 0
+    },
+    "fold_4": {
+      "validation_patients": 76,
+      "events": 25,
+      "event_rate": 0.32894736842105265,
+      "median_dss_months": 16.06009797,
+      "events_beyond_60_months": 0
+    }
+  },
   "arms": {
     "camr_2m": {
       "model_id": "camr_2m",
@@ -70,7 +107,7 @@
         "bootstrap_Harrell_C": {
           "trials": 2000,
           "mean": 0.7566462341182641,
-          "sd": 0.03618320836768177,
+          "sd": 0.036183208367681775,
           "ci95": [
             0.6842759477936606,
             0.8240663900414937
@@ -430,7 +467,7 @@
       "epoch_statistics": {
         "epochs": 30,
         "mean_c_index": 0.6445589012150027,
-        "sd_c_index": 0.04696900708715148,
+        "sd_c_index": 0.04696900708715149,
         "min_c_index": 0.5182250396196514,
         "max_c_index": 0.7329635499207607,
         "last_c_index": 0.6172741679873217,
@@ -648,6 +685,7 @@
     "A bootstrap interval wider than the gap between two arms means the table cannot rank those two arms.",
     "The published arm scores are validation-selected maxima over 30 epochs. The pure-noise null shows how large that selection bias is for this cohort: a random risk vector already reaches the reported epoch-maximum p95 after 30 epochs.",
     "The epoch mean over the 30 epochs is the selection-free summary of one arm and is the statistic to compare against the null.",
+    "The IPCW C and the dynamic AUC are decided by the few latest validation events, because the inverse-probability-of-censoring weight grows with the follow-up time. The fold event profile reports how many events lie beyond 60 months in every legacy split, so an unusual IPCW C can be checked against the other folds instead of being read as a model property.",
     "No arm score may be compared with a published table."
   ]
 }

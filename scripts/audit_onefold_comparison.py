@@ -178,11 +178,49 @@ def reproducibility(batch, arms, reference, edges, train_ids):
     return result or None
 
 
+def fold_event_profile(splits_root):
+    """The event profile of every legacy split's validation partition.
+
+    The IPCW C and the dynamic AUC of a fold are decided by the late events:
+    the inverse-probability-of-censoring weight grows with the follow-up
+    time, so the two or three latest validation events can flip the sign of
+    the metric.  This profile says how many late events each fold has, so a
+    fold whose IPCW C is unusual can be checked against the others instead of
+    being read as a model property.
+    """
+    import pandas as pd
+
+    clinical = Path('/data1/dataset_csv/clinical/all/blca.csv')
+    if not clinical.is_file() or not Path(splits_root).is_dir():
+        return None
+    table = pd.read_csv(clinical).rename(columns={'case id': 'pid'})
+    table['event_dss'] = 1-table['censorship_dss']
+    table['pid'] = table['pid'].astype(str).str.slice(0, 12)
+    table = table.drop_duplicates(subset=['pid'])
+    profile = {}
+    for path in sorted(Path(splits_root).glob('fold_*.csv')):
+        split = pd.read_csv(path)
+        validation = set(split['val'].astype(str).str.slice(0, 12))
+        rows = table[table['pid'].isin(validation)]
+        if rows.empty:
+            continue
+        late = int(((rows['event_dss'] == 1) & (rows['survival_months_dss'] > 60)).sum())
+        profile[path.stem] = {
+            'validation_patients': int(len(rows)),
+            'events': int(rows['event_dss'].sum()),
+            'event_rate': float(rows['event_dss'].mean()),
+            'median_dss_months': float(rows['survival_months_dss'].median()),
+            'events_beyond_60_months': late,
+        }
+    return profile or None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--batch', required=True)
     parser.add_argument('--survival-reference', required=True)
     parser.add_argument('--merged', default='merged_ranking.json')
+    parser.add_argument('--splits-root', default='/data1/dataset_splits_summary/uni/blca')
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
 
@@ -265,6 +303,7 @@ def main():
         'resolution': resolution,
         'top_gaps': gaps,
         'pure_noise_null': null,
+        'fold_event_profile': fold_event_profile(args.splits_root),
         'arms': arms,
         'reproducibility': reproducibility(batch, arms, reference, edges, train_ids),
         'upstream_source_verification': {
@@ -284,6 +323,12 @@ def main():
             'epoch-maximum p95 after 30 epochs.',
             'The epoch mean over the 30 epochs is the selection-free summary of '
             'one arm and is the statistic to compare against the null.',
+            'The IPCW C and the dynamic AUC are decided by the few latest '
+            'validation events, because the inverse-probability-of-censoring '
+            'weight grows with the follow-up time. The fold event profile '
+            'reports how many events lie beyond 60 months in every legacy '
+            'split, so an unusual IPCW C can be checked against the other '
+            'folds instead of being read as a model property.',
             'No arm score may be compared with a published table.',
         ],
     }
