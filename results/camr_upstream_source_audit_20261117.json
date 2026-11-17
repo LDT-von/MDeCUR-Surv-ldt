@@ -1,0 +1,137 @@
+{
+  "adapter_markers": {
+    "attention_mil_added": {
+      "self.attention": true
+    },
+    "bounded_output_neutralised": {
+      "self.upstream_model.output_range.fill_(1.)": true,
+      "self.upstream_model.output_shift.fill_(0.)": true
+    },
+    "declares_not_a_reproduction": {
+      "'official_model_reproduction': False": true
+    },
+    "discrete_hazard_head": {
+      "self.upstream_model.classifier = nn.Linear(15, bins)": true
+    },
+    "documents_replaced_bounded_output": {
+      "discrete-hazard logits instead of the bounded Cox": true,
+      "neutralising the rescaling": true
+    },
+    "no_continuous_cox_risk_set": true,
+    "no_l1_weight_regularisation": false,
+    "no_sigmoid_classifier": true,
+    "two_way_fusion": {
+      "class TwoWayLowRankFusion": false
+    }
+  },
+  "checks": {
+    "adapter_declares_non_reproduction": true,
+    "adapter_documents_the_replacement": true,
+    "adapter_survival_objective_differs_from_upstream": true,
+    "adapter_uses_discrete_hazard_head_not_bounded_scalar": true,
+    "all_recorded_files_present": true,
+    "recorded_hashes_match_this_checkout": true,
+    "upstream_bounded_output_confirmed": true,
+    "upstream_continuous_cox_partial_likelihood_confirmed": true,
+    "upstream_cox_loss2_index_order_risk_set_confirmed": true,
+    "upstream_scalar_sigmoid_output_confirmed": true,
+    "upstream_training_calls_cox_loss2": true,
+    "upstream_training_never_calls_cox_loss1": true
+  },
+  "conclusion": "The official CAMR code uses a bounded scalar Cox output and a continuous-time partial likelihood with no discretization, and its training loop calls CoxLoss2 whose risk set ignores survival time. The delivered adapter replaces the output layer and the survival objective, so camr_2m is an explicit adaptation and not an official reproduction.",
+  "date": "2026-11-16",
+  "files": {
+    "README.md": {
+      "crlf_sha256": "25856e05b726bcd2141597f77d9a0319ba035bcd433c3632908962aede9cb464",
+      "lf_sha256": "664e030a6d0ee1876f3397ada8e4ed55557acbda042b689ec9762f705c639a9f",
+      "present": true,
+      "raw_sha256": "664e030a6d0ee1876f3397ada8e4ed55557acbda042b689ec9762f705c639a9f",
+      "recorded_crlf_sha256": "25856e05b726bcd2141597f77d9a0319ba035bcd433c3632908962aede9cb464",
+      "recorded_matches": "crlf"
+    },
+    "data_loaders.py": {
+      "crlf_sha256": "8dd128b15e097411bdeb298aed64b73d069a147ec0f65d00d426db596e488874",
+      "lf_sha256": "1f0f0adea67ee5d00d4e5d1f98fef2a8d2aa3fe6dbf40e356bd2c2132ab4b92b",
+      "present": true,
+      "raw_sha256": "1f0f0adea67ee5d00d4e5d1f98fef2a8d2aa3fe6dbf40e356bd2c2132ab4b92b",
+      "recorded_crlf_sha256": "8dd128b15e097411bdeb298aed64b73d069a147ec0f65d00d426db596e488874",
+      "recorded_matches": "crlf"
+    },
+    "fusion.py": {
+      "crlf_sha256": "13370f73670b2e75f71177d0f679da8549cc2dbc4013b2362a63273f73446cf9",
+      "lf_sha256": "8cf6a4d2b880b325c9ee73559757a6e72bf4a917542432580250dbda165038cb",
+      "present": true,
+      "raw_sha256": "13370f73670b2e75f71177d0f679da8549cc2dbc4013b2362a63273f73446cf9",
+      "recorded_crlf_sha256": "13370f73670b2e75f71177d0f679da8549cc2dbc4013b2362a63273f73446cf9",
+      "recorded_matches": "raw"
+    },
+    "networks.py": {
+      "crlf_sha256": "41c3881397500abc4e84f33a48c1a7b69a7ff8237efbaa9d9fc2d9a2a161da90",
+      "lf_sha256": "aa3daf8829b04fd6745331e2a4d26ec31d6b7966b76fd115adf2fac93ad8fa6b",
+      "present": true,
+      "raw_sha256": "41c3881397500abc4e84f33a48c1a7b69a7ff8237efbaa9d9fc2d9a2a161da90",
+      "recorded_crlf_sha256": "41c3881397500abc4e84f33a48c1a7b69a7ff8237efbaa9d9fc2d9a2a161da90",
+      "recorded_matches": "raw"
+    },
+    "train_test.py": {
+      "crlf_sha256": "aef6c3a68c84701baa10652e71546a8c6b0cb2e387ed9f381507b814a04c40e2",
+      "lf_sha256": "63eff23e7f97e353c6c96228c603167120bb8f874f51673f2b729c5d289648a0",
+      "present": true,
+      "raw_sha256": "aef6c3a68c84701baa10652e71546a8c6b0cb2e387ed9f381507b814a04c40e2",
+      "recorded_crlf_sha256": "aef6c3a68c84701baa10652e71546a8c6b0cb2e387ed9f381507b814a04c40e2",
+      "recorded_matches": "raw"
+    },
+    "utils.py": {
+      "crlf_sha256": "8bb0bd341d208e3286ba8f3263d75f7eea172f4ff2960df6f761febd3461e720",
+      "lf_sha256": "57dd3c66645a84f371e3e457925e4bb4928fc372a233c592a261dd877abb396a",
+      "present": true,
+      "raw_sha256": "57dd3c66645a84f371e3e457925e4bb4928fc372a233c592a261dd877abb396a",
+      "recorded_crlf_sha256": "8bb0bd341d208e3286ba8f3263d75f7eea172f4ff2960df6f761febd3461e720",
+      "recorded_matches": "crlf"
+    }
+  },
+  "limits": "Source-only audit. It does not train, does not evaluate patients, does not verify the upstream bundled LGG pickle, and does not make the adapter comparable to published CAMR numbers.",
+  "line_ending_note": "Recorded 2026-11-13 hashes were taken on a CRLF checkout; the LF and CRLF variants are both reported so the record is reproducible on either platform.",
+  "protocol": "camr_upstream_source_audit",
+  "source_path": "/data1/papers/comparators/CAMR",
+  "status": "passed",
+  "upstream_commit": "8fbae0a0bc4e9da31547b5eab5d773e6b2049e93",
+  "upstream_markers": {
+    "bounded_output_affine": {
+      "out = out * self.output_range + self.output_shift": true,
+      "self.output_range": true,
+      "self.output_shift": true
+    },
+    "cox_loss1_continuous_risk_set": {
+      "R_mat[i,j] = survtime[j] >= survtime[i]": true,
+      "def CoxLoss1": true,
+      "loss_cox = -torch.mean((theta - torch.log(torch.sum(exp_theta*R_mat, dim=1))) * censor)": true
+    },
+    "cox_loss2_index_order_risk_set": {
+      "def CoxLoss2": true,
+      "def R_set": true,
+      "return indicator_matrix": true,
+      "torch.tril(matrix_ones)": true
+    },
+    "label_dim_default_one": {
+      "'--label_dim'": true,
+      "default=1": true
+    },
+    "scalar_sigmoid_classifier": {
+      "self.classifier = nn.Sequential(nn.Linear(15, output_dim), nn.Sigmoid())": true
+    },
+    "three_modality_loader": {
+      "x_cna": true,
+      "x_gene": true,
+      "x_path": true
+    },
+    "training_never_calls_cox_loss1": {
+      "CoxLoss1(": false
+    },
+    "training_uses_cox_loss2": {
+      "loss_cox = CoxLoss2": true,
+      "loss_cox =CoxLoss2": true
+    }
+  },
+  "upstream_url": "https://github.com/wxq-ustc/CAMR"
+}

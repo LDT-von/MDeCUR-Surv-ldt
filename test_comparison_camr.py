@@ -6,6 +6,7 @@ classes from ``papers/comparators/CAMR`` and that the protocol adaptations
 documented.
 """
 import unittest
+from pathlib import Path
 
 import torch
 
@@ -142,6 +143,45 @@ class CAMRComparisonTest(unittest.TestCase):
         self.assertFalse(metadata['official_model_reproduction'])
         self.assertFalse(metadata['fake_CNA_used'])
         self.assertIn('MisaLMFGatedRec', metadata['upstream_modules_executed'])
+
+    def test_the_upstream_source_audit_markers_match_the_current_adapter(self):
+        """The CAMR upstream source audit must recognise the adapter as it is.
+
+        An earlier revision of ``scripts/audit_camr_upstream_source.py``
+        looked for a standalone ``self.head`` in the adapter.  The adapter was
+        later refactored to replace the upstream ``classifier`` attribute and
+        to neutralise the upstream bounded rescaling, so the old marker
+        stopped matching and the audit reported a false failure against the
+        real checkout.  This test keeps the audit markers and the adapter in
+        step.
+        """
+        import json
+        import subprocess
+        import sys
+        import tempfile
+
+        source = Path('/data1/papers/comparators/CAMR')
+        if not source.is_dir():
+            self.skipTest('The CAMR checkout is not present on this machine')
+
+        script = Path('scripts/audit_camr_upstream_source.py')
+        self.assertTrue(script.is_file())
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder)/'audit.json'
+            result = subprocess.run(
+                [sys.executable, str(script), '--source', str(source), '--out', str(target)],
+                capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            report = json.loads(target.read_text(encoding='utf-8'))
+
+        self.assertEqual(report['status'], 'passed')
+        for name, value in report['checks'].items():
+            self.assertTrue(value, f'CAMR upstream audit check failed: {name}')
+
+        # The adapter must really carry a discrete-hazard head and no sigmoid.
+        adapter = Path('comparison_camr.py').read_text(encoding='utf-8')
+        self.assertIn('self.upstream_model.classifier = nn.Linear(15, bins)', adapter)
+        self.assertNotIn('nn.Sigmoid())', adapter)
 
 
 if __name__ == '__main__':
