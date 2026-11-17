@@ -155,36 +155,49 @@ class DeReF2M(nn.Module):
 
         logits_list, features_list, scores_list = [], [], []
         for index, bag in enumerate(bags):
-            # The upstream pathomics branch treats the patch bag as a token
-            # matrix: pathomics_fc maps [N, 1024] -> [N, 256] and the upstream
-            # unsqueeze(0) restores the leading patient axis.
-            x_path = bag.to(device=device, dtype=dtype)  # [N, 1024]
-            genomics_features = [
-                self.model.genomics_fc[group].forward(omic_by_patient[index][group])
-                for group in range(NUM_OMIC_GROUPS)]
-            # Upstream intent: one token per omic group, one patient per call.
-            genomics_features = torch.stack(genomics_features).unsqueeze(0)  # [1, 6, D]
-            cls_path, patch_path = self.model.pathomics_encoder(
-                self.model.pathomics_fc(x_path).unsqueeze(0))  # [1, N, 256]
-            cls_omic, patch_omic = self.model.genomics_encoder(genomics_features)
+            # The upstream feature reorganisation draws ``seg_length`` with
+            # ``random.choice`` from the **global** Python random state, so two
+            # identical runs in two processes drew different segment lengths
+            # and produced different predictions (measured: the DeReF arm was
+            # not bit-reproducible across two identical-seed runs).  The
+            # upstream file is not modified; the global state is seeded from
+            # the recorded seed around the upstream call instead, so the
+            # upstream reorganisation is reproduced deterministically.
+            random_state = random.getstate()
+            random.seed(self.seed + index)
+            try:
+                # The upstream pathomics branch treats the patch bag as a token
+                # matrix: pathomics_fc maps [N, 1024] -> [N, 256] and the upstream
+                # unsqueeze(0) restores the leading patient axis.
+                x_path = bag.to(device=device, dtype=dtype)  # [N, 1024]
+                genomics_features = [
+                    self.model.genomics_fc[group].forward(omic_by_patient[index][group])
+                    for group in range(NUM_OMIC_GROUPS)]
+                # Upstream intent: one token per omic group, one patient per call.
+                genomics_features = torch.stack(genomics_features).unsqueeze(0)  # [1, 6, D]
+                cls_path, patch_path = self.model.pathomics_encoder(
+                    self.model.pathomics_fc(x_path).unsqueeze(0))  # [1, N, 256]
+                cls_omic, patch_omic = self.model.genomics_encoder(genomics_features)
 
-            feature_g = self.model.m_private(cls_omic)
-            feature_p = self.model.p_private(cls_path)
-            feature_comm = self.model.com_encoder(cls_omic, cls_path)
-            feature_red = self.model.red_encoder(cls_omic, cls_path)
+                feature_g = self.model.m_private(cls_omic)
+                feature_p = self.model.p_private(cls_path)
+                feature_comm = self.model.com_encoder(cls_omic, cls_path)
+                feature_red = self.model.red_encoder(cls_omic, cls_path)
 
-            cat_total = torch.concat([feature_g, feature_p, feature_comm, feature_red], dim=0)
-            seg_l = random.choice(self.model.seg_length)
-            cat_new = cat_total.reshape(4, seg_l, 128 // seg_l).transpose(1, 0).reshape(1, -1)
+                cat_total = torch.concat([feature_g, feature_p, feature_comm, feature_red], dim=0)
+                seg_l = random.choice(self.model.seg_length)
+                cat_new = cat_total.reshape(4, seg_l, 128 // seg_l).transpose(1, 0).reshape(1, -1)
 
-            out1 = self.model.exp1(cat_new)
-            out2 = self.model.exp2(cat_new)
-            out3 = self.model.exp3(cat_new)
-            out4 = self.model.exp4(cat_new)
-            out_total = torch.concat([out1, out2, out3, out4], dim=0)
-            score = self.model.gate(cat_total)
-            out_total = out_total * score
-            logits = self.model.classifier(out_total.view(1, -1))
+                out1 = self.model.exp1(cat_new)
+                out2 = self.model.exp2(cat_new)
+                out3 = self.model.exp3(cat_new)
+                out4 = self.model.exp4(cat_new)
+                out_total = torch.concat([out1, out2, out3, out4], dim=0)
+                score = self.model.gate(cat_total)
+                out_total = out_total * score
+                logits = self.model.classifier(out_total.view(1, -1))
+            finally:
+                random.setstate(random_state)
             logits_list.append(logits)
             features_list.append([feature_g, feature_p, feature_comm, feature_red])
             scores_list.append(score)

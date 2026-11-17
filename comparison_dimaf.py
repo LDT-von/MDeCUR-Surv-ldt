@@ -159,7 +159,21 @@ def fit_prototypes(patch_features, n_proto=16, n_iter=50, feature_dim=None, seed
         raise ValueError('Nonfinite patch features in prototype fitting')
     module = _load_prototype_module()
     torch.manual_seed(seed)
-    weights = module.kmeans_clustering(patch_features.cpu(), n_proto, n_iter)
+    # The upstream ``kmeans_clustering`` calls scikit-learn's ``KMeans``
+    # without a ``random_state``, so its initialisation is drawn from NumPy's
+    # **global** random state.  That makes the prototypes depend on whatever
+    # ran before in the process, and two identical runs in two processes
+    # produced different prototypes (measured: the DIMAF arm was not
+    # bit-reproducible across two identical-seed runs, while the two arms that
+    # do not cluster were).  Seeding NumPy's global state from the recorded
+    # seed immediately before the call makes the upstream clustering
+    # reproducible without changing the upstream file or the upstream algorithm.
+    state = np.random.get_state()
+    np.random.seed(seed)
+    try:
+        weights = module.kmeans_clustering(patch_features.cpu(), n_proto, n_iter)
+    finally:
+        np.random.set_state(state)
     array = np.asarray(weights, dtype=np.float64)
     if array.shape != (1, n_proto, feature_dim):
         raise ValueError('Unexpected prototype array shape')

@@ -1,0 +1,653 @@
+{
+  "audit_version": "onefold_comparison_audit_v2",
+  "batch": "/data1/decur_runs/BLCA_FOLD0_RANKING_20261116",
+  "survival_reference": "/data1/decur_runs/PARITY_DCT_FOLD0/survival_reference.csv",
+  "validation_events": 27,
+  "validation_patients": 77,
+  "train_patients": 303,
+  "bin_edges": [
+    null,
+    8.087582602,
+    15.12312194,
+    21.40250518,
+    null
+  ],
+  "resolution": {
+    "widest_bootstrap_CI_width": 0.23327986108715404,
+    "mean_bootstrap_CI_width": 0.181774435396924
+  },
+  "top_gaps": {
+    "best": {
+      "top": "camr_2m",
+      "runner_up": "mdecur_full_dense",
+      "gap": 0.002377179080824021
+    },
+    "last": {
+      "top": "morphid_no_interaction",
+      "runner_up": "upstream_camr_2m",
+      "gap": 0.002377179080824132
+    }
+  },
+  "pure_noise_null": {
+    "trials": 1000,
+    "epochs": 30,
+    "epoch_mean": {
+      "mean": 0.5000280243000529,
+      "sd": 0.011138172076293607,
+      "p95": 0.5191257263602747,
+      "p99": 0.5252353407290016
+    },
+    "epoch_max": {
+      "mean": 0.6231735340729002,
+      "sd": 0.02881606697231902,
+      "p95": 0.6719889064976228,
+      "p99": 0.6997068145800317
+    }
+  },
+  "arms": {
+    "camr_2m": {
+      "model_id": "camr_2m",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.6895404120443741,
+        "sd_c_index": 0.05517711318064117,
+        "min_c_index": 0.49049128367670364,
+        "max_c_index": 0.7543581616481775,
+        "last_c_index": 0.696513470681458,
+        "selection_inflation": 0.06481774960380338
+      },
+      "best": {
+        "Harrell_C": 0.7543581616481775,
+        "IPCW_C": 0.37118395586548447,
+        "NLL": 0.9466704574452881,
+        "IBS": 0.14281923267503777,
+        "AUC": 0.8628093578593878,
+        "epoch": 16,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7566462341182641,
+          "sd": 0.03618320836768177,
+          "ci95": [
+            0.6842759477936606,
+            0.8240663900414937
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.696513470681458,
+        "IPCW_C": 0.4982110435413187,
+        "NLL": 1.9942216791693796,
+        "IBS": 0.17216816617664119,
+        "AUC": 0.7920950134582532,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.6985501012766105,
+          "sd": 0.042621724325588445,
+          "ci95": [
+            0.6112161310649024,
+            0.7776946107784432
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "camr_2m_official": {
+      "model_id": "camr_2m_official",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.6620179609086106,
+        "sd_c_index": 0.09269953872494828,
+        "min_c_index": 0.3652931854199683,
+        "max_c_index": 0.751188589540412,
+        "last_c_index": 0.7187004754358162,
+        "selection_inflation": 0.08917062863180136
+      },
+      "best": {
+        "Harrell_C": 0.751188589540412,
+        "IPCW_C": 0.3543836620768429,
+        "NLL": 1.0845241295738484,
+        "IBS": 0.14017307775126778,
+        "AUC": 0.8665916004337899,
+        "epoch": 16,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7539411437194568,
+          "sd": 0.037466814517387766,
+          "ci95": [
+            0.6756521739130434,
+            0.8241758241758241
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.7187004754358162,
+        "IPCW_C": 0.3580200516758688,
+        "NLL": 1.2011286929798448,
+        "IBS": 0.15010771133014686,
+        "AUC": 0.8127960973752197,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7210932974521188,
+          "sd": 0.03881466290076569,
+          "ci95": [
+            0.6438356164383562,
+            0.7943037974683544
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "mdecur_dense_aux_off": {
+      "model_id": "mdecur_dense_aux_off",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.6950343370311675,
+        "sd_c_index": 0.02927834749450036,
+        "min_c_index": 0.5903328050713154,
+        "max_c_index": 0.748811410459588,
+        "last_c_index": 0.6973058637083994,
+        "selection_inflation": 0.05377707342842053
+      },
+      "best": {
+        "Harrell_C": 0.748811410459588,
+        "IPCW_C": 0.8319583233178223,
+        "NLL": 0.8564903663155583,
+        "IBS": 0.1720693673628202,
+        "AUC": 0.8317606951170247,
+        "epoch": 5,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7515864812594841,
+          "sd": 0.05400345496956348,
+          "ci95": [
+            0.6426364572605562,
+            0.8536439665471923
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.6973058637083994,
+        "IPCW_C": 0.6885436006701852,
+        "NLL": 0.9471890709243305,
+        "IBS": 0.14335718665192454,
+        "AUC": 0.7646402657524198,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7002049892216208,
+          "sd": 0.046645079977696464,
+          "ci95": [
+            0.6073338426279603,
+            0.7908950617283951
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "mdecur_full_dense": {
+      "model_id": "mdecur_full_dense",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.6974115161119915,
+        "sd_c_index": 0.02926118612213256,
+        "min_c_index": 0.5942947702060222,
+        "max_c_index": 0.7519809825673535,
+        "last_c_index": 0.6996830427892234,
+        "selection_inflation": 0.05456946645536198
+      },
+      "best": {
+        "Harrell_C": 0.7519809825673535,
+        "IPCW_C": 0.8331327807597136,
+        "NLL": 0.8563722291952865,
+        "IBS": 0.17060131044971122,
+        "AUC": 0.845523689371203,
+        "epoch": 5,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7546963767452523,
+          "sd": 0.05237599449859957,
+          "ci95": [
+            0.6511627906976745,
+            0.8537576167907921
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.6996830427892234,
+        "IPCW_C": 0.6832972740705526,
+        "NLL": 0.936835767613113,
+        "IBS": 0.14287564028869507,
+        "AUC": 0.7678363055870497,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7024450465933764,
+          "sd": 0.04666163235936801,
+          "ci95": [
+            0.6096207215541165,
+            0.7940552016985138
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "morphid": {
+      "model_id": "morphid",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.7216587427363972,
+        "sd_c_index": 0.026762819509001924,
+        "min_c_index": 0.5903328050713154,
+        "max_c_index": 0.7377179080824089,
+        "last_c_index": 0.7353407290015848,
+        "selection_inflation": 0.016059165346011706
+      },
+      "best": {
+        "Harrell_C": 0.7377179080824089,
+        "IPCW_C": 0.5022943601328871,
+        "NLL": 1.542822469456309,
+        "IBS": 0.3692222497438421,
+        "AUC": 0.8396248387163681,
+        "epoch": 14,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7396290453558685,
+          "sd": 0.04607517341260027,
+          "ci95": [
+            0.6467449306296692,
+            0.8225308641975309
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.7353407290015848,
+        "IPCW_C": 0.6658910951425291,
+        "NLL": 1.649235524399891,
+        "IBS": 0.3692374179811741,
+        "AUC": 0.8440083294417096,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7375118510744801,
+          "sd": 0.045300722789605105,
+          "ci95": [
+            0.6450704225352113,
+            0.821969696969697
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "morphid_no_interaction": {
+      "model_id": "morphid_no_interaction",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.7241151611199155,
+        "sd_c_index": 0.028640437934621555,
+        "min_c_index": 0.5903328050713154,
+        "max_c_index": 0.7440570522979397,
+        "last_c_index": 0.7408874801901744,
+        "selection_inflation": 0.01994189117802425
+      },
+      "best": {
+        "Harrell_C": 0.7440570522979397,
+        "IPCW_C": 0.6760831069438586,
+        "NLL": 1.68123993885361,
+        "IBS": 0.37359018110469633,
+        "AUC": 0.8481900746414118,
+        "epoch": 27,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7461982627308257,
+          "sd": 0.043978080855325806,
+          "ci95": [
+            0.6555661274976213,
+            0.8260244428468727
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.7408874801901744,
+        "IPCW_C": 0.6753440583167559,
+        "NLL": 1.6793258793908536,
+        "IBS": 0.3741154685390792,
+        "AUC": 0.8481900746414119,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7432371546778032,
+          "sd": 0.044534346702685676,
+          "ci95": [
+            0.6529680365296804,
+            0.8250676284941388
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "upstream_camr_2m": {
+      "model_id": "camr_2m",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.7037242472266244,
+        "sd_c_index": 0.05361495801905405,
+        "min_c_index": 0.5023771790808241,
+        "max_c_index": 0.748811410459588,
+        "last_c_index": 0.7385103011093502,
+        "selection_inflation": 0.04508716323296358
+      },
+      "best": {
+        "Harrell_C": 0.748811410459588,
+        "IPCW_C": 0.36672246708803247,
+        "NLL": 0.795884046921071,
+        "IBS": 0.15275460925028855,
+        "AUC": 0.8502192916503792,
+        "epoch": 9,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7516082452951273,
+          "sd": 0.04203994144974729,
+          "ci95": [
+            0.6638935108153078,
+            0.83
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.7385103011093502,
+        "IPCW_C": 0.3633351270437185,
+        "NLL": 2.1450535420011465,
+        "IBS": 0.15603474718833177,
+        "AUC": 0.8615482928975524,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7401959990860167,
+          "sd": 0.03770023038143995,
+          "ci95": [
+            0.6637596899224806,
+            0.811046511627907
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "upstream_deref_2m": {
+      "model_id": "deref_2m",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.6445589012150027,
+        "sd_c_index": 0.04696900708715148,
+        "min_c_index": 0.5182250396196514,
+        "max_c_index": 0.7329635499207607,
+        "last_c_index": 0.6172741679873217,
+        "selection_inflation": 0.08840464870575804
+      },
+      "best": {
+        "Harrell_C": 0.7329635499207607,
+        "IPCW_C": 0.3644199820542461,
+        "NLL": 0.8436049872195561,
+        "IBS": 0.13586481213296353,
+        "AUC": 0.8092188958899348,
+        "epoch": 6,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7354712537230195,
+          "sd": 0.04293992829553394,
+          "ci95": [
+            0.6503551696921863,
+            0.8177777777777778
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.6172741679873217,
+        "IPCW_C": 0.33595101336094146,
+        "NLL": 2.317223365586568,
+        "IBS": 0.20320207630069476,
+        "AUC": 0.6999384321231714,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.6188799227267431,
+          "sd": 0.04959253780806647,
+          "ci95": [
+            0.5214418893722809,
+            0.7153351698806244
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "upstream_dimaf_2m": {
+      "model_id": "dimaf_2m",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.6375858425779186,
+        "sd_c_index": 0.02999845768455622,
+        "min_c_index": 0.606973058637084,
+        "max_c_index": 0.7345483359746434,
+        "last_c_index": 0.6220285261489699,
+        "selection_inflation": 0.0969624933967248
+      },
+      "best": {
+        "Harrell_C": 0.7345483359746434,
+        "IPCW_C": 0.34679737279556494,
+        "NLL": 0.9777603592586183,
+        "IBS": 0.20589449566214824,
+        "AUC": 0.7587713548804933,
+        "epoch": 1,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.7365597718416251,
+          "sd": 0.052773996572355285,
+          "ci95": [
+            0.6296900489396411,
+            0.837796480489671
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.6220285261489699,
+        "IPCW_C": 0.6526047404165333,
+        "NLL": 2.167447638174486,
+        "IBS": 0.22361212384309104,
+        "AUC": 0.6726214418100395,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.6221442637669876,
+          "sd": 0.05504837620162734,
+          "ci95": [
+            0.5146506386175808,
+            0.7275711159737418
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": true
+    },
+    "upstream_pibd_2m": {
+      "model_id": "pibd_2m",
+      "group": "project",
+      "epochs_completed": 30,
+      "epoch_statistics": {
+        "epochs": 30,
+        "mean_c_index": 0.5428288431061806,
+        "sd_c_index": 0.03545598732778039,
+        "min_c_index": 0.3795562599049128,
+        "max_c_index": 0.5705229793977813,
+        "last_c_index": 0.555863708399366,
+        "selection_inflation": 0.02769413629160067
+      },
+      "best": {
+        "Harrell_C": 0.5705229793977813,
+        "IPCW_C": 0.7589221794826732,
+        "NLL": 1.0169118763185534,
+        "IBS": 0.14705217171033924,
+        "AUC": 0.5800493255007306,
+        "epoch": 2,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.5698910361306102,
+          "sd": 0.05776753456087888,
+          "ci95": [
+            0.45958219800181654,
+            0.6839530332681018
+          ]
+        }
+      },
+      "last": {
+        "Harrell_C": 0.555863708399366,
+        "IPCW_C": 0.7780229098051291,
+        "NLL": 5.29003934386705,
+        "IBS": 0.19154020321656423,
+        "AUC": 0.49859132670808465,
+        "epoch": 30,
+        "events_in_validation": 27,
+        "patients_in_validation": 77,
+        "bootstrap_Harrell_C": {
+          "trials": 2000,
+          "mean": 0.5571833960221171,
+          "sd": 0.05878542649930978,
+          "ci95": [
+            0.4416376306620209,
+            0.6749174917491749
+          ]
+        }
+      },
+      "epoch_mean_vs_null_p99": true,
+      "epoch_max_vs_null_p99": false
+    }
+  },
+  "reproducibility": {
+    "upstream_camr_2m": {
+      "max_abs_survival_difference": 0.0,
+      "risk_rank_spearman": 1.0,
+      "bit_identical": true
+    },
+    "upstream_deref_2m": {
+      "max_abs_survival_difference": 0.16228649020195007,
+      "risk_rank_spearman": 0.98908985751091,
+      "bit_identical": false
+    },
+    "upstream_dimaf_2m": {
+      "max_abs_survival_difference": 0.0993952751159668,
+      "risk_rank_spearman": 0.9950312845049686,
+      "bit_identical": false
+    },
+    "upstream_pibd_2m": {
+      "max_abs_survival_difference": 0.0,
+      "risk_rank_spearman": 1.0,
+      "bit_identical": true
+    }
+  },
+  "upstream_source_verification": {
+    "PIBD": {
+      "models/model_PIBD.py": "8912a5649bd7df982dd9f78a96f0fd03698f1b9e7345bf16c0217be88a716ef6",
+      "models/disentangle_transformer.py": "6386c3a7611a952c1cf6f8f0c3f92bf41d1ee4974fb6e06e5336ab637d4b48f5",
+      "models/omics_encoder.py": "dd256bd95f348b0f07cf1b35feecf9d9d669df9c1f996a13cd7ee42b2ef87dde",
+      "models/club.py": "baed1a8c759c22efe268773ee737c8faa1c3fb9cb9b1771912decd44a74087b2",
+      "utils/loss_func.py": "dfbd241592a24e3a204fb0571d955d44729e778ba5f217787406257beefef569"
+    },
+    "CAMR": {
+      "networks.py": "41c3881397500abc4e84f33a48c1a7b69a7ff8237efbaa9d9fc2d9a2a161da90",
+      "fusion.py": "13370f73670b2e75f71177d0f679da8549cc2dbc4013b2362a63273f73446cf9",
+      "utils.py": "57dd3c66645a84f371e3e457925e4bb4928fc372a233c592a261dd877abb396a"
+    },
+    "DeReF": {
+      "models/deref/network.py": "6551237cbaf8894e9d7eca2f2d0e9492e1609e4dc3960104b89274292412771c",
+      "models/deref/util.py": "b22ede50922227d95eee97c2e9604538438f6004d401922535e067ca72d76934",
+      "models/deref/engine.py": "ad4ca1426cbb3f420d307815d5021bafd6efc67701604aebed509c7bf7feffdd",
+      "utils/loss.py": "ea0717859bcbb7e3e004cdfc08ca55389ecc839c56f74497b0ab3072350a73ec",
+      "csv/signatures.csv": "6bf0a195a67a04774df3fec808748e06a87176506b17d3cd1e8e9049d2624477"
+    },
+    "DIMAF": {
+      "src/models/DIMAF/main_model.py": "aecd944c31fc494796256f6b2a0ae56799528079a73a0f129d785854bab92d2b",
+      "src/models/DIMAF/layers.py": "53226a4a537240aacb6bd41b17d0d34e61a33125168c85e827afb2f4a392ee20",
+      "src/models/PANTHER/main_model.py": "226878509b104fb037ea7f79b643cea58d8e1af1b24b025837d63d8fc72c603c",
+      "src/models/PANTHER/layers.py": "9ccaa597de4edca347b57e62436d87cf9d144d2385eef80575d693e492749519",
+      "src/models/PANTHER/network.py": "8f830b5f582d29041bad491479e9f42e2f0fa5587255a779c30205cb3c27a05c",
+      "src/survival/losses.py": "1297d3efb9f2090e245c04b498ccb24aaa39b2c335dba8af26cd292ce74b8ac8",
+      "src/survival/metrics.py": "6d765cb0ca8c747eb5da716944cca83d4ef5837a8c9548bde7a49bc80fdad307",
+      "src/data/data_files/hallmarks_signatures.csv": "d12450d83aea1d7a62d33782e4a46d19a2cc40d3db9cc39e54f6f8784fa284dd",
+      "src/embeddings/prototype.py": "bb6fccc275b3b3b06ef999863c38966383d462b093db5feef8c4e734a6453e73"
+    }
+  },
+  "merged_table_present": true,
+  "limits": [
+    "This audit only reads the finished artefacts; it trains nothing.",
+    "The outer test partition is never opened.",
+    "The bootstrap resamples the validation patients only; the censoring reference and the bin edges stay fixed because they are fitted on the training rows.",
+    "A bootstrap interval wider than the gap between two arms means the table cannot rank those two arms.",
+    "The published arm scores are validation-selected maxima over 30 epochs. The pure-noise null shows how large that selection bias is for this cohort: a random risk vector already reaches the reported epoch-maximum p95 after 30 epochs.",
+    "The epoch mean over the 30 epochs is the selection-free summary of one arm and is the statistic to compare against the null.",
+    "No arm score may be compared with a published table."
+  ]
+}

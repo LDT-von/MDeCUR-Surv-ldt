@@ -180,6 +180,75 @@ class FiveFoldComparisonTest(unittest.TestCase):
             sample_prototype_rows([], n_proto=4, n_patches_per_proto=10,
                                   feature_dim=4, seed=3)
 
+    def test_the_dimaf_prototypes_do_not_depend_on_the_ambient_numpy_state(self):
+        """The upstream KMeans reads NumPy's global state, so the prototypes
+        must be pinned to the recorded seed.
+
+        Measured defect: the DIMAF arm was not bit-reproducible across two
+        identical-seed runs, while the two upstream arms that do not cluster
+        were.  The upstream ``kmeans_clustering`` calls scikit-learn's
+        ``KMeans`` without a ``random_state``, so its initialisation is drawn
+        from NumPy's global random state, which ``torch.manual_seed`` does not
+        control.
+        """
+        import numpy as np
+        from comparison_dimaf import fit_prototypes
+
+        features = torch.randn(400, 8, generator=torch.Generator().manual_seed(0))
+
+        # Perturb the ambient NumPy global state between the two calls.
+        np.random.seed(1234)
+        np.random.random(17)
+        first = fit_prototypes(features, n_proto=4, n_iter=10, feature_dim=8, seed=3)
+
+        np.random.seed(9999)
+        np.random.random(23)
+        second = fit_prototypes(features, n_proto=4, n_iter=10, feature_dim=8, seed=3)
+
+        self.assertTrue(np.allclose(first, second),
+                        'The prototypes changed with the ambient NumPy state')
+
+    def test_the_dimaf_prototype_call_restores_the_ambient_numpy_state(self):
+        """The adaptation must not leave the global NumPy state disturbed.
+
+        The upstream clustering consumes the global random state.  The
+        adaptation pins it for the call and restores it afterwards, so the
+        rest of the run sees the same stream it would have seen anyway.
+        """
+        import numpy as np
+        from comparison_dimaf import fit_prototypes
+
+        features = torch.randn(200, 8, generator=torch.Generator().manual_seed(0))
+
+        np.random.seed(7)
+        before = np.random.random(5)
+        np.random.seed(7)
+        fit_prototypes(features, n_proto=4, n_iter=10, feature_dim=8, seed=3)
+        after = np.random.random(5)
+        self.assertTrue(np.allclose(before, after),
+                        'The ambient NumPy stream was disturbed by the clustering')
+
+    def test_the_deref_upstream_reorganisation_is_pinned_to_the_seed(self):
+        """The upstream feature reorganisation draws from Python's global
+        ``random`` state, so the adapter must pin it.
+
+        Measured defect: the DeReF arm was not bit-reproducible across two
+        identical-seed runs.  The upstream network calls ``random.choice`` on
+        the segment length, which ``torch.manual_seed`` does not control.
+        """
+        import random
+        from comparison_deref import DeReF2M
+
+        self.assertEqual(DeReF2M.method_name, 'DeReF-2M-P4096-DNLL')
+        source = Path('comparison_deref.py')
+        self.assertTrue(source.is_file())
+        text = source.read_text(encoding='utf-8')
+        # The adapter must pin the global ``random`` state around the upstream
+        # call and restore it afterwards.
+        self.assertIn('random.getstate()', text)
+        self.assertIn('random.setstate(', text)
+        self.assertIn('random.seed(self.seed', text)
+
     def test_upstream_checkouts_are_byte_identical_and_stay_clean(self):
         """The third-party trees must not be edited, and importing them must
         not leave generated caches inside them."""
