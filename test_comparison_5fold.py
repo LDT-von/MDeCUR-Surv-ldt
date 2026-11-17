@@ -249,6 +249,82 @@ class FiveFoldComparisonTest(unittest.TestCase):
         self.assertIn('random.setstate(', text)
         self.assertIn('random.seed(self.seed', text)
 
+    def test_the_deref_forward_is_reproducible_under_a_perturbed_ambient_state(self):
+        """The DeReF forward must not depend on the ambient ``random`` stream.
+
+        The upstream network picks the segment length with ``random.choice``.
+        Two calls that reach that point with different ambient states used to
+        produce different logits.  The adapter pins the state, so the same
+        model and the same inputs must give the same logits.
+
+        The two calls deliberately use **different** ambient states.  Resetting
+        the ambient state identically before each call would make even the
+        unfixed adapter deterministic inside one process and would hide the
+        defect.
+        """
+        import random
+        from comparison_deref import DeReF2M
+
+        def forward(ambient):
+            random.seed(ambient)
+            random.random()
+            np.random.seed(ambient)
+            np.random.random(11)
+            torch.manual_seed(3)
+            model = DeReF2M(path_dim=8, rna_dim=24,
+                            omic_indices=[[0, 1, 2, 3]]*6, bins=4, seed=3)
+            model.eval()
+            bags = [torch.randn(20, 8) for _ in range(2)]
+            rna = torch.randn(2, 24)
+            with torch.no_grad():
+                return model(bags, rna)['logits'].clone()
+
+        first = forward(999)
+        second = forward(20261117)
+        self.assertTrue(torch.equal(first, second),
+                        'The DeReF forward changed with the ambient random state')
+
+    def test_the_dimaf_prototypes_are_reproducible_across_processes(self):
+        """The upstream clustering must give the same prototypes in two processes.
+
+        The upstream ``kmeans_clustering`` calls scikit-learn's ``KMeans``
+        without a ``random_state``, so its initialisation follows NumPy's
+        global state.  The adapter pins that state, so two separate processes
+        must produce identical prototypes.
+        """
+        import subprocess
+        import sys
+        import tempfile
+
+        from comparison_dimaf import fit_prototypes
+
+        script = (
+            'import sys, numpy as np, torch\n'
+            'sys.path.insert(0, %r)\n'
+            'from comparison_dimaf import fit_prototypes\n'
+            'np.random.seed(12345); np.random.random(100)\n'
+            'features = torch.randn(400, 16, generator=torch.Generator().manual_seed(0))\n'
+            'np.save(sys.argv[1], fit_prototypes(features, n_proto=8, n_iter=20,\n'
+            '                                      feature_dim=16, seed=3))\n'
+            % str(Path(__file__).resolve().parent)
+        )
+        with tempfile.TemporaryDirectory() as folder:
+            paths = []
+            for index in range(2):
+                target = Path(folder)/f'proto_{index}.npy'
+                result = subprocess.run([sys.executable, '-c', script, str(target)],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+                paths.append(target)
+            first = np.load(paths[0])
+            second = np.load(paths[1])
+        self.assertTrue(np.array_equal(first, second),
+                        'The prototypes differ between two identical processes')
+        # The in-process call must agree with the cross-process one.
+        features = torch.randn(400, 16, generator=torch.Generator().manual_seed(0))
+        in_process = fit_prototypes(features, n_proto=8, n_iter=20, feature_dim=16, seed=3)
+        self.assertTrue(np.allclose(first, in_process))
+
     def test_upstream_checkouts_are_byte_identical_and_stay_clean(self):
         """The third-party trees must not be edited, and importing them must
         not leave generated caches inside them."""
