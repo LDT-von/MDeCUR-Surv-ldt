@@ -1,0 +1,356 @@
+{
+  "atlas_audit": {
+    "atlas_fingerprint": "60d191704aa16048cdfc7f83601200e8aaadac75e41955ddaf41757734ef3859",
+    "clr_matrix_row_sum_max_deviation": 5.329070518200751e-15,
+    "clr_sum_max_deviation": 5.329070518200751e-15,
+    "cluster_ari": 1.0,
+    "composition_mae_vs_truth": 0.1294277913613584,
+    "composition_rows": [
+      {
+        "clr_sum": 1.7763568394002505e-15,
+        "composition_sum": 1.0,
+        "mass_sum": 7.0,
+        "valid_count": 3
+      },
+      {
+        "clr_sum": 2.220446049250313e-16,
+        "composition_sum": 1.0,
+        "mass_sum": 18.0,
+        "valid_count": 4
+      },
+      {
+        "clr_sum": 1.3322676295501878e-15,
+        "composition_sum": 1.0,
+        "mass_sum": 20.0,
+        "valid_count": 3
+      },
+      {
+        "clr_sum": 1.3322676295501878e-15,
+        "composition_sum": 1.0,
+        "mass_sum": 12.0,
+        "valid_count": 3
+      },
+      {
+        "clr_sum": 1.1102230246251565e-16,
+        "composition_sum": 1.0,
+        "mass_sum": 27.0,
+        "valid_count": 4
+      }
+    ],
+    "composition_sum_max_deviation": 2.220446049250313e-16,
+    "empty_cluster_repairs": 0,
+    "mass_sum_min": 6.0
+  },
+  "command": "scripts/method3_2_synthetic.py --out results/method3_2_smoke.json --scenarios redundant --seeds 11",
+  "elapsed_seconds": 87.22,
+  "environment": {
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.19045-SP0",
+    "python": "3.10.11",
+    "torch": "2.6.0+cu124"
+  },
+  "generated_utc": "2026-11-16T14:39:39.318659+00:00",
+  "git": {
+    "dirty_entries": 30,
+    "dirty_files": [
+      "?? METHOD31_LITERATURE_MATH_20261116.md",
+      "?? METHOD3_1_CONTROLS_PREREG_20261116.md",
+      "?? METHOD3_1_SYNTHETIC_REPORT_20261116.md",
+      "?? METHOD3_2_DESIGN_20261116.md",
+      "?? PROMPT_METHOD3_2_INDEPENDENT_20261116.md",
+      "?? method3_1_cluster_adapter.py",
+      "?? method3_1_model.py",
+      "?? method3_1_nature_control.py",
+      "?? method3_1_regularized.py",
+      "?? method3_1_synthetic_data.py",
+      "?? method3_2_model.py",
+      "?? method3_2_synthetic_data.py",
+      "?? results/full_dense_independent_synthetic_20261116.json",
+      "?? results/full_dense_independent_synthetic_20261116.log",
+      "?? results/full_dense_independent_synthetic_final_20261116.log",
+      "?? results/interaction_candidate_synthetic_final_20261116.log",
+      "?? results/interaction_candidate_validation_final_20261116.log",
+      "?? results/interaction_candidate_validation_final_20261116.xml",
+      "?? results/method3_1_initial_model_source.txt",
+      "?? results/method3_1_synthetic.json",
+      "?? results/method3_1_synthetic_initial.json",
+      "?? results/method3_2_smoke.json",
+      "?? scripts/check_method31_probe_math.py",
+      "?? scripts/method3_1_controlled.py",
+      "?? scripts/method3_1_synthetic.py",
+      "?? scripts/method3_2_synthetic.py",
+      "?? test_method3_1.py",
+      "?? test_method3_1_adapter.py",
+      "?? test_method3_1_nature_control.py",
+      "?? test_method3_1_regularized.py"
+    ],
+    "head": "35e3496a64f92bdadc95385fe759262396c2c353"
+  },
+  "leakage_check": {
+    "baseline": "a42a5849af05cf095fac0bb253714573461ea4e6d5638ef774a3385c85428e7a",
+    "changed_test": "a42a5849af05cf095fac0bb253714573461ea4e6d5638ef774a3385c85428e7a",
+    "changed_val": "a42a5849af05cf095fac0bb253714573461ea4e6d5638ef774a3385c85428e7a",
+    "test_change_keeps_state": true,
+    "val_change_keeps_state": true
+  },
+  "runs": {
+    "redundant|11|full": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.6672766087221714,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 1.4478562920410367,
+      "retrieval_a": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.9527621667145991,
+      "route": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "seconds": 21.38,
+      "status": "ok",
+      "val_nll_best": 1.455320461917329,
+      "val_nll_last": 1.6953723503312716
+    },
+    "redundant|11|generic_inter": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.6651418115279049,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 1.4866821397330106,
+      "retrieval_a": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.955524349685081,
+      "route": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "seconds": 1.46,
+      "status": "ok",
+      "val_nll_best": 1.4427803579156853,
+      "val_nll_last": 1.6838442956052018
+    },
+    "redundant|11|no_cluster_cond": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.6695638914303141,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 1.4462153282142407,
+      "retrieval_a": [
+        0.014925373134328358,
+        0.013986013986013986,
+        0.014084507042253521,
+        0.013986013986013986
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.954418362048165,
+      "route": [
+        0.014925373134328358,
+        0.013986013986013986,
+        0.014084507042253521,
+        0.013986013986013986
+      ],
+      "seconds": 23.33,
+      "status": "ok",
+      "val_nll_best": 1.4491771576793544,
+      "val_nll_last": 1.7160534568082055
+    },
+    "redundant|11|no_composition": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.6707837755413236,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 1.3775328466150962,
+      "retrieval_a": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.9549402358153942,
+      "route": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "seconds": 1.47,
+      "status": "ok",
+      "val_nll_best": 1.4195141100559598,
+      "val_nll_last": 1.423992606325267
+    },
+    "redundant|11|no_interaction": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.6672766087221714,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 1.4469881903204183,
+      "retrieval_a": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.952697360091058,
+      "route": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "seconds": 1.33,
+      "status": "ok",
+      "val_nll_best": 1.4556027168350274,
+      "val_nll_last": 1.6956423375403824
+    },
+    "redundant|11|no_ssl": {
+      "error": "TypeError: method3_2_model.Method32Config() got multiple values for keyword argument 'epochs_ssl'",
+      "seconds": 0.0,
+      "status": "failed"
+    },
+    "redundant|11|shuffle_pairs": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.5692284232997865,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 1.6011746081178937,
+      "retrieval_a": [
+        0.007462686567164179,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.006993006993006993
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.9567412405623199,
+      "route": [
+        0.007462686567164179,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.006993006993006993
+      ],
+      "seconds": 21.17,
+      "status": "ok",
+      "val_nll_best": 1.4831763912524034,
+      "val_nll_last": 1.6578374973548458
+    },
+    "redundant|11|uniform_route": {
+      "atlas_fingerprint": "0b0b364158372ce94471d833528ef63677546051237e9a04f8769d3bf589e700",
+      "harrell_c": 0.6556877096675816,
+      "n_encoder_parameters": 480,
+      "n_events": 107,
+      "n_head_parameters": 148,
+      "n_patients": 120,
+      "nll": 2.395430060056845,
+      "retrieval_a": [
+        0.014925373134328358,
+        0.006993006993006993,
+        0.007042253521126761,
+        0.0
+      ],
+      "retrieval_attempts": [
+        134.0,
+        143.0,
+        142.0,
+        143.0
+      ],
+      "risk_mean": 0.9972473745178054,
+      "route": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "seconds": 1.51,
+      "status": "ok",
+      "val_nll_best": 1.4179624480569422,
+      "val_nll_last": 1.772048711808023
+    }
+  },
+  "scale": {
+    "arms": [
+      "full",
+      "uniform_route",
+      "no_ssl",
+      "no_composition",
+      "no_interaction",
+      "generic_inter",
+      "no_cluster_cond",
+      "shuffle_pairs"
+    ],
+    "epochs_head": 120,
+    "epochs_ssl": 40,
+    "n_test": 120,
+    "n_train": 160,
+    "n_val": 60,
+    "scenarios": [
+      "redundant"
+    ],
+    "seeds": [
+      11
+    ]
+  },
+  "source_sha256": {
+    "method3_2_model.py": "6b00f3698b3ce57510c1c8253c55335912238bd3cc4beb3862560889df07ec78",
+    "method3_2_synthetic_data.py": "1cd7a88884ebb51f647e4aad722b7f1ba8bbca9fd6ea1de123d7302df833ca6a",
+    "scripts/method3_2_synthetic.py": "745a178651851357fcc9e6d6a803fbad9bc59bec8373b293321cde2bb980a475"
+  },
+  "version": "method3_2_cluster_routed_contrast_v1"
+}
