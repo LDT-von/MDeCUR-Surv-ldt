@@ -1,5 +1,32 @@
 # 癌症代码仓库的会话接续
 
+**2026-11-17 RNA 矩阵溯源审计已完成（只读）**：新增 `scripts/audit_rna_matrix_provenance.py`、
+`test_audit_rna_matrix_provenance.py`（16 项）、`results/rna_matrix_provenance_audit_20261117.json`
+与 `RNA_MATRIX_PROVENANCE_AUDIT_20261117.md`。它回答 `SCORE_SANITY_REVIEW_20261116.md` §7.5：
+**BLCA 的 RNA-only C≈0.747 是真实的预后信号，不是预处理残留**。关键实测：①矩阵 17025 基因×407
+样本，来源是上游 SlotSPE/PIBD 的 TCGA GDC RSEM z-scores（`rna_data.csv` 的下游），**不包含在
+上游论文里**；②**27.1%（4621 个）基因有缺失**，缺失样本填常数，**其观测部分 100% 是精确 z-score**
+→ 处理顺序是"先按观测子集 z-score、后常数插补"；③上游 z-score 拟合在**整张 407 列**上，
+含验证折与 **27 个无临床行的 RNA 样本** → **输入侧转导泄漏**（非标签泄漏）；④训练折内逐基因
+结局衍生探测**无 |r|→1 的列**；⑤同一 ridge 探针下，训练折内标准化 C=0.7655、仅用 12404 个完全
+观测基因 C=0.7456，标签置换空对照最大 0.5951 → **信号真实**。⚠️**但单用 4621 个插补基因也能到
+C=0.7076**，说明该矩阵预后信息高度冗余、维度虚高。**本批没有重训任何生存网络、没有读 outer test、
+没有修改任何患者产物或数据树**；全仓库 `python -m pytest -q` → **614 passed**。
+**下一批的 RNA 输入应重做**：z-score 移到训练折内、只用完全观测基因。
+⚠️**本批与并行会话 `origin/main@f928158` 的 `scripts/audit_rna_matrix_semantics.py`
+（行/列语义 + PCA 批次）路径与输出都不冲突**：本批的脚本叫 `audit_rna_matrix_provenance.py`，
+输出 `results/rna_matrix_provenance_audit_20261117.json`；两者检查同一个矩阵的不同侧面，
+**并存**，不要互相覆盖。
+
+**2026-11-17 本机确实有患者数据与 GPU（此前文档表述有误）**：BLCA 的 RNA、临床标签、UNI v1 patch
+特征（`/data/CPathPatchFeature/blca/uni/pt_files`）、五折划分、gmt/genes、四个上游 checkout
+**全部在本机**；`/data1/decur_runs/PARITY_DCT_FOLD0/` 还有 2026-11-13 跑完的 30 轮真实患者结果。
+**不要再说"本机没有患者数据"**——正确说法是"**本批工作只产出了 CPU 合成证据**"。
+⚠️但**本机 CUDA 当前不可用**：torch 2.6.0+cu124 只支持到 sm_90，机器是 RTX 5090（sm_120），
+实测报 `no kernel image is available for execution on the device`；需要装 cu128 的 torch 才可用 GPU
+（下载源 `https://mirrors.aliyun.com/pytorch-wheels/cu128/` 实测约 5.6 MB/s，官方源极慢）。
+**五折协议仍锁死 `FOLDS = (0,)`**（`comparison_protocol.py:63`），恢复需重生成 plan。
+
 **2026-11-16 MorphID 已接入锁定单折比较（可上服务器跑）**：新增 `comparison_morphid.py` 薄适配器，
 `comparison_fold0.py` 的臂清单扩为 5 条：`mdecur_full_dense` / `mdecur_dense_aux_off` / `camr_2m` /
 `morphid` / `morphid_no_interaction`。**已有臂的逻辑、协议常量与指标口径一律未改**。

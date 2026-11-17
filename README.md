@@ -117,6 +117,15 @@ MurreNet/MoHD 没有可验证的本地实现，不列为已下载模型。
 单折路径与命令见 [PATIENTWISE_V3_HANDOFF_20261116.md](PATIENTWISE_V3_HANDOFF_20261116.md)。
 四种对照的接口说明见 [COMPARATOR_5FOLD_PROTOCOL_20261116.md](COMPARATOR_5FOLD_PROTOCOL_20261116.md)。
 
+**RNA 矩阵的来源与已知缺陷（2026-11-17 只读审计）**：
+`results/rna_matrix_provenance_audit_20261117.json` 与
+[RNA_MATRIX_PROVENANCE_AUDIT_20261117.md](RNA_MATRIX_PROVENANCE_AUDIT_20261117.md)。
+要点：BLCA 的 RNA-only C≈0.747 是**真实的预后信号**（去掉全部插补基因仍有 0.7456，
+远高于标签置换空对照 0.5951），不是预处理残留、也不是结局衍生列；但上游 z-score
+拟合在**整张矩阵**上（含验证折与 27 个无临床行样本），存在**输入侧转导泄漏**，
+且 27.1% 的基因是常数插补的。后续应重做 RNA 预处理（训练折内 z-score + 仅观测基因）。
+行/列语义与批次结构由 `scripts/audit_rna_matrix_semantics.py` 单独检查（两个脚本并存）。
+
 清理改变了源码清单和模块路径，因此需要重新生成 plan；旧 plan 的源码哈希守卫会拒绝直接复用。
 离散目标仍为 `patientwise_clamped_discrete_v1`，模型计算和 15 项默认辅助系数未调整。
 旧广播漏洞训练出的权重不能靠重评分修复；验证选轮分数不属于独立测试。
