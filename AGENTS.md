@@ -1,5 +1,15 @@
 # 癌症代码仓库的会话接续
 
+**2026-11-17 RTX 5090 (sm_120) 的 GPU 已可用（新增独立 venv，不动既有 conda）**：
+见 [`GPU_ENV_SM120_20261117.md`](GPU_ENV_SM120_20261117.md)。`torch 2.6.0+cu124` 只到 sm_90，
+装 `torch 2.8.0+cu128` 到**独立 venv `/data1/venv_cu128`** 后两张 5090 均识别 `cap=(12,0)`，
+真实 fp16 matmul 30 TFLOP/s。**官方源只有 ~3 KB/s，用阿里云镜像**
+`https://mirrors.aliyun.com/pytorch-wheels/cu128/`（~5.6 MB/s）。
+⚠️**plan 必须在目标解释器里生成**，否则 `Plan no longer matches inputs/source/runtime` 会被拒；
+⚠️**CPU/GPU 混跑会被 summary 守卫拒绝**（要求所有臂 `runtime` 一致）；
+⚠️**加速比只有 1.4×**（瓶颈在 CPU 侧 patch 读取，不是 GPU）。本批只跑了 1 轮 `--smoke`，
+**没有 30 轮对照结果**。
+
 **2026-11-17 RNA 矩阵溯源审计已完成（只读）**：新增 `scripts/audit_rna_matrix_provenance.py`、
 `test_audit_rna_matrix_provenance.py`（16 项）、`results/rna_matrix_provenance_audit_20261117.json`
 与 `RNA_MATRIX_PROVENANCE_AUDIT_20261117.md`。它回答 `SCORE_SANITY_REVIEW_20261116.md` §7.5：
